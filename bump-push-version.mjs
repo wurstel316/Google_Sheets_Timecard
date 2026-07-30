@@ -21,9 +21,17 @@ function bumpPushVersion(version) {
   const major = Number(match[1]);
   const minor = Number(match[2]);
   const patch = Number(match[3]);
-  const pushBuild = match[4] ? Number(match[4]) + 1 : 0;
+  const hasPushSuffix = match[4] !== undefined;
 
-  return `${major}.${minor}.${patch}-push.${pushBuild}`;
+  // If already on a push prerelease, increment just the push counter.
+  // If on a stable release, move to the NEXT patch prerelease so
+  // npm version patch lands on a new patch release rather than an existing tag.
+  if (hasPushSuffix) {
+    const pushBuild = Number(match[4]) + 1;
+    return `${major}.${minor}.${patch}-push.${pushBuild}`;
+  }
+
+  return `${major}.${minor}.${patch + 1}-push.0`;
 }
 
 function syncCompiledHeaders(version) {
