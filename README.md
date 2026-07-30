@@ -19,6 +19,19 @@ This repo now uses a simplified release flow:
 - Switches to test environment (`env:test`)
 - Pushes and deploys to test Apps Script deployment
 
+### Commit changes before production release
+1. Review current changes:
+  - `git status`
+2. Stage the files you want in the release:
+  - `git add <file1> <file2>`
+  - or stage everything: `git add .`
+3. Create a commit:
+  - `git commit -m "Describe what changed"`
+4. Push your branch:
+  - `git push`
+5. Confirm you are clean before release:
+  - `git status`
+
 ### Production release (human-only)
 1. `npm run release:status`
 2. Pick one release type:

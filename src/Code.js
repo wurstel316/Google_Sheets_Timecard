@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.0.0 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.0.0-push.1 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -646,7 +646,7 @@ const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
 const EMPLOYEE_EMAIL_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const SCRIPT_VERSION = '2.0.0';
+const SCRIPT_VERSION = '2.0.0-push.1';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -1553,7 +1553,11 @@ function updateEntryNote(rowIndex, noteText, appendMode) {
     return { success: true, message: 'Note saved.' };
 }
 function adminSetEntryVerified(rowIndex, verified) {
-    return updateEntryVerifiedWithAudit(rowIndex, verified);
+    const result = updateEntryVerifiedWithAudit(rowIndex, verified);
+    const parsedRowIndex = Number(rowIndex);
+    return Object.assign({
+        rowIndex: isFinite(parsedRowIndex) ? parsedRowIndex : rowIndex
+    }, result);
 }
 function adminSetEntryVerifiedBatch(actions) {
     if (!hasPermission('verify')) {
@@ -1564,28 +1568,50 @@ function adminSetEntryVerifiedBatch(actions) {
         }));
     }
     const items = Array.isArray(actions) ? actions : [];
-    return items.map((action) => updateEntryVerifiedWithAudit(action && action.rowIndex, action && action.verified));
+    return items.map((action) => {
+        const rowIndex = action && action.rowIndex;
+        const parsedRowIndex = Number(rowIndex);
+        const result = updateEntryVerifiedWithAudit(rowIndex, action && action.verified);
+        return Object.assign({
+            rowIndex: isFinite(parsedRowIndex) ? parsedRowIndex : rowIndex
+        }, result);
+    });
 }
 function updateEntryVerifiedWithAudit(rowIndex, verified) {
+    const startMs = Date.now();
     if (!hasPermission('verify')) {
+        debugLog('updateEntryVerifiedWithAudit.permission_denied', { rowIndex: rowIndex });
         return { success: false, message: 'Verify permission required.' };
     }
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const dataEntry = ss.getSheetByName('DataEntry');
     if (!dataEntry) {
+        debugLog('updateEntryVerifiedWithAudit.missing_sheet', { rowIndex: rowIndex });
         return { success: false, message: 'DataEntry sheet not found.' };
     }
     const rowNum = Number(rowIndex);
     if (!isFinite(rowNum) || rowNum < 2 || rowNum > dataEntry.getLastRow()) {
+        debugLog('updateEntryVerifiedWithAudit.invalid_row', {
+            rowIndex: rowIndex,
+            parsedRowNum: rowNum,
+            lastRow: dataEntry.getLastRow()
+        });
         return { success: false, message: 'Invalid row.' };
     }
     const rowData = dataEntry.getRange(rowNum, 1, 1, DATA_COL_COUNT).getValues()[0];
     if (isDeletedDataRow(rowData)) {
+        debugLog('updateEntryVerifiedWithAudit.deleted_row', { rowIndex: rowNum });
         return { success: false, message: 'Cannot verify a deleted row.' };
     }
     const effectiveClockIn = getEffectiveClockInFromRow(rowData);
     const allowedRange = getAllowedDateRange();
     if (!(effectiveClockIn instanceof Date) || isNaN(effectiveClockIn.getTime()) || effectiveClockIn < allowedRange.minDate || effectiveClockIn > allowedRange.maxDate) {
+        debugLog('updateEntryVerifiedWithAudit.outside_active_period', {
+            rowIndex: rowNum,
+            effectiveClockInIso: (effectiveClockIn instanceof Date && !isNaN(effectiveClockIn.getTime())) ? effectiveClockIn.toISOString() : null,
+            minDateIso: allowedRange.minDate ? allowedRange.minDate.toISOString() : null,
+            maxDateIso: allowedRange.maxDate ? allowedRange.maxDate.toISOString() : null
+        });
         return {
             success: false,
             message: `Verified state can only be changed for entries in active pay period (${allowedRange.minDateStr} to ${allowedRange.maxDateStr}).`
@@ -1602,6 +1628,11 @@ function updateEntryVerifiedWithAudit(rowIndex, verified) {
     dataEntry.getRange(rowNum, dataCol('VERIFIED')).setValue(nextVerified);
     dataEntry.getRange(rowNum, dataCol('NOTES')).setValue(nextNotes);
     SpreadsheetApp.flush();
+    debugLog('updateEntryVerifiedWithAudit.success', {
+        rowIndex: rowNum,
+        verified: nextVerified,
+        durationMs: Date.now() - startMs
+    });
     return {
         success: true,
         message: nextVerified ? 'Entry verified.' : 'Entry marked unverified.',

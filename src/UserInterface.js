@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 1.2.0-push.172 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.0.0-push.1 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -5227,6 +5227,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return;
             }
 
+            debugClientLog('adminVerify.batch.request', {
+              total: pendingActions.length,
+              rows: pendingActions.map((action) => action.rowIndex)
+            });
+
             adminVerifyQueueInFlight = true;
             const msg = document.getElementById('adminLoadMsg');
             if (msg) {
@@ -5243,15 +5248,19 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                     resultByRow[result.rowIndex] = result;
                   }
                 });
+                const fallbackByPositionAllowed = resultList.length === pendingActions.length;
+                let successCount = 0;
+                const failedRows = [];
 
-                pendingActions.forEach((action) => {
+                pendingActions.forEach((action, actionIdx) => {
                   const rowIndex = action.rowIndex;
                   const entry = adminEntriesByRow[rowIndex];
-                  const result = resultByRow[rowIndex];
+                  const result = resultByRow[rowIndex] || (fallbackByPositionAllowed ? resultList[actionIdx] : null);
                   delete adminVerifyQueueByRow[rowIndex];
                   delete adminVerifySaveInFlightByRow[rowIndex];
 
                   if (!result || !result.success) {
+                    const failureReason = (result && result.message) ? result.message : 'Unknown verify error.';
                     if (entry) {
                       entry.verified = action.previousVerified;
                       entry.notes = action.previousNotes;
@@ -5264,14 +5273,27 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                       adminBaselineByRow[rowIndex].notes = action.previousNotes;
                       adminBaselineByRow[rowIndex].pendingNewNoteText = '';
                     }
-                    if (msg) {
-                      msg.innerText = 'Failed to update verified state for row ' + rowIndex + '.';
-                    }
+                    debugClientError('adminVerify.batch.row_failure', {
+                      rowIndex: rowIndex,
+                      reason: failureReason,
+                      result: result || null
+                    });
+                    failedRows.push({ rowIndex: rowIndex, reason: failureReason });
                     return;
                   }
 
+                  successCount += 1;
+                  debugClientLog('adminVerify.batch.row_success', {
+                    rowIndex: rowIndex,
+                    verified: (result.verified === undefined || result.verified === null)
+                      ? action.nextVerified === true
+                      : isVerifiedValue(result.verified)
+                  });
+
                   if (entry) {
-                    entry.verified = isVerifiedValue(result.verified);
+                    entry.verified = (result.verified === undefined || result.verified === null)
+                      ? action.nextVerified === true
+                      : isVerifiedValue(result.verified);
                     if (typeof result.notes === 'string') {
                       entry.notes = result.notes;
                     }
@@ -5291,14 +5313,31 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 adminVerifyQueueOrder = adminVerifyQueueOrder.filter((rowIndex) => adminVerifyQueueByRow[rowIndex]);
                 renderAdminEntries();
                 if (msg && adminVerifyQueueOrder.length === 0) {
-                  msg.innerText = 'Saved ' + pendingActions.length + ' verified change' + (pendingActions.length === 1 ? '' : 's') + '.';
+                  if (failedRows.length > 0) {
+                    const firstFailure = failedRows[0];
+                    msg.innerText = 'Saved ' + successCount + ' verified change' + (successCount === 1 ? '' : 's') + '; ' +
+                      'failed ' + failedRows.length + ' row' + (failedRows.length === 1 ? '' : 's') +
+                      ' (first: row ' + firstFailure.rowIndex + ': ' + firstFailure.reason + ').';
+                  } else {
+                    msg.innerText = 'Saved ' + pendingActions.length + ' verified change' + (pendingActions.length === 1 ? '' : 's') + '.';
+                  }
                 }
+                debugClientLog('adminVerify.batch.complete', {
+                  requested: pendingActions.length,
+                  succeeded: successCount,
+                  failed: failedRows.length,
+                  remainingQueued: adminVerifyQueueOrder.length
+                });
                 if (adminVerifyQueueOrder.length > 0) {
                   scheduleAdminVerifyQueueFlush();
                 }
               })
               .withFailureHandler((error) => {
                 adminVerifyQueueInFlight = false;
+                debugClientError('adminVerify.batch.network_failure', {
+                  rows: pendingActions.map((action) => action.rowIndex),
+                  error: error || null
+                });
                 pendingActions.forEach((action) => {
                   const rowIndex = action.rowIndex;
                   const entry = adminEntriesByRow[rowIndex];

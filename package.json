@@ -1,6 +1,6 @@
 {
   "name": "timecard-gas-project",
-  "version": "2.0.0",
+  "version": "2.0.0-push.1",
   "description": "A Google Apps Script TimeCard project",
   "main": "src/Code.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "sync:testdata": "node sync-test-data-csv.mjs",
     "push:test": "npm run version:push && npm run sync:testdata && npm run env:test && clasp push && clasp deploy -i AKfycbxjg3UEh-SA3Oip3HixWsRrr7oS5uDgyAlJ4LCI0EqmgUzMLB2KID-DJnQM8cXu4Gjf -d \"Deployed from OpenCode\"",
     "release:status": "git status -sb && git log --oneline --decorate -n 10",
-    "release:live": "node guard-live-release.mjs && npm run env:live && clasp push && clasp deploy --deploymentId AKfycbyhLxLhQmSCCP5cWabHOjQjn90X1d7_Lt1t3YMQ0Ngutu39nJuGFeVhx29FCGOac0o --description \"Release v$npm_package_version\" && git push && git push --tags",
+    "release:live": "node guard-live-release.mjs && npm run env:live && clasp push && clasp deploy --deploymentId AKfycbxGxJVbfVxUDNH75QieX9SCzplO5hwvt5hGckNWYhwibfe18qBngByILqIuf7zHdifa --description \"Release v$npm_package_version\" && git push && git push --tags",
     "release:patch": "npm version patch -m \"release(patch): v%s\" && npm run release:live",
     "release:minor": "npm version minor -m \"release(minor): v%s\" && npm run release:live",
     "release:major": "npm version major -m \"release(major): v%s\" && npm run release:live",
