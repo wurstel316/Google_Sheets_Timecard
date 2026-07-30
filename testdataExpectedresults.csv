@@ -1,0 +1,16 @@
+Payroll Report,,,,,,,,,,,,,,,
+Pay Period,01/01/2026,to,01/14/2026,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+Email,Wk1 RT,Wk1 OT,Wk1 DT,Wk2 RT,Wk2 OT,Wk2 DT,Vac,Hol,Sick,Hrs>40,Tot RT,Tot OT,Tot DT,Notes,Rule
+aws_complex_7days_weekly@test.com,40.00,16.00,—,—,—,—,—,—,—,16.00,40.00,16.00,—,,AWS
+boundary_filter@test.com,8.00,—,—,8.00,—,—,—,—,—,—,16.00,—,—,,CA Standard
+ca_7thday_span_weeks@test.com,24.00,—,—,6.00,—,—,—,—,—,—,30.00,—,—,,CA Standard
+ca_complex_7th_plus_weekly@test.com,40.00,14.00,—,—,—,—,—,—,—,14.00,40.00,14.00,—,,CA Standard
+ca_dt_no_pyramid@test.com,40.00,12.00,1.00,—,—,—,—,—,—,13.00,40.00,12.00,1.00,,CA Standard
+deleted_filter@test.com,8.00,—,—,—,—,—,—,—,—,—,8.00,—,—,,CA Standard
+mixed_leave@test.com,8.00,—,—,—,—,—,8.00,—,8.00,—,8.00,—,—,,CA Standard
+modified_priority@test.com,—,—,—,16.00,4.00,—,—,—,—,—,16.00,4.00,—,,CA Standard
+multiclock_day@test.com,—,—,—,8.00,2.00,—,—,—,—,—,8.00,2.00,—,,CA Standard
+partial_modified@test.com,—,—,—,16.00,2.00,—,—,—,—,—,16.00,2.00,—,,CA Standard
+transition_employee@test.com,40.00,20.00,—,—,—,—,—,—,—,20.00,40.00,20.00,—,,CA Standard
+week2_only@test.com,—,—,—,32.00,8.00,—,—,—,—,—,32.00,8.00,—,,CA Standard

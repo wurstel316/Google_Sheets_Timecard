@@ -1,0 +1,40 @@
+{
+  "name": "timecard-gas-project",
+  "version": "1.2.0-push.170",
+  "description": "A Google Apps Script TimeCard project",
+  "main": "src/Code.js",
+  "scripts": {
+    "login": "clasp login --no-localhost",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "deploy": "clasp deploy --deploymentId AKfycbyhLxLhQmSCCP5cWabHOjQjn90X1d7_Lt1t3YMQ0Ngutu39nJuGFeVhx29FCGOac0o --description \"Deployed from OpenCode\"",
+    "create": "clasp create --type sheets --title \"TimeCard\" --rootDir ./src",
+    "env:status": "node clasp-env.mjs status",
+    "env:test": "node clasp-env.mjs test",
+    "env:live": "node clasp-env.mjs live",
+    "open:test": "npm run env:test && npm run open",
+    "open:live": "npm run env:live && npm run open",
+    "version:push": "node bump-push-version.mjs",
+    "sync:testdata": "node sync-test-data-csv.mjs",
+    "push:test": "npm run version:push && npm run sync:testdata && npm run env:test && clasp push && clasp deploy -i AKfycbxjg3UEh-SA3Oip3HixWsRrr7oS5uDgyAlJ4LCI0EqmgUzMLB2KID-DJnQM8cXu4Gjf -d \"Deployed from OpenCode\"",
+    "push:live": "npm run version:push && npm run env:live && npm run push",
+    "deploy:test": "npm run env:test && clasp deploy --description \"Deployed from OpenCode\"",
+    "deploy:live": "npm run env:live && clasp deploy",
+    "release:status": "git status -sb && git log --oneline --decorate -n 10",
+    "release:patch": "npm version patch -m \"release: v%s\"",
+    "release:minor": "npm version minor -m \"release: v%s\"",
+    "release:major": "npm version major -m \"release: v%s\"",
+    "version": "node sync-script-version.mjs && git add src/Code.js"
+  },
+  "keywords": [
+    "google-apps-script",
+    "timecard",
+    "google-sheets"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@google/clasp": "^3.3.0"
+  }
+}

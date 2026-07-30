@@ -1,0 +1,298 @@
+# Use the command-line interface with clasp
+
+To develop and manage Google Apps Script projects from your terminal rather
+than the Apps Script editor, use the open-source tool `clasp`.
+
+The [`clasp` codelab](http://g.co/codelabs/clasp) provides an overview of all
+`clasp` features.
+
+## Features
+
+`clasp` includes the following features:
+
+### Develop locally
+
+`clasp` lets you develop your Apps Script projects locally. Write
+code on your own computer and upload it to Apps Script when
+finished. You can also download existing Apps Script projects to
+edit them offline. Use your favorite development tools like
+[`git`](https://git-scm.com/) when building Apps Script
+projects.
+
+### Manage deployment versions
+
+Create, update, and view multiple [deployments](https://developers.google.com/apps-script/concepts/deployments)
+of your project.
+
+### Structure code
+
+`clasp` lets you organize your code into directories, which are preserved
+when you upload them to script.google.com. For example:
+
+```
+# On script.google.com:
+├── tests/slides.gs
+└── tests/sheets.gs
+
+# Locally:
+├── tests/
+│   ├─ slides.gs
+│   └─ sheets.gs
+```
+
+## Project types
+
+You can use `clasp` to manage both standalone and container-bound script projects.
+
+### Standalone projects
+
+A standalone project appears as a separate file in your Google Drive. You can
+create a new standalone script using the `clasp create` command.
+
+### Container-bound projects
+
+A [container-bound project](https://developers.google.com/apps-script/guides/bound) is attached to a
+Google Docs, Sheets, Slides, or Google Forms
+file. You can create a new container-bound script attached to a new file using
+the `clasp create` command. You can also attach a new script to an existing file
+using the `--parentId` flag.
+
+### Other project types
+
+`clasp` also supports creating scripts for web apps and APIs.
+
+## Requirements
+
+`clasp` is written in [Node.js](https://nodejs.org/en/) and distributed using
+the `npm` tool. Prior to using `clasp`, you must have
+[Node.js version 20.0.0 or later](https://nodejs.org/en/download/) installed.
+Installing Node.js requires administrative privileges.
+
+## Installation
+
+Once you've installed Node.js, use the following `npm` command to install
+`clasp`:
+
+    npm install @google/clasp -g
+
+After installation, use the `clasp` command from any directory on your computer.
+
+## Use `clasp`
+
+Use `clasp` to handle a variety of tasks from the command line. This section
+describes common operations to use when developing with `clasp`.
+
+### Login
+
+This command logs in and authorizes management of your Google Account's
+Apps Script projects. Once it is run, you are asked to sign into a Google
+Account where your Apps Script projects are stored.
+
+    clasp login
+
+### Logout
+
+This command logs out of the command-line tool. Re-login using `clasp login` to
+re-authenticate with Google before continuing to use `clasp`.
+
+    clasp logout
+
+### Create a new Apps Script project
+
+This command creates a new script in the current directory with an optional
+script title.
+
+    clasp create [scriptTitle] [--type <projectType>] [--parentId <parentId>]
+
+This command uses the following optional parameters:
+
+- `scriptTitle`: The title of the script project.
+- `--type <projectType>`: The type of project to create. Allowed values are `standalone`, `docs`, `sheets`, `slides`, `forms`, `webapp`, and `api`.
+- `--parentId <parentId>`: The ID of the existing Google Drive file (Docs, Sheets, Slides, or Forms) to which the new script project should be bound.
+
+This command also creates two files in the current directory:
+
+- A `.clasp.json` file storing the script ID.
+- An `appsscript.json` project manifest file containing project metadata.
+
+### Clone an existing project
+
+This command clones an existing project in the current directory. The script
+must be created or shared with your Google account. You specify the script
+project to clone by providing its script ID. You can clone both standalone and
+container-bound projects.
+
+To find the Script ID of the project:
+
+1. Open the Apps Script project.
+2. At the left, click **Project Settings** .
+3. Under **IDs** , copy the **Script ID**.
+
+   clasp clone
+
+### Download a script project
+
+This command downloads the Apps Script project from
+Google Drive to your computer's file system.
+
+    clasp pull
+
+### Upload a script project
+
+This command uploads all of a script project's files from your computer to
+Drive.
+
+    clasp push
+
+### List project versions
+
+This command lists the number and description of each of a script project's
+versions.
+
+    clasp versions
+
+### Deploy a published project
+
+Deploy script projects as web apps, Google Workspace add-ons, or executables. Create
+[deployments](https://developers.google.com/apps-script/concepts/deployments) in the script editor, in the
+project [manifest](https://developers.google.com/apps-script/concepts/manifests), or using `clasp`.
+
+To deploy a project with `clasp`, first create an immutable version of the
+Apps Script project. A version is a "snapshot" of a script
+project and is similar to a read-only branched release.
+
+    clasp version [description]
+
+This command displays the newly created version number. Use that number to
+deploy and undeploy instances of your project:
+
+    clasp deploy [version] [description]
+    clasp undeploy <deploymentId>
+
+This command updates an existing deployment with a new version and description:
+
+    clasp redeploy <deploymentId> <version> <description>
+
+### List deployments
+
+This command lists the script project's deployment IDs, versions, and their
+descriptions.
+
+    clasp deployments
+
+### Open the project in the Apps Script editor
+
+This command opens a script project in the Apps Script editor.
+The editor launches as a new tab in your default web browser.
+
+    clasp open-script
+
+## Contribute to the `clasp` open-source project
+
+Contribute to `clasp` on [GitHub](https://github.com/google/clasp).
+
+## CI/CD for Apps Script with `clasp` and GitHub Actions
+
+This guide covers setting up automated linting, testing, and deployment for
+Google Apps Script projects using **clasp** and **GitHub Actions**.
+
+### 1. Prerequisites
+
+Before you begin, complete the setup steps in [Requirements](https://developers.google.com/apps-script/guides/clasp#requirements).
+
+You also need:
+
+- A GitHub repository.
+- The Apps Script API enabled at `script.google.com/home/usersettings`.
+
+### 2. Authentication in CI
+
+Since CI runners can't open a browser for OAuth, you store credentials as
+[**GitHub Secrets**](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets):
+
+| Secret | Value |
+|---|---|
+| `CLASPRC_JSON` | Contents of `~/.clasprc.json` (created by `clasp login`) |
+| `CLASP_JSON` | Contents of `.clasp.json` (your script ID mapping) |
+
+The refresh token in `.clasprc.json` grants access to your Apps Script projects.
+Treat it as a sensitive credential and rotate it periodically.
+
+Add `.clasprc.json` and `.clasp.json` to your `.gitignore`. These contain
+credentials and should never be committed.
+
+### 3. CI Workflow --- Lint and Test on PRs
+
+`.github/workflows/ci.yml`:
+
+    name: CI
+    on:
+      pull_request:
+        branches: [main]
+
+    jobs:
+      check:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v6.3
+          - uses: actions/setup-node@v6.3
+            with:
+              node-version: "20"
+              cache: npm
+          - run: npm ci
+          - run: npm run lint
+
+### 4. CD Workflow --- Deploy on Merge
+
+`.github/workflows/deploy.yml`:
+
+    name: Deploy
+    on:
+      push:
+        branches: [main]
+
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+            with:
+              node-version: "20"
+              cache: npm
+          - run: npm ci
+          - run: npm run lint && npm test
+          - name: Setup clasp credentials
+            run: |
+
+              echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+              echo '${{ secrets.CLASP_JSON }}' > .clasp.json
+
+          - name: Push and version
+            run: |
+              npx @google/clasp push --force
+              npx @google/clasp version "$(git rev-parse --short HEAD)"
+
+The `--force` flag overwrites remote code without confirmation. Once this
+pipeline is in place, avoid manual edits in the Apps Script editor --- the
+repository becomes the single source of truth.
+
+### 5. Multi-Environment Deployment
+
+For separate dev/staging/production environments, create a distinct Apps Script
+project for each and store their configs as separate secrets (`CLASP_JSON_DEV`,
+`CLASP_JSON_STAGING`, `CLASP_JSON_PROD`). In the workflow, write the appropriate
+secret to `.clasp.json` based on the branch being deployed.
+
+### Troubleshooting
+
+| Error | Fix |
+|---|---|
+| "Script API not enabled" | Enable at `script.google.com/home/usersettings` |
+| "401 Unauthorized" | Re-run `clasp login` locally, update `CLASPRC_JSON` secret |
+| "ENOENT .clasp.json" | Verify the credentials step writes the file before `clasp push` |
+| Push succeeds but code unchanged | Confirm `scriptId` in the secret matches your target project |
+
+### Further Reading
+
+- [GitHub Actions documentation](https://docs.github.com/en/actions)
