@@ -13,6 +13,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.0.1] - 2026-07-30
+
+### Added
+- _None yet._
+
+### Changed
+- _None yet._
+
+### Fixed
 - Summary: Fixed push prerelease bumping so stable versions advance to the next patch prerelease.
 - Why: Prevents patch release collisions with existing tags (for example trying to re-tag v2.0.0) and keeps semantic release progression aligned.
 - Files: bump-push-version.mjs
