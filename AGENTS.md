@@ -6,9 +6,23 @@ This is a Google Apps Script time tracking application with a web interface for 
 ## Key Commands
 - `npm run login` - One-time Google authentication
 - `npm run create` - Create new Sheets-bound script project  
-- `npm run push:test` - Deploy JavaScript code to test environment (only approved deployment method)
-- `npm run push:live` - Deploy JavaScript code to live production environment (- never run without explicit authorization)
-- Do not run NPM or clasp commands without specific request Never run push:live that is for manual user use only.
+- `npm run push:test` - Deploy JavaScript code to test environment (the only deploy command agents are allowed to run)
+- `npm run release:status` - Show git status and recent commits before a release
+- `CONFIRM_LIVE=YES npm run release:patch|minor|major` - Human-only live release commands with semantic version bump + live push/deploy
+- Do not run NPM or clasp commands without specific request. Agents must never run live release scripts.
+
+## Agent Safety Rules (Critical)
+- Agents are only allowed to run `npm run push:test` for deployment actions.
+- Agents must never run `npm run release:live`.
+- Agents must never run `npm run release:patch`, `npm run release:minor`, or `npm run release:major`.
+- Agents must never run `npm run env:live`.
+- Live production releases are manual human operations only and require `CONFIRM_LIVE=YES`.
+
+## Changelog Rules (Critical)
+- For any non-trivial code change, agents must update `CHANGELOG.md` in the `Unreleased` section before finishing.
+- Changelog entries must include: what changed, why it changed, key files touched, and validation performed.
+- Agents must append entries and never rewrite or remove existing historical release sections.
+- Human release commands automatically move `Unreleased` into a dated release section via `update-changelog-for-release.mjs`.
 
 
 ## Deployment Configuration Files
@@ -19,21 +33,20 @@ This is a Google Apps Script time tracking application with a web interface for 
 	Environment Management Commands
 	Switching Environments
 	npm run env:test    # Switch to test environment
-	npm run env:live    # Switch to live (production) environment
+	npm run env:live    # Switch to live (production) environment - human-only
 	Deployment Workflow
 	npm run login       # One-time Google authentication
-	npm run push:test   # Deploy code to test environment (only approved deployment method)
-	npm run push:live   # Deploy code to live production environment (only approved deployment method - never run without explicit authorization)
+	npm run push:test   # Deploy code to test environment (approved test workflow)
+	CONFIRM_LIVE=YES npm run release:patch|minor|major   # Human-only live release workflow
 	Key Points
-	The npm run push command deploys to whichever environment is currently configured
 	Environment switching modifies the active clasp configuration file (.clasp.test.json or .clasp.live.json)
 	Deployment ID is stored in the respective .clasp.*.json file's scriptId field
 	This setup provides explicit control over environments rather than implicit behavior, with clear separation between test and production deployments.
 	
 	## Important Notes
 	Only `npm run push:test`. 
-	The basic `npm run push` command is deprecated and should never be used without explicit authorization.
-	Always default to `npm run push:test'
+	Live release commands require `CONFIRM_LIVE=YES` and are human-only.
+	Agents always default to `npm run push:test`.
 
 ## Architecture
 - **Core file**: Code.js contains main logic and server functions
@@ -44,6 +57,7 @@ This is a Google Apps Script time tracking application with a web interface for 
 ## Development Workflow
 1. Make changes in local files (Code.js, UserInterface.js)
 2. Deploy using `npm run push:test`.
+3. For production release (human-only), run `CONFIRM_LIVE=YES npm run release:patch|minor|major`.
 
 ## Important Patterns
 - All employee data stored in single DataEntry sheet sorted by email and timestamp
@@ -151,6 +165,8 @@ AWS employees have different thresholds:
 - Use exact string matching (including whitespace and indentation).
 - After planning, output ONLY the tool call(s) — no extra text before the tool call.
 - If appending new content at the end, prefer the "write" tool or use a unique anchor string at the bottom.
+- For deployment tasks, agents may run only `npm run push:test` and must refuse all live-release scripts.
+- For non-trivial code changes, agents must add an `Unreleased` entry in `CHANGELOG.md`.
 
 ## Modal Management Best Practices
 When managing modals in the web interface:
