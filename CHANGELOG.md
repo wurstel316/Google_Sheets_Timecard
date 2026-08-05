@@ -10,6 +10,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
+- _None yet._
+
+### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.2.0] - 2026-08-05
+
+### Added
+- _None yet._
+
+### Changed
 - Summary: Reworked release commands into a single automated release orchestrator that stages changes, versions, tags, pushes Git, and then performs live clasp deployment.
 - Why: Removes manual release sequencing and enforces a consistent release pipeline from command execution through deployment.
 - Files: package.json, run-release.mjs, README.md

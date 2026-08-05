@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.1.1-push.0 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.0 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -681,7 +681,7 @@ const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
 const EMPLOYEE_EMAIL_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const SCRIPT_VERSION = '2.1.1-push.0';
+const SCRIPT_VERSION = '2.2.0';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
