@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.0.1 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.0.2-push.12 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -8,6 +8,14 @@
  * Create menu when spreadsheet opens
  */
 function onOpen() {
+    try {
+        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const dataEntry = ss.getSheetByName('DataEntry');
+        ensureDataEntrySchema(dataEntry);
+    }
+    catch (e) {
+        Logger.log('onOpen: schema check skipped: %s', e.toString());
+    }
     const ui = SpreadsheetApp.getUi();
     const debugEnabled = isDebugEnabled();
     const menu = ui.createMenu('Payroll Tools')
@@ -34,7 +42,7 @@ const ENTRY_TYPE_WORKED = 'worked';
 const ENTRY_TYPE_VACATION = 'vacation';
 const ENTRY_TYPE_SICK = 'sick';
 const ENTRY_TYPE_VALUES = new Set([ENTRY_TYPE_WORKED, ENTRY_TYPE_VACATION, ENTRY_TYPE_SICK]);
-const DATA_ENTRY_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type'];
+const DATA_ENTRY_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Entry ID'];
 const ARCHIVE_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Archived Date'];
 function toDateOrNull(value) {
     if (value instanceof Date && !isNaN(value.getTime())) {
@@ -170,6 +178,21 @@ function normalizeHeaderKey(value) {
         .toLowerCase()
         .replace(/[^a-z0-9]/g, '');
 }
+function ensureDataEntrySchema(dataEntry) {
+    if (!dataEntry) {
+        return;
+    }
+    const requiredColumns = DATA_ENTRY_HEADERS.length;
+    const currentColumns = dataEntry.getLastColumn();
+    if (currentColumns < requiredColumns) {
+        enforceExactColumnCount(dataEntry, requiredColumns, 'DataEntry', []);
+    }
+    const headerValues = dataEntry.getRange(1, 1, 1, requiredColumns).getValues()[0];
+    const headersMismatch = headerValues.some((headerValue, idx) => normalizeHeaderKey(headerValue) !== normalizeHeaderKey(DATA_ENTRY_HEADERS[idx]));
+    if (headersMismatch) {
+        dataEntry.getRange(1, 1, 1, requiredColumns).setValues([DATA_ENTRY_HEADERS]);
+    }
+}
 function findBestSourceIndexByHeader(sourceHeaderKeys, targetAliases, usedSourceIndexes) {
     for (let i = 0; i < sourceHeaderKeys.length; i++) {
         if (usedSourceIndexes.has(i)) {
@@ -202,7 +225,8 @@ function normalizeDataEntryColumnsForMigration(dataEntry, log) {
         'Clock In Modified': ['clockinmodified', 'modifiedclockin', 'clockinedited', 'editedclockin'],
         'Clock Out Modified': ['clockoutmodified', 'modifiedclockout', 'clockoutedited', 'editedclockout'],
         'Deleted': ['deleted', 'isdeleted'],
-        'Entry Type': ['entrytype', 'type']
+        'Entry Type': ['entrytype', 'type'],
+        'Entry ID': ['entryid', 'id', 'uuid']
     };
     const usedSourceIndexes = new Set();
     const sourceIndexByTarget = DATA_ENTRY_HEADERS.map(header => {
@@ -397,7 +421,8 @@ const DATA_COLUMNS = {
     CLOCK_IN_MODIFIED: 6,
     CLOCK_OUT_MODIFIED: 7,
     DELETED: 8,
-    ENTRY_TYPE: 9
+    ENTRY_TYPE: 9,
+    ENTRY_ID: 10
 };
 const DATA_COL_COUNT = Object.keys(DATA_COLUMNS).length;
 // Archive sheet column mapping (DataEntry parity + Archived Date)
@@ -444,6 +469,15 @@ function archiveCol(key) {
 function normalizeEntryType(entryType) {
     const value = String(entryType || '').trim().toLowerCase();
     return ENTRY_TYPE_VALUES.has(value) ? value : ENTRY_TYPE_WORKED;
+}
+function generateEntryId() {
+    return Utilities.getUuid();
+}
+function getRowEntryId(rowData) {
+    if (!rowData || rowData.length <= DATA_COLUMNS.ENTRY_ID) {
+        return '';
+    }
+    return String(rowData[DATA_COLUMNS.ENTRY_ID] || '').trim();
 }
 function getRowEntryType(rowData) {
     if (!rowData || rowData.length <= DATA_COLUMNS.ENTRY_TYPE) {
@@ -547,6 +581,7 @@ function buildDataEntryRow(email, rawClockIn, rawClockOut, notes, verified, entr
     row[DATA_COLUMNS.CLOCK_OUT_MODIFIED] = '';
     row[DATA_COLUMNS.DELETED] = false;
     row[DATA_COLUMNS.ENTRY_TYPE] = normalizeEntryType(entryType);
+    row[DATA_COLUMNS.ENTRY_ID] = generateEntryId();
     return row;
 }
 function getAdminEmailSet() {
@@ -646,7 +681,7 @@ const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
 const EMPLOYEE_EMAIL_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const SCRIPT_VERSION = '2.0.1';
+const SCRIPT_VERSION = '2.0.2-push.12';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -714,6 +749,7 @@ function doGet(e) {
         if (!dataEntry) {
             throw new Error('DataEntry sheet not found. Please run Initialize Sheets from Payroll Tools menu.');
         }
+        ensureDataEntrySchema(dataEntry);
         const statusObj = getCurrentStatus(userEmail, dataEntry);
         const allowedRange = getAllowedDateRange();
         const activePayPeriod = getActivePayPeriod();
@@ -915,6 +951,13 @@ function submitClockAction(action, notes) {
         }
         // Insert clock-in at chronologically correct position
         const newRow = insertRowChronologically(dataEntry, now, buildDataEntryRow(userEmail, now, '', notes || '', false, ENTRY_TYPE_WORKED));
+        const createdRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
+        debugLog('entryId.create.success', {
+            source: 'submitClockAction.ClockIn',
+            rowIndex: newRow,
+            entryId: getRowEntryId(createdRowData) || null,
+            email: userEmail
+        });
         SpreadsheetApp.flush();
         addEmailToEmployeeCache(userEmail);
         Logger.log('submitClockAction: clock-in completed (row=%s)', newRow);
@@ -1049,6 +1092,13 @@ function submitManualTimeEntry(clockInISO, clockOutISO, notes, entryType = ENTRY
     Logger.log('submitManualTimeEntry: manual entry requested');
     debugLog('submitManualTimeEntry payload', { clockInISO: clockInISO, clockOutISO: clockOutISO, hasNotes: !!notes, notesLength: notes ? String(notes).length : 0 });
     const newRow = insertRowChronologically(dataEntry, clockInDate, buildDataEntryRow(userEmail, clockInDate, '', finalNotes, false, normalizedEntryType));
+    const createdManualRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
+    debugLog('entryId.create.success', {
+        source: 'submitManualTimeEntry',
+        rowIndex: newRow,
+        entryId: getRowEntryId(createdManualRowData) || null,
+        email: userEmail
+    });
     SpreadsheetApp.flush();
     addEmailToEmployeeCache(userEmail);
     processClockOut(userEmail, dataEntry, clockOutDate, finalNotes, newRow, clockInDate, false);
@@ -1142,6 +1192,13 @@ function processClockOut(email, dataEntry, clockOutDateTime, notes, rowIndex, cl
             startOfNextDay.setHours(0, 0, 0, 0);
             // Insert second-day entry at chronologically correct position
             const newRow = insertRowChronologically(dataEntry, startOfNextDay, buildDataEntryRow(email, startOfNextDay, clockOutDateTime, combinedNotes, false, existingEntryType));
+            const createdSplitRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
+            debugLog('entryId.create.success', {
+                source: 'processClockOut.midnightSplitSecondDay',
+                rowIndex: newRow,
+                entryId: getRowEntryId(createdSplitRowData) || null,
+                email: email
+            });
             // Note: insertRowChronologically() already flushes internally (line 1213), so no need to flush here
             Logger.log('processClockOut: midnight split second segment saved (row=%s)', newRow);
         }
@@ -1552,11 +1609,73 @@ function updateEntryNote(rowIndex, noteText, appendMode) {
     SpreadsheetApp.flush();
     return { success: true, message: 'Note saved.' };
 }
-function adminSetEntryVerified(rowIndex, verified) {
-    const result = updateEntryVerifiedWithAudit(rowIndex, verified);
+function buildDataEntryIdToRowMap(dataEntry) {
+    const idToRowMap = {};
+    const lastRow = dataEntry.getLastRow();
+    const bodyRows = Math.max(lastRow - 1, 0);
+    if (bodyRows === 0) {
+        return idToRowMap;
+    }
+    const idValues = dataEntry.getRange(2, dataCol('ENTRY_ID'), bodyRows, 1).getValues();
+    for (let i = 0; i < idValues.length; i++) {
+        const entryId = String(idValues[i][0] || '').trim();
+        if (entryId) {
+            idToRowMap[entryId] = i + 2;
+        }
+    }
+    return idToRowMap;
+}
+function resolveAdminTargetRow(dataEntry, requestedRowIndex, requestedEntryId, idToRowMap) {
+    const entryId = String(requestedEntryId || '').trim();
+    const lastRow = dataEntry.getLastRow();
+    if (entryId) {
+        const candidateFromMap = idToRowMap && Object.prototype.hasOwnProperty.call(idToRowMap, entryId)
+            ? Number(idToRowMap[entryId])
+            : NaN;
+        if (isFinite(candidateFromMap) && candidateFromMap >= 2 && candidateFromMap <= lastRow) {
+            debugLog('entryId.resolve.success', {
+                mode: 'entryId',
+                entryId: entryId,
+                resolvedRow: candidateFromMap,
+                requestedRowIndex: requestedRowIndex
+            });
+            return { rowNum: candidateFromMap, entryId: entryId };
+        }
+        debugLog('entryId.resolve.failure', {
+            mode: 'entryId',
+            entryId: entryId,
+            requestedRowIndex: requestedRowIndex,
+            lastRow: lastRow,
+            reason: 'entry_id_not_found'
+        });
+        return { rowNum: NaN, entryId: entryId, error: 'Entry not found. Refresh and try again.' };
+    }
+    const rowNum = Number(requestedRowIndex);
+    if (!isFinite(rowNum) || rowNum < 2 || rowNum > lastRow) {
+        debugLog('entryId.resolve.failure', {
+            mode: 'rowFallback',
+            entryId: '',
+            requestedRowIndex: requestedRowIndex,
+            parsedRowNum: rowNum,
+            lastRow: lastRow,
+            reason: 'invalid_row_fallback'
+        });
+        return { rowNum: NaN, entryId: '', error: 'Invalid row.' };
+    }
+    debugLog('entryId.resolve.fallback', {
+        mode: 'rowFallback',
+        entryId: '',
+        requestedRowIndex: requestedRowIndex,
+        resolvedRow: rowNum
+    });
+    return { rowNum: rowNum, entryId: '' };
+}
+function adminSetEntryVerified(rowIndex, verified, entryId) {
+    const result = updateEntryVerifiedWithAudit(rowIndex, verified, entryId);
     const parsedRowIndex = Number(rowIndex);
     return Object.assign({
-        rowIndex: isFinite(parsedRowIndex) ? parsedRowIndex : rowIndex
+        rowIndex: isFinite(parsedRowIndex) ? parsedRowIndex : rowIndex,
+        entryId: String(entryId || '').trim() || null
     }, result);
 }
 function adminSetEntryVerifiedBatch(actions) {
@@ -1567,36 +1686,65 @@ function adminSetEntryVerifiedBatch(actions) {
             message: 'Verify permission required.'
         }));
     }
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dataEntry = ss.getSheetByName('DataEntry');
+    if (!dataEntry) {
+        return (Array.isArray(actions) ? actions : []).map(action => ({
+            rowIndex: action && action.rowIndex,
+            entryId: action && action.entryId,
+            success: false,
+            message: 'DataEntry sheet not found.'
+        }));
+    }
+    ensureDataEntrySchema(dataEntry);
+    const idToRowMap = buildDataEntryIdToRowMap(dataEntry);
     const items = Array.isArray(actions) ? actions : [];
     return items.map((action) => {
         const rowIndex = action && action.rowIndex;
+        const entryId = action && action.entryId;
         const parsedRowIndex = Number(rowIndex);
-        const result = updateEntryVerifiedWithAudit(rowIndex, action && action.verified);
+        const result = updateEntryVerifiedWithAudit(rowIndex, action && action.verified, entryId, dataEntry, idToRowMap);
         return Object.assign({
-            rowIndex: isFinite(parsedRowIndex) ? parsedRowIndex : rowIndex
+            rowIndex: isFinite(parsedRowIndex) ? parsedRowIndex : rowIndex,
+            entryId: String(entryId || '').trim() || null
         }, result);
     });
 }
-function updateEntryVerifiedWithAudit(rowIndex, verified) {
+function updateEntryVerifiedWithAudit(rowIndex, verified, entryId, dataEntryOverride, idToRowMapOverride) {
     const startMs = Date.now();
+    const requestedEntryId = String(entryId || '').trim();
+    debugLog('entryId.verify.request', {
+        rowIndex: rowIndex,
+        entryId: requestedEntryId || null,
+        requestedVerified: verified === true
+    });
     if (!hasPermission('verify')) {
         debugLog('updateEntryVerifiedWithAudit.permission_denied', { rowIndex: rowIndex });
         return { success: false, message: 'Verify permission required.' };
     }
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const dataEntry = ss.getSheetByName('DataEntry');
+    const dataEntry = dataEntryOverride || SpreadsheetApp.getActiveSpreadsheet().getSheetByName('DataEntry');
     if (!dataEntry) {
         debugLog('updateEntryVerifiedWithAudit.missing_sheet', { rowIndex: rowIndex });
         return { success: false, message: 'DataEntry sheet not found.' };
     }
-    const rowNum = Number(rowIndex);
-    if (!isFinite(rowNum) || rowNum < 2 || rowNum > dataEntry.getLastRow()) {
+    ensureDataEntrySchema(dataEntry);
+    const idToRowMap = idToRowMapOverride || buildDataEntryIdToRowMap(dataEntry);
+    const target = resolveAdminTargetRow(dataEntry, rowIndex, entryId, idToRowMap);
+    const rowNum = target.rowNum;
+    if (!isFinite(rowNum)) {
         debugLog('updateEntryVerifiedWithAudit.invalid_row', {
             rowIndex: rowIndex,
+            entryId: requestedEntryId || null,
             parsedRowNum: rowNum,
-            lastRow: dataEntry.getLastRow()
+            lastRow: dataEntry.getLastRow(),
+            resolverError: target.error || null
         });
-        return { success: false, message: 'Invalid row.' };
+        debugLog('entryId.verify.failure', {
+            rowIndex: rowIndex,
+            entryId: requestedEntryId || null,
+            reason: target.error || 'invalid_row'
+        });
+        return { success: false, message: target.error || 'Invalid row.' };
     }
     const rowData = dataEntry.getRange(rowNum, 1, 1, DATA_COL_COUNT).getValues()[0];
     if (isDeletedDataRow(rowData)) {
@@ -1630,8 +1778,15 @@ function updateEntryVerifiedWithAudit(rowIndex, verified) {
     SpreadsheetApp.flush();
     debugLog('updateEntryVerifiedWithAudit.success', {
         rowIndex: rowNum,
+        entryId: getRowEntryId(rowData) || null,
         verified: nextVerified,
         durationMs: Date.now() - startMs
+    });
+    debugLog('entryId.verify.success', {
+        rowIndex: rowNum,
+        requestedEntryId: requestedEntryId || null,
+        matchedEntryId: getRowEntryId(rowData) || null,
+        usedEntryIdMatch: !!requestedEntryId
     });
     return {
         success: true,
@@ -1648,8 +1803,27 @@ function getAllEntriesForAdminView(includeDeleted) {
     const dataEntry = ss.getSheetByName('DataEntry');
     if (!dataEntry || dataEntry.getLastRow() <= 1)
         return [];
+    ensureDataEntrySchema(dataEntry);
     const includeDeletedRows = includeDeleted === true;
     const rows = dataEntry.getRange(2, 1, dataEntry.getLastRow() - 1, DATA_COL_COUNT).getValues();
+    let wroteMissingEntryIds = false;
+    const entryIdColumnValues = rows.map((row) => {
+        let entryId = getRowEntryId(row);
+        if (!entryId) {
+            entryId = generateEntryId();
+            row[DATA_COLUMNS.ENTRY_ID] = entryId;
+            wroteMissingEntryIds = true;
+        }
+        return [entryId];
+    });
+    if (wroteMissingEntryIds) {
+        dataEntry.getRange(2, dataCol('ENTRY_ID'), entryIdColumnValues.length, 1).setValues(entryIdColumnValues);
+        SpreadsheetApp.flush();
+        debugLog('entryId.backfill.generated', {
+            source: 'getAllEntriesForAdminView',
+            rowsTouched: entryIdColumnValues.length
+        });
+    }
     const tz = Session.getScriptTimeZone();
     const mapped = rows.map((row, idx) => ({
         effectiveClockInDateKey: getEffectiveClockInFromRow(row)
@@ -1659,6 +1833,7 @@ function getAllEntriesForAdminView(includeDeleted) {
             ? Utilities.formatDate(getEffectiveClockOutFromRow(row), tz, 'yyyy-MM-dd')
             : null,
         rowIndex: idx + 2,
+        entryId: getRowEntryId(row),
         email: row[DATA_COLUMNS.EMAIL] || '',
         rawClockIn: getRowRawClockIn(row) ? getRowRawClockIn(row).toISOString() : null,
         rawClockOut: getRowRawClockOut(row) ? getRowRawClockOut(row).toISOString() : null,
@@ -1728,16 +1903,44 @@ function adminSaveEntryUpdate(rowIndex, update) {
     if (!dataEntry) {
         return { success: false, message: 'DataEntry sheet not found.' };
     }
-    const rowNum = Number(rowIndex);
-    if (!isFinite(rowNum) || rowNum < 2 || rowNum > dataEntry.getLastRow()) {
-        return { success: false, message: 'Invalid row.' };
-    }
+    ensureDataEntrySchema(dataEntry);
     const payload = update || {};
+    const requestedEntryId = String(payload.entryId || '').trim();
+    debugLog('entryId.adminSave.request', {
+        rowIndex: rowIndex,
+        entryId: requestedEntryId || null,
+        hasModifiedClockIn: Object.prototype.hasOwnProperty.call(payload, 'modifiedClockInISO'),
+        hasModifiedClockOut: Object.prototype.hasOwnProperty.call(payload, 'modifiedClockOutISO'),
+        deleted: payload.deleted === true
+    });
+    const target = resolveAdminTargetRow(dataEntry, rowIndex, payload.entryId, buildDataEntryIdToRowMap(dataEntry));
+    const rowNum = target.rowNum;
+    if (!isFinite(rowNum)) {
+        debugLog('entryId.adminSave.failure', {
+            rowIndex: rowIndex,
+            entryId: requestedEntryId || null,
+            reason: target.error || 'invalid_row'
+        });
+        return { success: false, message: target.error || 'Invalid row.' };
+    }
     const allDataRows = dataEntry.getDataRange().getValues();
     const currentRow = allDataRows[rowNum - 1];
     if (!currentRow) {
+        debugLog('entryId.adminSave.failure', {
+            rowIndex: rowIndex,
+            entryId: requestedEntryId || null,
+            resolvedRow: rowNum,
+            reason: 'row_not_found'
+        });
         return { success: false, message: 'Row not found.' };
     }
+    const matchedEntryId = getRowEntryId(currentRow);
+    debugLog('entryId.adminSave.match', {
+        rowIndex: rowNum,
+        requestedEntryId: requestedEntryId || null,
+        matchedEntryId: matchedEntryId || null,
+        usedEntryIdMatch: !!requestedEntryId
+    });
     const email = currentRow[DATA_COLUMNS.EMAIL];
     const previouslyDeleted = isDeletedDataRow(currentRow);
     const nextDeleted = Object.prototype.hasOwnProperty.call(payload, 'deleted') ? payload.deleted === true : isDeletedDataRow(currentRow);
@@ -1829,6 +2032,11 @@ function adminSaveEntryUpdate(rowIndex, update) {
     }
     setRowFormatAndFormula(dataEntry, rowNum);
     SpreadsheetApp.flush();
+    debugLog('entryId.adminSave.success', {
+        rowIndex: rowNum,
+        requestedEntryId: requestedEntryId || null,
+        matchedEntryId: matchedEntryId || null
+    });
     return { success: true, message: 'Entry updated.', entryType: nextEntryType };
 }
 /**
@@ -1999,6 +2207,7 @@ function findChronologicalInsertPosition(sheet, email, clockInDateTime) {
  * @returns Row index (1-based) of inserted row
  */
 function insertRowChronologically(sheet, clockInDateTime, values) {
+    ensureDataEntrySchema(sheet);
     const email = values[0];
     debugLog('insertRowChronologically start', { email: email, clockIn: clockInDateTime });
     const insertIndex = findChronologicalInsertPosition(sheet, email, clockInDateTime);
@@ -2519,6 +2728,14 @@ function submitManualEntryFromMenu(email, clockInISO, clockOutISO, notes, entryT
         });
         // Insert row at chronologically correct position
         const newRow = insertRowChronologically(dataEntry, clockInDate, buildDataEntryRow(email, clockInDate, '', finalNotes, false, normalizedEntryType));
+        const insertedRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
+        const entryId = getRowEntryId(insertedRowData);
+        debugLog('entryId.create.success', {
+            source: 'submitManualEntryFromMenu',
+            rowIndex: newRow,
+            entryId: entryId || null,
+            email: email
+        });
         SpreadsheetApp.flush();
         addEmailToEmployeeCache(email);
         // Process clock-out with midnight rollover handling
@@ -2535,6 +2752,7 @@ function submitManualEntryFromMenu(email, clockInISO, clockOutISO, notes, entryT
             ? null
             : {
                 rowIndex: newRow,
+                entryId: entryId,
                 email: email,
                 rawClockIn: clockInDate.toISOString(),
                 rawClockOut: clockOutDate.toISOString(),
@@ -3369,7 +3587,18 @@ function _archiveOldEntriesCore(archiveDate) {
         }
         if (clockInValue <= cutoffDate) {
             debugLog('archiveOldEntries mark row for archive', { row: i + 1, clockIn: clockInValue.toISOString() });
-            const archiveRow = data[i].slice(0, DATA_COL_COUNT);
+            const archiveRow = [
+                data[i][DATA_COLUMNS.EMAIL],
+                data[i][DATA_COLUMNS.CLOCK_IN],
+                data[i][DATA_COLUMNS.CLOCK_OUT],
+                data[i][DATA_COLUMNS.HOURS],
+                data[i][DATA_COLUMNS.VERIFIED],
+                data[i][DATA_COLUMNS.NOTES],
+                data[i][DATA_COLUMNS.CLOCK_IN_MODIFIED],
+                data[i][DATA_COLUMNS.CLOCK_OUT_MODIFIED],
+                data[i][DATA_COLUMNS.DELETED],
+                data[i][DATA_COLUMNS.ENTRY_TYPE]
+            ];
             archiveRow.push(new Date());
             toArchive.push(archiveRow);
             rowsToClear.push(i + 1);

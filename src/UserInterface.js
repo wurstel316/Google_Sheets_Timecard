@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.0.0-push.1 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.0.2-push.12 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -165,8 +165,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <base target="_top">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
         <style>
-          :root { font-size: 20px; }
+          :root {
+            font-size: 20px;
+            --timecard-ui-scale-multiplier: 1;
+            --timecard-picker-font-size: 1.02rem;
+            --timecard-picker-cell-size: 2.1rem;
+            --timecard-picker-time-font-size: 1.08rem;
+          }
           body { 
             font-family: Arial, sans-serif; 
             margin: 0; 
@@ -753,10 +760,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-aws-row input[type="date"] {
             width: auto;
-            min-width: 10rem;
+            min-width: 10.8rem;
             margin: 0;
-            padding: 0.35rem 0.45rem;
-            font-size: 0.8rem;
+            padding: 0.5rem 0.65rem;
+            font-size: clamp(1rem, 3.5vw, 1.1rem);
+            min-height: 2.45rem;
+            line-height: 1.2;
           }
           .admin-holiday-detected {
             margin-top: 0.35rem;
@@ -1662,6 +1671,106 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-size: clamp(1rem, 3.5vw, 1.1rem);
             box-sizing: border-box;
           }
+          .modal-content input[type="date"],
+          .modal-content input[type="datetime-local"],
+          .modal-content input.manual-datetime-picker,
+          .modal-content input.admin-datetime-picker {
+            min-height: 2.45rem;
+            padding: 0.5rem 0.65rem;
+            line-height: 1.2;
+          }
+          .modal-content input[type="date"]::-webkit-calendar-picker-indicator,
+          .modal-content input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            transform: scale(1.15);
+            transform-origin: center;
+            cursor: pointer;
+          }
+          .flatpickr-calendar {
+            font-size: var(--timecard-picker-font-size);
+            background: #ffffff !important;
+            border: 1px solid #cfd8e3;
+            border-radius: 0.6rem;
+            box-shadow: 0 0.45rem 1rem rgba(15, 23, 42, 0.24);
+            width: min(20rem, 92vw);
+            opacity: 1 !important;
+            z-index: 2200 !important;
+            isolation: isolate;
+          }
+          .flatpickr-calendar.open,
+          .flatpickr-calendar.inline {
+            opacity: 1 !important;
+            visibility: visible !important;
+          }
+          .flatpickr-calendar,
+          .flatpickr-calendar * {
+            backdrop-filter: none !important;
+          }
+          .flatpickr-calendar .flatpickr-days,
+          .flatpickr-calendar .dayContainer {
+            background: #ffffff !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+          }
+          .flatpickr-rContainer,
+          .flatpickr-innerContainer,
+          .flatpickr-months,
+          .flatpickr-weekdays,
+          .flatpickr-month {
+            background: #ffffff !important;
+            opacity: 1 !important;
+          }
+          .flatpickr-calendar .flatpickr-day,
+          .flatpickr-calendar span.flatpickr-weekday {
+            width: calc(var(--timecard-picker-cell-size) - 0.02rem);
+            max-width: calc(var(--timecard-picker-cell-size) - 0.02rem);
+            height: var(--timecard-picker-cell-size);
+            line-height: var(--timecard-picker-cell-size);
+          }
+          .flatpickr-time {
+            background: #ffffff !important;
+            border-top: 1px solid #e2e8f0;
+            opacity: 1 !important;
+            position: relative;
+            z-index: 1;
+          }
+          .flatpickr-time input,
+          .flatpickr-time .flatpickr-am-pm,
+          .flatpickr-time .numInputWrapper {
+            background: #ffffff !important;
+            opacity: 1 !important;
+          }
+          .flatpickr-calendar .flatpickr-weekday {
+            font-size: 0.88em;
+            font-weight: 600;
+          }
+          .flatpickr-months .flatpickr-month,
+          .flatpickr-current-month {
+            height: 2.45rem;
+          }
+          .flatpickr-current-month {
+            font-size: 1.08em;
+            padding-top: 0.3rem;
+          }
+          .flatpickr-time input.flatpickr-hour,
+          .flatpickr-time input.flatpickr-minute {
+            font-size: var(--timecard-picker-time-font-size);
+            font-weight: 600;
+          }
+          .flatpickr-time .flatpickr-am-pm {
+            font-size: calc(var(--timecard-picker-time-font-size) * 0.95);
+          }
+          .modal-content input.manual-picker-invalid,
+          .modal-content input.admin-picker-invalid {
+            border-color: #d93025 !important;
+            background: #fff2f2 !important;
+            box-shadow: 0 0 0 1px rgba(217, 48, 37, 0.22) inset;
+          }
+          .flatpickr-day.flatpickr-disabled,
+          .flatpickr-time .flatpickr-disabled {
+            text-decoration: line-through;
+            opacity: 0.4;
+          }
           .modal-actions {
             display: flex;
             flex-direction: column;
@@ -1843,7 +1952,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .archive-range-field input {
             margin: 0;
-            font-size: clamp(0.95rem, 3vw, 1.05rem);
+            font-size: clamp(1rem, 3.5vw, 1.1rem);
             padding: 0.5rem 0.65rem;
             min-height: 2.45rem;
           }
@@ -2068,7 +2177,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
              ${statusObj.isClockedIn ? '🔴 Clock Out' : '🟢 Clock In'}
            </button>
 
-          <button id="manualEntryBtn" onclick="showManualEntryForm()">
+          <button id="manualEntryBtn" type="button" onclick="showManualEntryForm(event)">
             ➕ Add Time Entry
           </button>
           <p class="manual-entry-helper">Worked, Sick, or Vacation.</p>
@@ -2092,10 +2201,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <p id="dateRangeInfo" class="modal-note">Loading allowed date range...</p>
 
               <label for="manualClockIn">Clock In</label>
-              <input type="datetime-local" id="manualClockIn" required>
+              <input type="text" id="manualClockIn" class="manual-datetime-picker" required autocomplete="off">
 
               <label for="manualClockOut">Clock Out</label>
-              <input type="datetime-local" id="manualClockOut" required>
+              <input type="text" id="manualClockOut" class="manual-datetime-picker" required autocomplete="off">
 
               <div class="manual-entry-type-group">
                 <label class="manual-entry-type-option"><input type="checkbox" id="manualEntryTypeWorked" onchange="handleManualEntryTypeChange('worked')"> Worked</label>
@@ -2108,8 +2217,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <p id="manualError" class="error" style="display: none;"></p>
 
               <div class="modal-actions">
-                <button id="manualSubmit" onclick="submitManualEntry()">Submit</button>
-                <button class="secondary" onclick="hideManualEntryForm()">Cancel</button>
+                <button id="manualSubmit" type="button" onclick="submitManualEntry(event)">Submit</button>
+                <button class="secondary" type="button" onclick="hideManualEntryForm()">Cancel</button>
               </div>
             </div>
           </div>
@@ -2317,10 +2426,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <p class="modal-note" id="adminTimeEditRawInfo">Raw times</p>
 
               <label for="adminEditClockIn">Clock In</label>
-              <input type="datetime-local" id="adminEditClockIn">
+              <input type="text" id="adminEditClockIn" class="admin-datetime-picker" autocomplete="off">
 
               <label for="adminEditClockOut">Clock Out</label>
-              <input type="datetime-local" id="adminEditClockOut">
+              <input type="text" id="adminEditClockOut" class="admin-datetime-picker" autocomplete="off">
 
               <p id="adminEditError" class="error" style="display:none;"></p>
 
@@ -2357,6 +2466,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           
         </div>
         
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         <script>
           const clientDebugEnabled = ${isDebugEnabled() ? 'true' : 'false'};
           const UI_SCALE_STORAGE_KEY = 'timecard_ui_scale_percent';
@@ -2366,6 +2476,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           const UI_SCALE_MAX_PERCENT = 300;
           const UI_SCALE_BASE_FONT_SIZE_PX = 20;
           const UI_SCALE_PRESET_VALUES = [85, 90, 95, 100, 105, 110, 115, 120, 130, 140, 150, 175, 200, 225, 250, 275, 300];
+          const MANUAL_ENTRY_MAX_SPAN_MS = 14 * 60 * 60 * 1000;
+          const MANUAL_PICKER_MINUTE_INCREMENT = 1;
+          const MANUAL_PICKER_STEP_MS = MANUAL_PICKER_MINUTE_INCREMENT * 60 * 1000;
           // Refactor note: Manual Add Time range is preloaded by doGet/createMobileHtml
           // so the modal opens with constraints immediately and without a range RPC.
           const preloadedAllowedRange = ${JSON.stringify(preloadedManualRange)};
@@ -2393,6 +2506,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let adminCollapsedDays = {};
           let adminManualEntryTargetEmail = '';
           let manualEntryType = 'worked';
+          let manualEntryModalOpenedAtMs = 0;
+          let manualClockInPicker = null;
+          let manualClockOutPicker = null;
+          let manualPickerRuleState = null;
+          let adminEditClockInPicker = null;
+          let adminEditClockOutPicker = null;
           let adminTempRowSeed = -1;
           let adminEditingRowIndex = null;
           let adminPreviewReady = false;
@@ -2454,13 +2573,40 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
+          function applyPickerScalePercent(percent) {
+            const ratio = Math.min(1.55, Math.max(1, percent / 100));
+            const fontSizeRem = (1.02 * ratio).toFixed(3) + 'rem';
+            const cellSizeRem = (2.1 * ratio).toFixed(3) + 'rem';
+            const timeFontSizeRem = (1.08 * ratio).toFixed(3) + 'rem';
+            document.documentElement.style.setProperty('--timecard-ui-scale-multiplier', ratio.toFixed(3));
+            document.documentElement.style.setProperty('--timecard-picker-font-size', fontSizeRem);
+            document.documentElement.style.setProperty('--timecard-picker-cell-size', cellSizeRem);
+            document.documentElement.style.setProperty('--timecard-picker-time-font-size', timeFontSizeRem);
+
+            // If pickers are mounted, redraw so open popups reflect current scale immediately.
+            try {
+              if (manualClockInPicker && typeof manualClockInPicker.redraw === 'function') manualClockInPicker.redraw();
+              if (manualClockOutPicker && typeof manualClockOutPicker.redraw === 'function') manualClockOutPicker.redraw();
+              if (adminEditClockInPicker && typeof adminEditClockInPicker.redraw === 'function') adminEditClockInPicker.redraw();
+              if (adminEditClockOutPicker && typeof adminEditClockOutPicker.redraw === 'function') adminEditClockOutPicker.redraw();
+            } catch (e) {
+              // No-op when picker instance is unavailable.
+            }
+          }
+
           function applyUiScalePercent(value) {
             const percent = clampUiScalePercent(value);
             const computedFontSizePx = (UI_SCALE_BASE_FONT_SIZE_PX * percent / 100).toFixed(2);
             document.documentElement.style.fontSize = computedFontSizePx + 'px';
+            applyPickerScalePercent(percent);
             const uiScaleValue = document.getElementById('uiScaleValue');
             if (uiScaleValue) {
               uiScaleValue.innerText = String(percent) + '%';
+            }
+            try {
+              window.dispatchEvent(new CustomEvent('timecard-ui-scale-change', { detail: { percent: percent } }));
+            } catch (e) {
+              // No-op when CustomEvent is unavailable.
             }
             return percent;
           }
@@ -3030,6 +3176,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 recentEntries = entries || [];
                 recentEntriesLastUpdated = Date.now();
                 renderEntriesTable(recentEntries);
+                if (isManualEntryModalVisible() && !adminManualEntryTargetEmail) {
+                  refreshManualDateTimePickers(true);
+                }
                 debugClientLog('refreshRecentEntries.success', {
                   entriesCount: recentEntries.length,
                   targetFound: !!document.getElementById('recentEntriesBody'),
@@ -3593,6 +3742,20 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               'window.google.script=window.google.script||{};' +
               'if(p&&p.google&&p.google.script&&p.google.script.run){window.google.script.run=p.google.script.run;}' +
               'window.google.script.host={close:function(){if(p&&typeof p.closeMoreReportsModal==="function"){p.closeMoreReportsModal();}}};' +
+              'function applyParentUiScale(){' +
+                'try{' +
+                  'if(!p||!p.document||!document.documentElement)return;' +
+                  'var root=p.document.documentElement;' +
+                  'var computed=p.getComputedStyle?p.getComputedStyle(root):null;' +
+                  'var rootFontPx=computed?parseFloat(computed.fontSize):NaN;' +
+                  'if(!isFinite(rootFontPx)||rootFontPx<=0){rootFontPx=' + String(UI_SCALE_BASE_FONT_SIZE_PX) + ';}' +
+                  'var scale=Math.max(0.5,Math.min(3,rootFontPx/' + String(UI_SCALE_BASE_FONT_SIZE_PX) + '));' +
+                  'document.documentElement.style.zoom=String(scale);' +
+                  'document.documentElement.style.transformOrigin="top left";' +
+                '}catch(_e){}' +
+              '}' +
+              'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",applyParentUiScale);}else{applyParentUiScale();}' +
+              'if(p&&p.addEventListener){p.addEventListener("timecard-ui-scale-change",applyParentUiScale);}' +
               '})();' + scriptClose;
             if (html.indexOf('<body>') > -1) {
               return html.replace('<body>', '<body>' + bridgeScript);
@@ -4892,7 +5055,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   ? '<button type="button" class="admin-collapse-btn" data-email="' + escapeHtml(currentEmailKey) + '" onclick="toggleAdminUserCollapsed(this.dataset.email)" title="Expand/collapse user">' + collapseSymbol + '</button>'
                   : '';
                 const addMissedBtn = currentEmailKey
-                  ? '<button type="button" class="admin-group-add-missed-btn" data-email="' + escapeHtml(currentEmailKey) + '"' + (hasEditPermission ? ' onclick="openAdminManualEntryForEmployee(this.dataset.email)"' : '') + (hasEditPermission ? '' : ' disabled') + ' title="' + escapeHtml(hasEditPermission ? 'Add missed time for this employee' : 'Edit permission required.') + '">+ Add missed time</button>'
+                  ? '<button type="button" class="admin-group-add-missed-btn" data-email="' + escapeHtml(currentEmailKey) + '"' + (hasEditPermission ? ' onclick="openAdminManualEntryForEmployee(this.dataset.email, event)"' : '') + (hasEditPermission ? '' : ' disabled') + ' title="' + escapeHtml(hasEditPermission ? 'Add missed time for this employee' : 'Edit permission required.') + '">+ Add missed time</button>'
                   : '';
                 rowsHtml.push('<tr class="admin-group-row"><td colspan="6"><div class="admin-group-meta"><div class="admin-group-left">' + collapseBtn + '<span>&#128100; ' + escapeHtml(currentEmail || 'Unknown') + '</span></div>' + addMissedBtn + '</div></td></tr>');
               }
@@ -4955,6 +5118,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             });
 
             body.innerHTML = rowsHtml.join('');
+            if (isManualEntryModalVisible() && adminManualEntryTargetEmail) {
+              refreshManualDateTimePickers(true);
+            }
           }
 
           function loadAdminEntries(onComplete) {
@@ -5042,6 +5208,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const draft = adminDraftByRow[rowIndex];
             if (!entry || !draft || !isAdminRowEditable(rowIndex) || adminPermissions.canEdit !== true) return;
             adminEditingRowIndex = rowIndex;
+            initializeAdminTimeEditPickers();
             const effective = getAdminEffectiveFromDraft(rowIndex);
             document.getElementById('adminTimeEditRowLabel').innerText = 'Row ' + rowIndex + ' - ' + (entry.email || '');
             document.getElementById('adminTimeEditRawInfo').innerText =
@@ -5049,6 +5216,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               ' | Raw Out: ' + (entry.rawClockOut ? formatDisplayDate(entry.rawClockOut) : 'none');
             document.getElementById('adminEditClockIn').value = formatAdminDateForInput(effective.clockIn);
             document.getElementById('adminEditClockOut').value = formatAdminDateForInput(effective.clockOut);
+            if (adminEditClockInPicker && adminEditClockOutPicker) {
+              adminEditClockInPicker.setDate(document.getElementById('adminEditClockIn').value, false, 'Y-m-d\\TH:i');
+              adminEditClockOutPicker.setDate(document.getElementById('adminEditClockOut').value, false, 'Y-m-d\\TH:i');
+              refreshAdminTimeEditPickerBounds();
+            }
             document.getElementById('adminEditError').style.display = 'none';
             document.getElementById('adminTimeEditModal').style.display = 'flex';
           }
@@ -5128,6 +5300,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (!confirm('Restore row ' + rowIndex + '? This will mark it as active again.')) return;
 
             const payload = {
+              entryId: entry.entryId || '',
               modifiedClockInISO: draft.modifiedClockInISO || '',
               modifiedClockOutISO: draft.modifiedClockOutISO || '',
               notes: draft.notes || '',
@@ -5160,6 +5333,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (!secondConfirm) return;
 
             const payload = {
+              entryId: entry.entryId || '',
               modifiedClockInISO: draft.modifiedClockInISO || '',
               modifiedClockOutISO: draft.modifiedClockOutISO || '',
               notes: draft.notes || '',
@@ -5195,6 +5369,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             adminVerifySaveInFlightByRow[rowIndex] = true;
             adminVerifyQueueByRow[rowIndex] = {
               rowIndex: rowIndex,
+              entryId: entry.entryId || '',
               previousVerified: previousVerified,
               nextVerified: nextVerified,
               previousNotes: String(entry.notes || '')
@@ -5366,17 +5541,19 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   scheduleAdminVerifyQueueFlush();
                 }
               })
-              .adminSetEntryVerifiedBatch(pendingActions.map((action) => ({ rowIndex: action.rowIndex, verified: action.nextVerified })));
+                .adminSetEntryVerifiedBatch(pendingActions.map((action) => ({ rowIndex: action.rowIndex, entryId: action.entryId || '', verified: action.nextVerified })));
           }
 
           function saveAdminRow(rowIndex, options) {
             if (adminPermissions.canEdit !== true) return;
             const saveOptions = options || {};
             const draft = adminDraftByRow[rowIndex];
+            const entry = adminEntriesByRow[rowIndex];
             if (!draft) return;
             if (!computeAdminRowDirty(rowIndex)) return;
 
             const payload = {
+              entryId: entry && entry.entryId ? entry.entryId : '',
               modifiedClockInISO: draft.modifiedClockInISO || '',
               modifiedClockOutISO: draft.modifiedClockOutISO || '',
               notes: composeAdminNotesForSave(rowIndex),
@@ -5389,8 +5566,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               payload.notes = payload.notes ? payload.notes + '; ' + timeEditNote : timeEditNote;
               payload.clientAppendedTimeEditNote = true;
             }
-
-            const entry = adminEntriesByRow[rowIndex];
             const baselineBefore = adminBaselineByRow[rowIndex] ? Object.assign({}, adminBaselineByRow[rowIndex]) : null;
             const draftBefore = saveOptions.rollbackDraft
               ? Object.assign({}, saveOptions.rollbackDraft)
@@ -5553,74 +5728,674 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return y + '-' + m + '-' + d + 'T' + h + ':' + mi;
           }
 
+          function parseDateTimeInputValue(value) {
+            const text = String(value || '').trim();
+            if (!text) return null;
+            const parsed = new Date(text);
+            return isNaN(parsed.getTime()) ? null : parsed;
+          }
+
+          function getCurrentManualTargetEmail() {
+            const target = String(adminManualEntryTargetEmail || '').trim().toLowerCase();
+            if (target) return target;
+            return String(currentUserEmail || '').trim().toLowerCase();
+          }
+
+          function floorToManualStep(ms) {
+            return Math.floor(ms / MANUAL_PICKER_STEP_MS) * MANUAL_PICKER_STEP_MS;
+          }
+
+          function ceilToManualStep(ms) {
+            return Math.ceil(ms / MANUAL_PICKER_STEP_MS) * MANUAL_PICKER_STEP_MS;
+          }
+
+          function getManualAllowedWindow() {
+            const now = new Date();
+            let minDate = null;
+            let maxDate = new Date(now.getTime());
+            const range = preloadedAllowedRange;
+
+            if (range && range.minDateISO && range.maxDateISO) {
+              const minParts = String(range.minDateISO).split('-');
+              minDate = new Date(parseInt(minParts[0], 10), parseInt(minParts[1], 10) - 1, parseInt(minParts[2], 10));
+              minDate.setHours(0, 0, 0, 0);
+
+              const maxParts = String(range.maxDateISO).split('-');
+              const configuredMaxDate = new Date(parseInt(maxParts[0], 10), parseInt(maxParts[1], 10) - 1, parseInt(maxParts[2], 10));
+              configuredMaxDate.setHours(23, 59, 59, 999);
+              if (configuredMaxDate.getTime() < maxDate.getTime()) {
+                maxDate = configuredMaxDate;
+              }
+            } else {
+              maxDate.setSeconds(0, 0);
+              minDate = new Date(maxDate);
+              minDate.setDate(minDate.getDate() - 13);
+              minDate.setHours(0, 0, 0, 0);
+            }
+
+            return {
+              minDate,
+              maxDate,
+              minMs: minDate.getTime(),
+              maxMs: maxDate.getTime()
+            };
+          }
+
+          function collectManualConflictIntervals(targetEmail) {
+            const intervals = [];
+            const target = String(targetEmail || '').trim().toLowerCase();
+            if (!target) return intervals;
+
+            if (adminManualEntryTargetEmail) {
+              const rowKeys = Object.keys(adminEntriesByRow || {});
+              for (let i = 0; i < rowKeys.length; i++) {
+                const rowIndex = Number(rowKeys[i]);
+                const entry = adminEntriesByRow[rowIndex];
+                if (!entry || entry.deleted) continue;
+                const entryEmail = String(entry.email || '').trim().toLowerCase();
+                if (entryEmail !== target) continue;
+
+                const effective = getAdminEffectiveFromDraft(rowIndex);
+                if (!effective || !effective.clockIn) continue;
+                const start = new Date(effective.clockIn);
+                if (isNaN(start.getTime())) continue;
+                const end = effective.clockOut ? new Date(effective.clockOut) : new Date();
+                if (isNaN(end.getTime())) continue;
+                if (end.getTime() <= start.getTime()) continue;
+                intervals.push({ startMs: start.getTime(), endMs: end.getTime() });
+              }
+            } else {
+              const list = Array.isArray(recentEntries) ? recentEntries : [];
+              for (let i = 0; i < list.length; i++) {
+                const entry = list[i];
+                if (!entry || entry.deleted || !entry.clockIn) continue;
+                const start = new Date(entry.clockIn);
+                if (isNaN(start.getTime())) continue;
+                const end = entry.clockOut ? new Date(entry.clockOut) : new Date();
+                if (isNaN(end.getTime())) continue;
+                if (end.getTime() <= start.getTime()) continue;
+                intervals.push({ startMs: start.getTime(), endMs: end.getTime() });
+              }
+            }
+
+            intervals.sort((a, b) => a.startMs - b.startMs);
+            const merged = [];
+            for (let i = 0; i < intervals.length; i++) {
+              const current = intervals[i];
+              const last = merged.length > 0 ? merged[merged.length - 1] : null;
+              if (!last || current.startMs > last.endMs) {
+                merged.push({ startMs: current.startMs, endMs: current.endMs });
+              } else {
+                last.endMs = Math.max(last.endMs, current.endMs);
+              }
+            }
+            return merged;
+          }
+
+          function isMsWithinAnyInterval(ms, intervals) {
+            const list = Array.isArray(intervals) ? intervals : [];
+            for (let i = 0; i < list.length; i++) {
+              if (ms >= list[i].startMs && ms < list[i].endMs) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          function hasOverlapWithIntervals(startMs, endMs, intervals) {
+            const list = Array.isArray(intervals) ? intervals : [];
+            for (let i = 0; i < list.length; i++) {
+              if (startMs < list[i].endMs && endMs > list[i].startMs) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          function buildManualPickerRuleState() {
+            const windowBounds = getManualAllowedWindow();
+            const targetEmail = getCurrentManualTargetEmail();
+            const openEntryStart = adminManualEntryTargetEmail
+              ? getOpenEntryStartForEmployee(targetEmail)
+              : getOpenEntryStart();
+
+            let latestAllowedMs = windowBounds.maxMs;
+            if (openEntryStart && !isNaN(openEntryStart.getTime())) {
+              latestAllowedMs = Math.min(latestAllowedMs, openEntryStart.getTime() - MANUAL_PICKER_STEP_MS);
+            }
+            latestAllowedMs = Math.max(latestAllowedMs, windowBounds.minMs);
+
+            const clockInInput = document.getElementById('manualClockIn');
+            const selectedClockIn = clockInInput ? parseDateTimeInputValue(clockInInput.value) : null;
+            const selectedClockInMs = selectedClockIn ? floorToManualStep(selectedClockIn.getTime()) : null;
+
+            const conflictIntervals = collectManualConflictIntervals(targetEmail);
+
+            let outMinMs = windowBounds.minMs + MANUAL_PICKER_STEP_MS;
+            let outMaxMs = latestAllowedMs;
+            if (selectedClockInMs !== null) {
+              outMinMs = Math.max(outMinMs, selectedClockInMs + MANUAL_PICKER_STEP_MS);
+              outMaxMs = Math.min(outMaxMs, selectedClockInMs + MANUAL_ENTRY_MAX_SPAN_MS);
+            }
+
+            return {
+              targetEmail,
+              minMs: windowBounds.minMs,
+              maxMs: windowBounds.maxMs,
+              latestAllowedMs,
+              selectedClockInMs,
+              outMinMs,
+              outMaxMs,
+              conflictIntervals
+            };
+          }
+
+          function isSelectableManualClockIn(dateObj) {
+            if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return false;
+            if (!manualPickerRuleState) return true;
+            const ms = floorToManualStep(dateObj.getTime());
+            if (ms < manualPickerRuleState.minMs || ms > manualPickerRuleState.latestAllowedMs) return false;
+            if (isMsWithinAnyInterval(ms, manualPickerRuleState.conflictIntervals)) return false;
+
+            const minOut = ms + MANUAL_PICKER_STEP_MS;
+            const maxOut = Math.min(manualPickerRuleState.latestAllowedMs, ms + MANUAL_ENTRY_MAX_SPAN_MS);
+            if (minOut > maxOut) return false;
+
+            for (let probe = minOut; probe <= maxOut; probe += MANUAL_PICKER_STEP_MS) {
+              if (!hasOverlapWithIntervals(ms, probe, manualPickerRuleState.conflictIntervals)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          function isSelectableManualClockOut(dateObj) {
+            if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return false;
+            if (!manualPickerRuleState) return true;
+            if (manualPickerRuleState.selectedClockInMs === null) return false;
+            const ms = floorToManualStep(dateObj.getTime());
+            if (ms < manualPickerRuleState.outMinMs || ms > manualPickerRuleState.outMaxMs) return false;
+            if (hasOverlapWithIntervals(manualPickerRuleState.selectedClockInMs, ms, manualPickerRuleState.conflictIntervals)) return false;
+            return true;
+          }
+
+          function findClosestAllowedManualClockIn(preferredMs) {
+            if (!manualPickerRuleState) return null;
+            const min = ceilToManualStep(manualPickerRuleState.minMs);
+            const max = floorToManualStep(manualPickerRuleState.latestAllowedMs);
+            if (min > max) return null;
+
+            let probe = Math.min(max, Math.max(min, floorToManualStep(preferredMs)));
+            if (isSelectableManualClockIn(new Date(probe))) return new Date(probe);
+
+            for (let offset = MANUAL_PICKER_STEP_MS; offset <= (max - min); offset += MANUAL_PICKER_STEP_MS) {
+              const down = probe - offset;
+              if (down >= min && isSelectableManualClockIn(new Date(down))) return new Date(down);
+              const up = probe + offset;
+              if (up <= max && isSelectableManualClockIn(new Date(up))) return new Date(up);
+            }
+            return null;
+          }
+
+          function findFirstAllowedManualClockOut(clockInMs) {
+            if (!manualPickerRuleState || clockInMs === null) return null;
+            const minOut = ceilToManualStep(Math.max(clockInMs + MANUAL_PICKER_STEP_MS, manualPickerRuleState.outMinMs));
+            const maxOut = floorToManualStep(manualPickerRuleState.outMaxMs);
+            for (let probe = minOut; probe <= maxOut; probe += MANUAL_PICKER_STEP_MS) {
+              if (isSelectableManualClockOut(new Date(probe))) {
+                return new Date(probe);
+              }
+            }
+            return null;
+          }
+
+          function isSelectableManualClockInDay(dayDate) {
+            if (!manualPickerRuleState || !(dayDate instanceof Date)) return true;
+            const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0, 0).getTime();
+            const dayEnd = dayStart + (24 * 60 * 60 * 1000) - 1;
+            const startMs = ceilToManualStep(Math.max(dayStart, manualPickerRuleState.minMs));
+            const endMs = floorToManualStep(Math.min(dayEnd, manualPickerRuleState.latestAllowedMs));
+            if (startMs > endMs) return false;
+            for (let probe = startMs; probe <= endMs; probe += MANUAL_PICKER_STEP_MS) {
+              if (isSelectableManualClockIn(new Date(probe))) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          function isSelectableManualClockOutDay(dayDate) {
+            if (!manualPickerRuleState || !(dayDate instanceof Date)) return true;
+            if (manualPickerRuleState.selectedClockInMs === null) return false;
+            const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0, 0).getTime();
+            const dayEnd = dayStart + (24 * 60 * 60 * 1000) - 1;
+            const startMs = ceilToManualStep(Math.max(dayStart, manualPickerRuleState.outMinMs));
+            const endMs = floorToManualStep(Math.min(dayEnd, manualPickerRuleState.outMaxMs));
+            if (startMs > endMs) return false;
+            for (let probe = startMs; probe <= endMs; probe += MANUAL_PICKER_STEP_MS) {
+              if (isSelectableManualClockOut(new Date(probe))) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          function setPickerInputInvalid(picker, invalid, className) {
+            if (!picker) return;
+            const targets = [picker.input, picker.altInput];
+            targets.forEach((target) => {
+              if (!target || !target.classList) return;
+              target.classList.toggle(className, invalid === true);
+            });
+          }
+
+          function getPickerSelectedDate(picker) {
+            if (!picker || !Array.isArray(picker.selectedDates) || picker.selectedDates.length === 0) return null;
+            const d = picker.selectedDates[0];
+            return (d instanceof Date && !isNaN(d.getTime())) ? new Date(d.getTime()) : null;
+          }
+
+          function ensureNativeDateTimeFallback(inputIdList) {
+            const ids = Array.isArray(inputIdList) ? inputIdList : [];
+            ids.forEach((id) => {
+              const el = document.getElementById(id);
+              if (!el) return;
+              if (el.type !== 'datetime-local') {
+                el.type = 'datetime-local';
+              }
+              el.step = String(MANUAL_PICKER_STEP_MS / 1000);
+              el.setAttribute('inputmode', 'numeric');
+            });
+          }
+
+          function stepPickerTimeByInput(picker, inputEl, direction) {
+            if (!picker || !inputEl || !direction) return;
+            const baseDate = getPickerSelectedDate(picker) || new Date();
+            const next = new Date(baseDate.getTime());
+            if (inputEl.classList.contains('flatpickr-minute')) {
+              next.setMinutes(next.getMinutes() + (MANUAL_PICKER_MINUTE_INCREMENT * direction));
+            } else if (inputEl.classList.contains('flatpickr-hour')) {
+              next.setHours(next.getHours() + direction);
+            } else if (inputEl.classList.contains('flatpickr-am-pm')) {
+              next.setHours(next.getHours() + (next.getHours() >= 12 ? -12 : 12));
+            } else {
+              return;
+            }
+            picker.setDate(next, true, 'Y-m-d\\TH:i');
+          }
+
+          function attachPickerTimeScrollInteractions(picker) {
+            if (!picker || !picker.calendarContainer) return;
+            const controls = picker.calendarContainer.querySelectorAll('.flatpickr-hour, .flatpickr-minute, .flatpickr-am-pm');
+            controls.forEach((control) => {
+              if (!control || control.dataset.timeScrollBound === '1') return;
+              control.dataset.timeScrollBound = '1';
+              control.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const direction = e.deltaY > 0 ? -1 : 1;
+                stepPickerTimeByInput(picker, control, direction);
+              }, { passive: false });
+              let touchY = null;
+              control.addEventListener('touchstart', function(e) {
+                if (!e.touches || e.touches.length === 0) return;
+                touchY = e.touches[0].clientY;
+              }, { passive: true });
+              control.addEventListener('touchmove', function(e) {
+                if (!e.touches || e.touches.length === 0 || touchY === null) return;
+                const nextY = e.touches[0].clientY;
+                const delta = touchY - nextY;
+                if (Math.abs(delta) >= 12) {
+                  const direction = delta > 0 ? 1 : -1;
+                  stepPickerTimeByInput(picker, control, direction);
+                  touchY = nextY;
+                }
+              }, { passive: true });
+              control.addEventListener('touchend', function() {
+                touchY = null;
+              }, { passive: true });
+            });
+          }
+
+          function updateManualPickerValidityHints() {
+            const errorEl = document.getElementById('manualError');
+            if (!manualClockInPicker || !manualClockOutPicker || !errorEl) return;
+            const inDate = parseDateTimeInputValue(manualClockInPicker.input ? manualClockInPicker.input.value : '');
+            const outDate = parseDateTimeInputValue(manualClockOutPicker.input ? manualClockOutPicker.input.value : '');
+            const hasIn = !!(inDate && !isNaN(inDate.getTime()));
+            const hasOut = !!(outDate && !isNaN(outDate.getTime()));
+            const inInvalid = hasIn ? !isSelectableManualClockIn(inDate) : false;
+            let outInvalid = false;
+            let hint = '';
+
+            if (hasIn && hasOut) {
+              if (outDate.getTime() <= inDate.getTime()) {
+                outInvalid = true;
+                hint = 'Clock Out must be after Clock In.';
+              } else if (!isSelectableManualClockOut(outDate)) {
+                outInvalid = true;
+                hint = 'Selected Clock Out would be invalid (overlap, range, or 14-hour cap).';
+              }
+            }
+            if (!hint && inInvalid) {
+              hint = 'Selected Clock In would be invalid (overlap or range limit).';
+            }
+
+            setPickerInputInvalid(manualClockInPicker, inInvalid, 'manual-picker-invalid');
+            setPickerInputInvalid(manualClockOutPicker, outInvalid, 'manual-picker-invalid');
+
+            if (hint) {
+              errorEl.innerText = hint;
+              errorEl.style.display = 'block';
+            } else if (errorEl.innerText.indexOf('Selected Clock ') === 0 || errorEl.innerText.indexOf('Clock Out must be after Clock In.') === 0) {
+              errorEl.style.display = 'none';
+              errorEl.innerText = '';
+            }
+          }
+
+          function initializeManualDateTimePickers() {
+            if (manualClockInPicker || manualClockOutPicker) return;
+            if (typeof flatpickr !== 'function') {
+              ensureNativeDateTimeFallback(['manualClockIn', 'manualClockOut']);
+              return;
+            }
+
+            const clockInInput = document.getElementById('manualClockIn');
+            const clockOutInput = document.getElementById('manualClockOut');
+            if (!clockInInput || !clockOutInput) return;
+
+            const commonOptions = {
+              enableTime: true,
+              dateFormat: 'Y-m-d\\TH:i',
+              altInput: true,
+              altFormat: 'm/d/Y h:i K',
+              time_24hr: false,
+              minuteIncrement: MANUAL_PICKER_MINUTE_INCREMENT,
+              disableMobile: true,
+              allowInput: false
+            };
+
+            manualClockInPicker = flatpickr(clockInInput, Object.assign({}, commonOptions, {
+              onReady: function(_, __, instance) {
+                attachPickerTimeScrollInteractions(instance);
+              },
+              onOpen: function() {
+                attachPickerTimeScrollInteractions(manualClockInPicker);
+                refreshManualDateTimePickers(true);
+              },
+              onChange: function() {
+                refreshManualDateTimePickers(true);
+              },
+              onValueUpdate: function() {
+                updateManualPickerValidityHints();
+              }
+            }));
+
+            manualClockOutPicker = flatpickr(clockOutInput, Object.assign({}, commonOptions, {
+              onReady: function(_, __, instance) {
+                attachPickerTimeScrollInteractions(instance);
+              },
+              onOpen: function() {
+                attachPickerTimeScrollInteractions(manualClockOutPicker);
+                refreshManualDateTimePickers(true);
+              },
+              onChange: function() {
+                updateManualPickerValidityHints();
+              },
+              onValueUpdate: function() {
+                updateManualPickerValidityHints();
+              }
+            }));
+          }
+
+          function refreshManualDateTimePickers(keepClockOutValue) {
+            initializeManualDateTimePickers();
+            manualPickerRuleState = buildManualPickerRuleState();
+
+            const clockInInput = document.getElementById('manualClockIn');
+            const clockOutInput = document.getElementById('manualClockOut');
+            const manualErrorEl = document.getElementById('manualError');
+            if (!clockInInput || !clockOutInput) return;
+
+            if (!manualClockInPicker || !manualClockOutPicker) return;
+
+            const inDayCache = {};
+            manualClockInPicker.set('disable', [function(dateObj) {
+              const key = String(dateObj.getFullYear()) + '-' + String(dateObj.getMonth()) + '-' + String(dateObj.getDate());
+              if (typeof inDayCache[key] !== 'boolean') {
+                inDayCache[key] = isSelectableManualClockInDay(dateObj);
+              }
+              return !inDayCache[key];
+            }]);
+            manualClockInPicker.set('minDate', new Date(manualPickerRuleState.minMs));
+            manualClockInPicker.set('maxDate', new Date(manualPickerRuleState.latestAllowedMs));
+
+            let selectedClockIn = parseDateTimeInputValue(clockInInput.value);
+            if (!selectedClockIn) {
+              const fallbackClockIn = findClosestAllowedManualClockIn(Date.now());
+              if (fallbackClockIn) {
+                selectedClockIn = fallbackClockIn;
+                manualClockInPicker.setDate(selectedClockIn, false, 'Y-m-d\\TH:i');
+              }
+            }
+
+            manualPickerRuleState = buildManualPickerRuleState();
+            const outDayCache = {};
+            manualClockOutPicker.set('disable', [function(dateObj) {
+              const key = String(dateObj.getFullYear()) + '-' + String(dateObj.getMonth()) + '-' + String(dateObj.getDate());
+              if (typeof outDayCache[key] !== 'boolean') {
+                outDayCache[key] = isSelectableManualClockOutDay(dateObj);
+              }
+              return !outDayCache[key];
+            }]);
+            if (manualPickerRuleState.outMinMs <= manualPickerRuleState.outMaxMs) {
+              manualClockOutPicker.set('minDate', new Date(manualPickerRuleState.outMinMs));
+              manualClockOutPicker.set('maxDate', new Date(manualPickerRuleState.outMaxMs));
+            }
+
+            let selectedClockOut = keepClockOutValue ? parseDateTimeInputValue(clockOutInput.value) : null;
+            if (!selectedClockOut) {
+              const safeClockIn = manualPickerRuleState.selectedClockInMs;
+              const fallbackClockOut = findFirstAllowedManualClockOut(safeClockIn);
+              if (fallbackClockOut) {
+                selectedClockOut = fallbackClockOut;
+                manualClockOutPicker.setDate(selectedClockOut, false, 'Y-m-d\\TH:i');
+              }
+            }
+
+            if (manualErrorEl && manualErrorEl.style.display === 'none') {
+              if (!selectedClockIn || !selectedClockOut) {
+                manualErrorEl.innerText = 'No available manual entry slot in the selected range.';
+                manualErrorEl.style.display = 'block';
+              }
+            }
+            updateManualPickerValidityHints();
+          }
+
           function setDateTimeConstraints(callback) {
             const clockInInput = document.getElementById('manualClockIn');
             const clockOutInput = document.getElementById('manualClockOut');
             const dateRangeInfo = document.getElementById('dateRangeInfo');
             const range = preloadedAllowedRange;
+            const bounds = getManualAllowedWindow();
 
-            if (range && range.minDateISO && range.maxDateISO) {
-              const minParts = range.minDateISO.split('-');
-              const minDate = new Date(parseInt(minParts[0], 10), parseInt(minParts[1], 10) - 1, parseInt(minParts[2], 10));
-              minDate.setHours(0, 0, 0, 0);
+            clockInInput.min = formatForInput(bounds.minDate);
+            clockInInput.max = formatForInput(bounds.maxDate);
+            clockOutInput.min = formatForInput(bounds.minDate);
+            clockOutInput.max = formatForInput(bounds.maxDate);
 
-              const maxParts = range.maxDateISO.split('-');
-              const maxDate = new Date(parseInt(maxParts[0], 10), parseInt(maxParts[1], 10) - 1, parseInt(maxParts[2], 10));
-              maxDate.setHours(23, 59, 59, 999);
-
-              clockInInput.min = formatForInput(minDate);
-              clockInInput.max = formatForInput(maxDate);
-              clockOutInput.min = formatForInput(minDate);
-              clockOutInput.max = formatForInput(maxDate);
-
-              const defaultStart = new Date();
-              defaultStart.setHours(8, 0);
-              const defaultEnd = new Date();
-              defaultEnd.setHours(17, 0);
-              clockInInput.value = formatForInput(defaultStart);
-              clockOutInput.value = formatForInput(defaultEnd);
-
-              if (dateRangeInfo) {
-                dateRangeInfo.innerText = 'Limited to current pay period: ' + range.minDateStr + ' through ' + range.maxDateStr + ' (today).';
-              }
-
-              if (typeof callback === 'function') {
-                callback();
-              }
-              return;
-            }
-
-            const max = new Date();
-            max.setHours(23, 59);
-            const min = new Date(max);
-            min.setDate(min.getDate() - 13);
-            min.setHours(0, 0);
-            clockInInput.min = formatForInput(min);
-            clockInInput.max = formatForInput(max);
-            clockOutInput.min = formatForInput(min);
-            clockOutInput.max = formatForInput(max);
-
-            const defaultStart = new Date();
-            defaultStart.setHours(8, 0);
-            const defaultEnd = new Date();
-            defaultEnd.setHours(17, 0);
+            const preferredStartMs = floorToManualStep(Date.now() - (9 * 60 * 60 * 1000));
+            const latestStartMs = Math.max(bounds.minMs, bounds.maxMs - MANUAL_PICKER_STEP_MS);
+            const defaultStartMs = Math.min(latestStartMs, Math.max(bounds.minMs, preferredStartMs));
+            const defaultEndMs = Math.min(bounds.maxMs, defaultStartMs + (9 * 60 * 60 * 1000));
+            const safeDefaultEndMs = defaultEndMs > defaultStartMs
+              ? defaultEndMs
+              : Math.min(bounds.maxMs, defaultStartMs + MANUAL_PICKER_STEP_MS);
+            const defaultStart = new Date(defaultStartMs);
+            const defaultEnd = new Date(safeDefaultEndMs);
             clockInInput.value = formatForInput(defaultStart);
             clockOutInput.value = formatForInput(defaultEnd);
 
             if (dateRangeInfo) {
-              dateRangeInfo.innerText = 'Limited to the last 14 days.';
+              if (range && range.minDateISO && range.maxDateISO) {
+                dateRangeInfo.innerText = 'Limited to current pay period: ' + range.minDateStr + ' through ' + range.maxDateStr + ' (today). Clock out is capped at 14 hours after clock in.';
+              } else {
+                dateRangeInfo.innerText = 'Limited to the last 14 days. Clock out is capped at 14 hours after clock in.';
+              }
             }
+
+            refreshManualDateTimePickers(false);
 
             if (typeof callback === 'function') {
               callback();
             }
           }
 
-          function showManualEntryForm() {
+          function initializeAdminTimeEditPickers() {
+            if (adminEditClockInPicker || adminEditClockOutPicker) return;
+            if (typeof flatpickr !== 'function') {
+              ensureNativeDateTimeFallback(['adminEditClockIn', 'adminEditClockOut']);
+              return;
+            }
+
+            const inEl = document.getElementById('adminEditClockIn');
+            const outEl = document.getElementById('adminEditClockOut');
+            if (!inEl || !outEl) return;
+
+            const options = {
+              enableTime: true,
+              dateFormat: 'Y-m-d\\TH:i',
+              altInput: true,
+              altFormat: 'm/d/Y h:i K',
+              time_24hr: false,
+              minuteIncrement: MANUAL_PICKER_MINUTE_INCREMENT,
+              disableMobile: true,
+              allowInput: false
+            };
+
+            adminEditClockInPicker = flatpickr(inEl, Object.assign({}, options, {
+              onReady: function(_, __, instance) {
+                attachPickerTimeScrollInteractions(instance);
+              },
+              onOpen: function() {
+                attachPickerTimeScrollInteractions(adminEditClockInPicker);
+                refreshAdminTimeEditPickerBounds();
+              },
+              onChange: function() {
+                refreshAdminTimeEditPickerBounds();
+                updateAdminTimeEditValidityHints();
+              },
+              onValueUpdate: function() {
+                updateAdminTimeEditValidityHints();
+              }
+            }));
+            adminEditClockOutPicker = flatpickr(outEl, Object.assign({}, options, {
+              onReady: function(_, __, instance) {
+                attachPickerTimeScrollInteractions(instance);
+              },
+              onOpen: function() {
+                attachPickerTimeScrollInteractions(adminEditClockOutPicker);
+                refreshAdminTimeEditPickerBounds();
+              },
+              onChange: function() {
+                updateAdminTimeEditValidityHints();
+              },
+              onValueUpdate: function() {
+                updateAdminTimeEditValidityHints();
+              }
+            }));
+          }
+
+          function refreshAdminTimeEditPickerBounds() {
+            if (!adminEditClockInPicker || !adminEditClockOutPicker) return;
+
+            const bounds = getActivePayPeriodBounds();
+            const minMs = bounds ? bounds.startMs : null;
+            const maxMs = bounds ? bounds.endMs : Date.now();
+
+            if (minMs !== null) {
+              adminEditClockInPicker.set('minDate', new Date(minMs));
+              adminEditClockOutPicker.set('minDate', new Date(minMs));
+            }
+            if (maxMs !== null) {
+              adminEditClockInPicker.set('maxDate', new Date(maxMs));
+              adminEditClockOutPicker.set('maxDate', new Date(maxMs));
+            }
+
+            const inDate = parseDateTimeInputValue(document.getElementById('adminEditClockIn').value);
+            if (inDate && !isNaN(inDate.getTime())) {
+              const outMin = new Date(inDate.getTime() + MANUAL_PICKER_STEP_MS);
+              const outMax = new Date(Math.min((maxMs !== null ? maxMs : Date.now()), inDate.getTime() + MANUAL_ENTRY_MAX_SPAN_MS));
+              adminEditClockOutPicker.set('minDate', outMin);
+              adminEditClockOutPicker.set('maxDate', outMax);
+            }
+            updateAdminTimeEditValidityHints();
+          }
+
+          function updateAdminTimeEditValidityHints() {
+            const errorEl = document.getElementById('adminEditError');
+            if (!errorEl || !adminEditClockInPicker || !adminEditClockOutPicker) return;
+            const inDate = parseDateTimeInputValue(adminEditClockInPicker.input ? adminEditClockInPicker.input.value : '');
+            const outDate = parseDateTimeInputValue(adminEditClockOutPicker.input ? adminEditClockOutPicker.input.value : '');
+            let inInvalid = false;
+            let outInvalid = false;
+            let hint = '';
+
+            if (!inDate) {
+              inInvalid = true;
+              hint = 'Clock In is required.';
+            } else {
+              const inIso = inDate.toISOString();
+              if (!isInActivePayPeriod(inIso)) {
+                inInvalid = true;
+                hint = 'Clock In is outside the active pay period.';
+              }
+            }
+
+            if (!outInvalid && outDate && inDate) {
+              if (outDate.getTime() <= inDate.getTime()) {
+                outInvalid = true;
+                hint = 'Clock Out must be after Clock In.';
+              } else if ((outDate.getTime() - inDate.getTime()) > MANUAL_ENTRY_MAX_SPAN_MS) {
+                outInvalid = true;
+                hint = 'Clock Out is beyond the 14-hour cap.';
+              } else if (!isInActivePayPeriod(outDate.toISOString())) {
+                outInvalid = true;
+                hint = 'Clock Out is outside the active pay period.';
+              }
+            }
+
+            setPickerInputInvalid(adminEditClockInPicker, inInvalid, 'admin-picker-invalid');
+            setPickerInputInvalid(adminEditClockOutPicker, outInvalid, 'admin-picker-invalid');
+
+            if (hint) {
+              errorEl.innerText = hint;
+              errorEl.style.display = 'block';
+            } else if (errorEl.innerText.indexOf('Clock In is ') === 0 || errorEl.innerText.indexOf('Clock Out ') === 0) {
+              errorEl.style.display = 'none';
+              errorEl.innerText = '';
+            }
+          }
+
+          function isManualEntryModalVisible() {
+            const modal = document.getElementById('manualEntryModal');
+            return !!(modal && modal.style.display === 'flex');
+          }
+
+          function showManualEntryForm(event) {
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
             const targetInfo = document.getElementById('manualTargetInfo');
+            const notesInput = document.getElementById('manualNotes');
             document.getElementById('manualError').style.display = 'none';
             document.getElementById('manualSubmit').disabled = false;
             setManualEntryType('worked');
+            if (notesInput) {
+              // Avoid stale notes carrying into a new manual entry and accidental instant submit.
+              notesInput.value = '';
+            }
             if (targetInfo) {
               if (adminManualEntryTargetEmail) {
                 targetInfo.innerText = 'Employee: ' + adminManualEntryTargetEmail;
@@ -5635,11 +6410,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 refreshRecentEntries();
               }
             });
+            manualEntryModalOpenedAtMs = Date.now();
             document.getElementById('manualEntryModal').style.display = 'flex';
           }
 
           function hideManualEntryForm() {
             adminManualEntryTargetEmail = '';
+            manualEntryModalOpenedAtMs = 0;
             setManualEntryType('worked');
             const targetInfo = document.getElementById('manualTargetInfo');
             if (targetInfo) {
@@ -5649,10 +6426,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             document.getElementById('manualEntryModal').style.display = 'none';
           }
 
-          function openAdminManualEntryForEmployee(email) {
+          function openAdminManualEntryForEmployee(email, event) {
             if (adminPermissions.canEdit !== true) return;
             adminManualEntryTargetEmail = String(email || '').trim().toLowerCase();
-            showManualEntryForm();
+            showManualEntryForm(event);
           }
 
           function getOpenEntryStartForEmployee(email) {
@@ -5983,7 +6760,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return earliest;
           }
 
-          function submitManualEntry() {
+          function submitManualEntry(event) {
+            if (event) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
             const clockInVal = document.getElementById('manualClockIn').value;
             const clockOutVal = document.getElementById('manualClockOut').value;
             const notesVal = document.getElementById('manualNotes').value;
@@ -6000,6 +6781,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
             errorEl.style.display = 'none';
             submitBtn.disabled = true;
+
+            // Guard against mobile/trackpad ghost click that can hit submit immediately after opening.
+            if (manualEntryModalOpenedAtMs > 0 && (Date.now() - manualEntryModalOpenedAtMs) < 300) {
+              submitBtn.disabled = false;
+              return;
+            }
 
             if (!clockInVal || !clockOutVal) {
               errorEl.innerText = 'Both start and end times are required.';
@@ -6047,10 +6834,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
             // Enforce max 14-hour span per entry
             const diffMs = clockOutDate.getTime() - clockInDate.getTime();
-            const maxMs = 14 * 60 * 60 * 1000;
-            if (diffMs > maxMs) {
-              const cappedEnd = new Date(clockInDate.getTime() + maxMs);
+            if (diffMs > MANUAL_ENTRY_MAX_SPAN_MS) {
+              const cappedEnd = new Date(clockInDate.getTime() + MANUAL_ENTRY_MAX_SPAN_MS);
               document.getElementById('manualClockOut').value = formatForInput(cappedEnd);
+              refreshManualDateTimePickers(true);
               errorEl.innerText = 'Entries are limited to 14 hours. End time was adjusted to 14 hours after start. Add a note explaining the extended shift, then submit again.';
               errorEl.style.display = 'block';
               submitBtn.disabled = false;

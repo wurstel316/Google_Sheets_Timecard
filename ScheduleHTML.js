@@ -1,0 +1,2471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Technique Towing – Vertical Schedule View (Rev 2.10)</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --border: #2d3a4f;
+      --text: #e7ecf3;
+      --muted: #8b9bb4;
+      --header-bg: #141c27;
+      --o: #22c55e;
+      --o-bg: rgba(34, 197, 94, 0.18);
+      --b: #a78bfa;
+      --b-bg: rgba(167, 139, 250, 0.18);
+      --uncovered: #fb7185;
+      --uncovered-bg: rgba(251, 113, 133, 0.20);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.4;
+      padding: 0.75rem;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      margin-bottom: 0.15rem;
+    }
+
+    .meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+    /* Main layout: sidebar + schedule */
+    .layout {
+      display: flex;
+      gap: 0.75rem;
+      align-items: stretch;
+      height: calc(100vh - 1.5rem);
+    }
+
+    .sidebar {
+      flex: 0 0 160px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      overflow-y: auto;
+    }
+
+    .sidebar-title {
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.1rem;
+    }
+
+    .sidebar-btn {
+      display: block;
+      width: 100%;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.78rem;
+      border-radius: 6px;
+      background: var(--b);
+      color: #0f1419;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      text-align: center;
+    }
+    .sidebar-btn:hover {
+      filter: brightness(1.08);
+    }
+
+    /* Save block + auto-save countdown timer */
+    .save-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-btn.save-btn {
+      background: var(--o);
+      color: #0f1419;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .sidebar-btn.save-btn:hover {
+      filter: brightness(1.1);
+    }
+    .sidebar-btn.save-btn.is-saving {
+      opacity: 0.75;
+      pointer-events: none;
+    }
+    .sidebar-btn.save-btn.just-saved {
+      background: #16a34a;
+    }
+    .save-timer-row {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.68rem;
+      color: var(--muted);
+      user-select: none;
+    }
+    .timer-ring-wrap {
+      position: relative;
+      width: 1.55rem;
+      height: 1.55rem;
+      flex-shrink: 0;
+    }
+    .timer-ring {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .timer-ring circle {
+      fill: none;
+      stroke-width: 3.2;
+    }
+    .timer-ring .track {
+      stroke: var(--border);
+    }
+    .timer-ring .progress {
+      stroke: var(--o);
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.35s linear;
+    }
+    .timer-ring-wrap.is-saving .timer-ring {
+      animation: timer-spin 0.9s linear infinite;
+    }
+    .timer-ring-wrap.is-saving .progress {
+      stroke: var(--b);
+    }
+    @keyframes timer-spin {
+      from { transform: rotate(-90deg); }
+      to   { transform: rotate(270deg); }
+    }
+    .timer-count {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.52rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      pointer-events: none;
+    }
+    .save-timer-label {
+      flex: 1 1 auto;
+      min-width: 0;
+      line-height: 1.25;
+    }
+
+    .location-filter {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+    .location-filter label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .location-filter select {
+      width: 100%;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #0f1419;
+      color: var(--text);
+      cursor: pointer;
+      appearance: auto;
+    }
+    .location-filter select:focus {
+      outline: 1px solid var(--b);
+      outline-offset: 1px;
+    }
+
+    .show-deleted-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      user-select: none;
+    }
+    .show-deleted-toggle input {
+      width: 0.95rem;
+      height: 0.95rem;
+      accent-color: var(--b);
+      cursor: pointer;
+    }
+
+    .emp-count-block.is-deleted .emp-count-name {
+      color: var(--muted);
+      opacity: 0.75;
+    }
+    .emp-count-block.is-deleted .emp-name-text {
+      text-decoration: line-through;
+    }
+    .emp-count-block.is-deleted .emp-workweek-tag {
+      display: none;
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      font-size: 0.82rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .swatch {
+      width: 1.15rem;
+      height: 1.15rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .swatch.o { background: var(--o-bg); color: var(--o); border: 1px solid color-mix(in srgb, var(--o) 45%, transparent); }
+    .swatch.b { background: var(--b-bg); color: var(--b); border: 1px solid color-mix(in srgb, var(--b) 45%, transparent); }
+    .swatch.uncovered { background: var(--uncovered-bg); color: var(--uncovered); border: 1px solid color-mix(in srgb, var(--uncovered) 45%, transparent); }
+
+    /* Employee status counts (below legend) */
+    .employee-counts {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      font-size: 0.82rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .emp-count-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      position: relative;
+    }
+
+    .emp-count-name {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      width: 100%;
+      padding: 0.15rem 0.2rem;
+      margin: -0.15rem -0.2rem;
+      border: none;
+      border-radius: 5px;
+      background: transparent;
+      font-family: inherit;
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.8rem;
+      line-height: 1.2;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .emp-count-name:hover,
+    .emp-count-name[aria-expanded="true"] {
+      background: rgba(167, 139, 250, 0.12);
+      color: var(--b);
+    }
+    .emp-count-name .chevron {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      color: var(--muted);
+      transition: transform 0.2s ease;
+    }
+    .emp-count-name[aria-expanded="true"] .chevron {
+      transform: rotate(180deg);
+      color: var(--b);
+    }
+    .emp-count-name .emp-name-text {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    /* Workweek tag appended after the employee name (CA | AWS) */
+    .emp-count-name .emp-workweek-tag {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--muted);
+      padding: 0.05rem 0.28rem;
+      border-radius: 3px;
+      background: rgba(139, 155, 180, 0.15);
+      line-height: 1.2;
+    }
+    .emp-count-name:hover .emp-workweek-tag,
+    .emp-count-name[aria-expanded="true"] .emp-workweek-tag {
+      color: var(--b);
+      background: rgba(167, 139, 250, 0.18);
+    }
+
+    /* Sliding employee action menu */
+    .emp-menu {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.22s ease;
+    }
+    .emp-menu.open {
+      grid-template-rows: 1fr;
+    }
+    .emp-menu-inner {
+      overflow: hidden;
+      min-height: 0;
+    }
+    .emp-menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      padding: 0.3rem 0 0.15rem;
+      margin-top: 0.1rem;
+      border-top: 1px solid var(--border);
+    }
+    .emp-menu-item {
+      display: block;
+      width: 100%;
+      padding: 0.32rem 0.45rem;
+      border: none;
+      border-radius: 5px;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .emp-menu-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+    }
+    .emp-menu-item.danger:hover {
+      background: rgba(251, 113, 133, 0.15);
+      color: var(--uncovered);
+    }
+    .emp-menu-item.has-sub {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .emp-menu-item.has-sub .sub-chevron {
+      font-size: 0.6rem;
+      transition: transform 0.2s ease;
+    }
+    .emp-menu-item.has-sub[aria-expanded="true"] .sub-chevron {
+      transform: rotate(90deg);
+    }
+
+    /* Nested location submenu (slides under Change Location) */
+    .emp-submenu {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.2s ease;
+    }
+    .emp-submenu.open {
+      grid-template-rows: 1fr;
+    }
+    .emp-submenu-inner {
+      overflow: hidden;
+      min-height: 0;
+    }
+    .emp-submenu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+      padding: 0.15rem 0 0.2rem 0.55rem;
+    }
+    .emp-loc-btn {
+      display: block;
+      width: 100%;
+      padding: 0.28rem 0.4rem;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .emp-loc-btn:hover {
+      background: rgba(167, 139, 250, 0.12);
+      color: var(--b);
+    }
+    .emp-loc-btn.current {
+      color: var(--o);
+      font-weight: 600;
+    }
+    .emp-loc-btn.current::after {
+      content: " ✓";
+      font-size: 0.68rem;
+    }
+
+    /* Inline create-new-location form */
+    .emp-new-loc {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.18s ease;
+    }
+    .emp-new-loc.open {
+      grid-template-rows: 1fr;
+    }
+    .emp-new-loc-inner {
+      overflow: hidden;
+      min-height: 0;
+    }
+    .emp-new-loc-form {
+      display: flex;
+      gap: 0.3rem;
+      padding: 0.25rem 0.1rem 0.35rem 0.55rem;
+    }
+    .emp-new-loc-form input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.28rem 0.4rem;
+      font-size: 0.72rem;
+      font-family: inherit;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: #0f1419;
+      color: var(--text);
+    }
+    .emp-new-loc-form input:focus {
+      outline: 1px solid var(--b);
+      outline-offset: 0;
+    }
+    .emp-new-loc-form button {
+      padding: 0.28rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      border-radius: 4px;
+      background: var(--b);
+      color: #0f1419;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .emp-new-loc-form button:hover {
+      filter: brightness(1.08);
+    }
+
+    .emp-count-row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+    }
+
+    .emp-count-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.28rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .emp-count-item .swatch {
+      width: 1rem;
+      height: 1rem;
+      font-size: 0.62rem;
+    }
+
+    .emp-count-empty {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-style: italic;
+    }
+
+    /* Uncovered shifts summary (sidebar) */
+    .uncovered-summary {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.82rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border);
+    }
+    .uncovered-summary-title {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+    .uncovered-summary-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-variant-numeric: tabular-nums;
+    }
+    .uncovered-summary-row .swatch {
+      width: 1rem;
+      height: 1rem;
+      font-size: 0.62rem;
+    }
+
+    section {
+      flex: 1;
+      min-width: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.6rem;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.8rem;
+      transform-origin: top left;
+    }
+
+    th, td {
+      padding: 0.38rem 0.45rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      min-width: 4.1rem;
+    }
+
+    th:last-child, td:last-child { border-right: none; }
+
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      background: var(--header-bg);
+      z-index: 5;
+      min-width: 3.6rem;
+      text-align: left;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      color: var(--muted);
+      border-right: 1px solid var(--border);
+      padding-left: 0.7rem;
+    }
+
+    thead th {
+      position: sticky;
+      z-index: 2;
+      background: var(--header-bg);
+    }
+
+    thead tr.days th {
+      top: 0;
+      background: #0c1220;
+      color: #e2e8f0;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 0.55rem 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead tr.days th:first-child {
+      z-index: 6;
+      background: #0c1220;
+    }
+
+    thead tr.drivers th {
+      top: 2.15rem;
+      background: var(--header-bg);
+      color: #cbd5e1;
+      font-weight: 600;
+      font-size: 0.78rem;
+      text-transform: none;
+      letter-spacing: 0;
+      padding: 0.45rem 0.35rem 0.55rem;
+      border-bottom: 2px solid #3b4a63;
+    }
+
+    thead tr.drivers th:first-child {
+      z-index: 6;
+      background: var(--header-bg);
+    }
+
+    /* Strong visual break between day groups (header + first column of each day) */
+    .day-group,
+    .day-start {
+      border-left: 3px solid #64748b !important;
+    }
+
+    .clear-day-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 0.3rem;
+      width: 1.05rem;
+      height: 1.05rem;
+      padding: 0;
+      border: none;
+      border-radius: 3px;
+      background: transparent;
+      color: #b85c6a;
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .clear-day-btn:hover {
+      background: transparent;
+      color: #d47888;
+    }
+
+    /* Green + button in day headers */
+    .add-day-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 0.35rem;
+      width: 1.15rem;
+      height: 1.15rem;
+      padding: 0;
+      border: none;
+      border-radius: 3px;
+      background: #16a34a;
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .add-day-btn:hover {
+      background: #15803d;
+    }
+
+    td.o {
+      background: var(--o-bg);
+      color: var(--o);
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    td.b {
+      background: var(--b-bg);
+      color: var(--b);
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
+    td.empty {
+      background: transparent;
+      color: transparent;
+    }
+    td.uncovered {
+      background: var(--uncovered-bg);
+      color: color-mix(in srgb, var(--uncovered) 55%, transparent);
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
+
+    tbody tr:hover td:first-child {
+      background: #1e293b;
+      color: #f1f5f9;
+    }
+    tbody tr:hover td.o { background: rgba(34, 197, 94, 0.30); }
+    tbody tr:hover td.b { background: rgba(167, 139, 250, 0.30); }
+    tbody tr:hover td.uncovered { background: rgba(251, 113, 133, 0.32); }
+
+    /* Employee column highlight (header name + body cells for that employee only) */
+    thead tr.drivers th.col-hover {
+      background: #243044;
+      color: #f1f5f9;
+    }
+    tbody td.col-hover {
+      background: rgba(148, 163, 184, 0.10);
+    }
+    tbody td.col-hover.o { background: rgba(34, 197, 94, 0.28); }
+    tbody td.col-hover.b { background: rgba(167, 139, 250, 0.28); }
+    tbody td.col-hover.uncovered { background: rgba(251, 113, 133, 0.28); }
+    /* Row + column intersection: slightly stronger */
+    tbody tr:hover td.col-hover.o { background: rgba(34, 197, 94, 0.38); }
+    tbody tr:hover td.col-hover.b { background: rgba(167, 139, 250, 0.38); }
+    tbody tr:hover td.col-hover.uncovered { background: rgba(251, 113, 133, 0.40); }
+    tbody tr:hover td.col-hover:not(.o):not(.b):not(.uncovered) {
+      background: rgba(148, 163, 184, 0.16);
+    }
+
+    /* Sidebar employee-name hover: dim non-matching columns + accent matching headers */
+    #schedule-table.is-emp-focus thead tr.drivers th:not(:first-child):not(.col-focus),
+    #schedule-table.is-emp-focus tbody td:not(:first-child):not(.col-focus) {
+      opacity: 0.28;
+      transition: opacity 0.12s ease;
+    }
+    #schedule-table.is-emp-focus thead tr.drivers th.col-focus {
+      background: rgba(167, 139, 250, 0.28);
+      color: #f5f3ff;
+      box-shadow: inset 0 -2px 0 var(--b);
+    }
+    #schedule-table.is-emp-focus tbody td.col-focus {
+      opacity: 1;
+    }
+
+    .note {
+      margin-top: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      padding: 0 0.2rem;
+      flex-shrink: 0;
+    }
+
+    /* ---- Modal ---- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal-overlay.hidden {
+      display: none;
+    }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      width: min(320px, 92vw);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+    .modal h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .modal-employee-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .modal-emp-btn {
+      display: block;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #0f1419;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+    }
+    .modal-emp-btn:hover {
+      background: var(--o-bg);
+      border-color: var(--o);
+      color: var(--o);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: flex-end;
+    }
+    .modal-actions button {
+      padding: 0.4rem 0.85rem;
+      border-radius: 6px;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .modal-cancel {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border) !important;
+    }
+    .modal-cancel:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .modal-empty-msg {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 800px) {
+      body { padding: 0.5rem; overflow: auto; }
+      .layout { flex-direction: column; height: auto; min-height: calc(100vh - 1rem); }
+      .sidebar { flex: none; width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; }
+      .sidebar-btn { width: auto; }
+      .save-block {
+        flex-direction: row;
+        align-items: center;
+        border-bottom: none;
+        padding-bottom: 0;
+        gap: 0.55rem;
+      }
+      .save-timer-row { white-space: nowrap; }
+      .location-filter { width: auto; min-width: 7rem; }
+      .legend { flex-direction: row; border-top: none; padding-top: 0; margin-left: auto; }
+      .employee-counts {
+        flex-direction: row;
+        flex-wrap: wrap;
+        border-top: none;
+        padding-top: 0;
+        width: 100%;
+        gap: 0.75rem 1.25rem;
+      }
+      .uncovered-summary {
+        border-top: none;
+        padding-top: 0;
+        width: auto;
+      }
+      th, td { min-width: 3.3rem; padding: 0.3rem 0.3rem; font-size: 0.75rem; }
+      thead tr.drivers th { top: 1.95rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-title">
+        <h1>Employee Schedule</h1>
+      </div>
+      <!-- TEMPORARY – delete this button when populateTestSchedule is removed -->
+      <button class="sidebar-btn" onclick="populateTestSchedule()">PopulateTestSchedule</button>
+      <!-- /TEMPORARY -->
+
+      <div class="save-block">
+        <button type="button" class="sidebar-btn save-btn" id="save-btn" onclick="saveSchedule()">Save</button>
+        <div class="save-timer-row" title="Auto-saves every 60 seconds">
+          <div class="timer-ring-wrap" id="timer-ring-wrap">
+            <svg class="timer-ring" viewBox="0 0 36 36" aria-hidden="true">
+              <circle class="track" cx="18" cy="18" r="15.9155"></circle>
+              <circle class="progress" id="timer-progress" cx="18" cy="18" r="15.9155"
+                stroke-dasharray="100" stroke-dashoffset="0"></circle>
+            </svg>
+            <span class="timer-count" id="save-countdown">60</span>
+          </div>
+          <span class="save-timer-label" id="save-timer-label">Auto-save in 60s</span>
+        </div>
+      </div>
+
+      <div class="location-filter">
+        <label for="location-select">Location</label>
+        <select id="location-select" onchange="onLocationChange()">
+          <option value="ALL">All</option>
+          <option value="STK">STK</option>
+          <option value="OAK">OAK</option>
+          <option value="">Unassigned</option>
+        </select>
+      </div>
+      <label class="show-deleted-toggle">
+        <input type="checkbox" id="show-deleted" onchange="onShowDeletedChange()">
+        Show deleted
+      </label>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="swatch o">O</div>
+          <span>On Duty</span>
+        </div>
+        <div class="legend-item">
+          <div class="swatch b">B</div>
+          <span>Backup</span>
+        </div>
+        <div class="legend-item">
+          <div class="swatch uncovered">–</div>
+          <span>Uncovered</span>
+        </div>
+      </div>
+      <div class="uncovered-summary" id="uncovered-summary"></div>
+      <div class="employee-counts" id="employee-counts"></div>
+    </aside>
+
+    <section>
+      <div class="table-wrap">
+        <table id="schedule-table">
+          <thead>
+            <tr class="days" id="day-headers"></tr>
+            <tr class="drivers" id="driver-headers"></tr>
+          </thead>
+          <tbody id="schedule-body"></tbody>
+        </table>
+      </div>
+      <p class="note">
+        Data lives in the <code>EmployeeSchedule</code> array (each employee has <code>EmployeeName</code>, <code>location</code>, <code>workweek</code>, and <code>days[]</code>).
+        The sidebar Location dropdown filters the view; edit the array and the table rebuilds automatically.
+      </p>
+    </section>
+  </div>
+
+  <!-- Add Employee Modal -->
+  <div id="add-employee-modal" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="modal-title">
+      <h3 id="modal-title">Add employee to <span id="modal-day-label"></span></h3>
+      <div id="modal-employee-list" class="modal-employee-list" role="list"></div>
+      <p id="modal-empty-msg" class="modal-empty-msg" style="display:none;">No eligible employees for this day.</p>
+      <div class="modal-actions">
+        <button type="button" class="modal-cancel" id="modal-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    //  SCHEDULE DATA  –  edit this section for future updates
+    // ============================================================
+    //
+    //  EmployeeSchedule is an array of employee objects. Shape:
+    //
+    //    [
+    //      {
+    //        EmployeeName: "string",   // display name
+    //        location: "STK" | "OAK" | "",
+    //            // STK  = Stockton
+    //            // OAK  = Oakhurst
+    //            // ""   = Unassigned (shown as "Unassigned" in the UI)
+    //        workweek: "CA" | "AWS",
+    //            // Work-week rule set for this employee (stored per employee).
+    //            // "CA"  = California standard (DEFAULT for every new employee)
+    //            // "AWS" = Alternative Work Schedule
+    //        days: [
+    //          {
+    //            dayName: "Monday" | "Tuesday" | … | "Sunday",
+    //            shifts: [
+    //              { timeBlock: "05:00", status: "" | "O" | "B" },
+    //              …
+    //              // timeBlock is always "HH:00" (00:00–23:00)
+    //              // status: "" = empty, "O" = On Duty, "B" = Backup
+    //            ]
+    //          },
+    //          …
+    //        ]
+    //      },
+    //      …
+    //    ]
+    //
+    //  Overnight ranges are split across consecutive days (end-exclusive).
+    //
+    //  LOCATION FILTER (sidebar #location-select)
+    //  ------------------------------------------
+    //  selectedLocation holds the active filter value:
+    //    "ALL"  – show every employee (default)
+    //    "STK"  – Stockton only
+    //    "OAK"  – Oakhurst only
+    //    ""     – Unassigned only
+    //
+    //  Changing the dropdown calls onLocationChange() → renderSchedule().
+    //  getFilteredEmployees() is the single source of truth for the
+    //  current view; renderSchedule, renderEmployeeCounts, and the
+    //  add-employee modal all consume it so the table, sidebar totals,
+    //  uncovered count, and eligible-employee list stay in sync.
+    //
+    // ============================================================
+
+    let EmployeeSchedule = [];
+
+    /**
+     * Active location filter driven by the sidebar <select id="location-select">.
+     * Values: "ALL" | location codes | "" (empty string = Unassigned).
+     * Default "ALL" shows every employee regardless of location.
+     */
+    let selectedLocation = "ALL";
+
+    /**
+     * When false (default), soft-deleted employees (name ends with "-deleted")
+     * are hidden from the schedule table and sidebar lists.
+     * Toggled by the sidebar "Show deleted" checkbox.
+     */
+    let showDeleted = false;
+
+    /**
+     * Known location codes (seeded with STK / OAK; grows when users create new ones
+     * or when schedule data introduces additional codes).
+     */
+    let knownLocations = ["STK", "OAK"];
+
+    /** True when EmployeeName ends with the soft-delete marker "-deleted". */
+    function isDeletedName(name) {
+      return typeof name === "string" && name.endsWith("-deleted");
+    }
+
+    /** Strip the "-deleted" suffix; returns original if not present. */
+    function getBaseName(name) {
+      if (!isDeletedName(name)) return name;
+      return name.slice(0, -"-deleted".length);
+    }
+
+    /**
+     * Collect location codes present in EmployeeSchedule and merge into knownLocations.
+     * Keeps order stable: existing known order first, then any new codes sorted.
+     */
+    function syncKnownLocationsFromData() {
+      const fromData = new Set();
+      (EmployeeSchedule || []).forEach(emp => {
+        const loc = (emp.location == null) ? "" : String(emp.location).trim();
+        if (loc) fromData.add(loc);
+      });
+      const existing = new Set(knownLocations);
+      const extras = Array.from(fromData).filter(l => !existing.has(l)).sort((a, b) => a.localeCompare(b));
+      if (extras.length) knownLocations = knownLocations.concat(extras);
+    }
+
+    /**
+     * Rebuild the sidebar #location-select options from knownLocations
+     * while preserving the currently selected value when possible.
+     */
+    function rebuildLocationSelect() {
+      const sel = document.getElementById("location-select");
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = "";
+      const addOpt = (value, label) => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = label;
+        sel.appendChild(opt);
+      };
+      addOpt("ALL", "All");
+      knownLocations.forEach(code => addOpt(code, code));
+      addOpt("", "Unassigned");
+      // Restore previous selection if still valid
+      const stillValid = Array.from(sel.options).some(o => o.value === prev);
+      sel.value = stillValid ? prev : "ALL";
+      selectedLocation = sel.value;
+    }
+
+    /**
+     * Sidebar location dropdown change handler.
+     * Reads #location-select, updates selectedLocation, then re-renders
+     * the full schedule (table + sidebar summaries).
+     */
+    function onLocationChange() {
+      const sel = document.getElementById("location-select");
+      selectedLocation = sel ? sel.value : "ALL";
+      renderSchedule();
+    }
+
+    /**
+     * Returns employees matching selectedLocation, always excluding soft-deleted.
+     * Used by renderSchedule, getEligibleEmployeesForDay, and any schedule logic
+     * so deleted employees never appear in the table or eligibility lists.
+     */
+    function getFilteredEmployees() {
+      if (!EmployeeSchedule || !EmployeeSchedule.length) return [];
+      return EmployeeSchedule.filter(emp => {
+        if (isDeletedName(emp.EmployeeName)) return false;
+        if (selectedLocation === "ALL") return true;
+        const loc = (emp.location == null) ? "" : String(emp.location);
+        return loc === selectedLocation;
+      });
+    }
+
+    /**
+     * Same location filter as getFilteredEmployees, but includes soft-deleted
+     * when showDeleted is true. Used only by the sidebar employee list so
+     * deleted staff can be viewed and un-deleted.
+     */
+    function getSidebarEmployees() {
+      if (!EmployeeSchedule || !EmployeeSchedule.length) return [];
+      return EmployeeSchedule.filter(emp => {
+        if (!showDeleted && isDeletedName(emp.EmployeeName)) return false;
+        if (selectedLocation === "ALL") return true;
+        const loc = (emp.location == null) ? "" : String(emp.location);
+        return loc === selectedLocation;
+      });
+    }
+
+    function onShowDeletedChange() {
+      const cb = document.getElementById("show-deleted");
+      showDeleted = !!(cb && cb.checked);
+      renderEmployeeCounts();
+    }
+
+    /**
+     * Set an employee's location. Adds the code to knownLocations if new,
+     * syncs the filter dropdown, then re-renders.
+     */
+    function setEmployeeLocation(employeeName, newLocation) {
+      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      if (!emp) return;
+      const loc = (newLocation == null) ? "" : String(newLocation).trim();
+      emp.location = loc;
+      if (loc && !knownLocations.includes(loc)) {
+        knownLocations.push(loc);
+        knownLocations.sort((a, b) => a.localeCompare(b));
+      }
+      rebuildLocationSelect();
+      renderSchedule();
+    }
+
+    /**
+     * Set an employee's workweek rule set.
+     * Allowed values: "CA" (California standard, default) | "AWS" (Alternative Work Schedule).
+     * Invalid values fall back to "CA". Re-renders so the sidebar tag updates.
+     */
+    function setEmployeeWorkweek(employeeName, newWorkweek) {
+      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      if (!emp) return;
+      const ww = String(newWorkweek || "").trim().toUpperCase();
+      emp.workweek = (ww === "AWS") ? "AWS" : "CA";
+      renderSchedule();
+    }
+
+    /**
+     * Soft-delete: append "-deleted" to the employee name so they are
+     * hidden from render (unless "Show deleted" is on). Data is kept.
+     */
+    function deleteEmployee(employeeName) {
+      if (isDeletedName(employeeName)) return;
+      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      if (!emp) return;
+      emp.EmployeeName = employeeName + "-deleted";
+      renderSchedule();
+    }
+
+    /**
+     * Restore a soft-deleted employee by removing the "-deleted" suffix.
+     */
+    function undeleteEmployee(employeeName) {
+      if (!isDeletedName(employeeName)) return;
+      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      if (!emp) return;
+      const base = getBaseName(employeeName);
+      // Avoid colliding with an active employee that already has the base name
+      if (EmployeeSchedule.some(e => e.EmployeeName === base)) {
+        console.warn(`Cannot undelete "${employeeName}": active employee "${base}" already exists`);
+        return;
+      }
+      emp.EmployeeName = base;
+      renderSchedule();
+    }
+
+    /**
+     * Close every open employee menu / submenu in the sidebar.
+     * Handles multiple .has-sub toggles (Change Location, Change Workweek)
+     * and every nested .emp-submenu / new-location panel.
+     */
+    function closeAllEmpMenus(exceptBlock) {
+      document.querySelectorAll(".emp-count-block").forEach(block => {
+        if (exceptBlock && block === exceptBlock) return;
+        const nameBtn = block.querySelector(".emp-count-name");
+        const menu = block.querySelector(".emp-menu");
+        if (nameBtn) nameBtn.setAttribute("aria-expanded", "false");
+        if (menu) menu.classList.remove("open");
+        block.querySelectorAll(".emp-submenu").forEach(sub => sub.classList.remove("open"));
+        block.querySelectorAll(".emp-new-loc").forEach(panel => panel.classList.remove("open"));
+        block.querySelectorAll(".emp-menu-item.has-sub").forEach(toggle => {
+          toggle.setAttribute("aria-expanded", "false");
+        });
+      });
+    }
+
+    function editScheduleBlock(employeeName, dayName, timeBlock, status) {
+      // ---------------------------------------------------------
+      // VALIDATION CHECKS AT TOP (returns early if invalid):
+      // ---------------------------------------------------------
+      
+      // 1. Validate employeeName must be a valid string
+      if (typeof employeeName !== "string" || employeeName.trim() === "") {
+        console.error(`Invalid employeeName: "${employeeName}" - must be non-empty string`);
+        return;
+      }
+      
+      // 2. Validate dayName must be one of: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
+      const validDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      if (!validDays.includes(dayName) || typeof dayName !== "string") {
+        console.error(`Invalid dayName: "${dayName}" - must be one of ${validDays.join(", ")}`);
+        return;
+      }
+      
+      // 3. Validate timeBlock must be "xx:00" format (e.g., "05:00", "23:00")
+      const timeBlockRegex = /^(\d{1,2}):00$/;
+      if (!timeBlockRegex.test(timeBlock) || typeof timeBlock !== "string") {
+        console.error(`Invalid timeBlock: "${timeBlock}" - must be in HH:00 format (e.g., '05:00')`);
+        return;
+      }
+
+      // Normalize status to allowed values only
+      const allowed = ["", "O", "B"];
+      if (!allowed.includes(status)) {
+        status = "";
+      }
+      
+      // ---------------------------------------------------------
+      // MAIN LOGIC (only runs if all validations pass):
+      // ---------------------------------------------------------
+      
+      // 1. Find or create employee
+      //    New entries get location "" (Unassigned) and workweek "CA" (default).
+      //    workweek is "CA" | "AWS"; only the default is set here so existing
+      //    callers of editScheduleBlock stay unchanged.
+      let employee = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      if (!employee) {
+        employee = { EmployeeName: employeeName, location: "", workweek: "CA", days: [] };
+        EmployeeSchedule.push(employee);
+      }
+      
+      // 2. Find or create the day for this employee
+      let day = employee.days.find(d => d.dayName === dayName);
+      if (!day) {
+        day = { dayName: dayName, shifts: [] };
+        employee.days.push(day);
+      }
+        
+      // 3. Find or create the timeBlock within this day, then set status
+      let shift = day.shifts.find(s => s.timeBlock === timeBlock);
+      if (!shift) {
+        shift = { timeBlock: timeBlock, status: status };
+        day.shifts.push(shift);
+      } else {
+        shift.status = status;
+      }
+      
+      renderSchedule();
+      
+      // No return → silent mutation only (user's preference)
+    }
+
+    /**
+     * Clear all statuses for one employee on one day (set every shift to "").
+     * Re-renders afterward so the column drops if fully empty.
+     */
+    function clearEmployeeDay(employeeName, dayName) {
+      const employee = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      if (!employee) return;
+
+      const day = employee.days.find(d => d.dayName === dayName);
+      if (!day || !Array.isArray(day.shifts)) return;
+
+      day.shifts.forEach(shift => {
+        shift.status = "";
+      });
+
+      renderSchedule();
+    }
+
+    // ============================================================
+    //  ADD-EMPLOYEE MODAL
+    // ============================================================
+    //  Lists employees from the *location-filtered* set who have no
+    //  non-empty status on the chosen day. Respects selectedLocation
+    //  so you only add people for the location currently being viewed.
+    // ============================================================
+
+    /**
+     * Employees in the current location filter who do NOT have any
+     * non-empty status on the given day. Uses getFilteredEmployees()
+     * so the modal stays scoped to the sidebar location selection.
+     */
+    function getEligibleEmployeesForDay(dayName) {
+      const filtered = getFilteredEmployees();
+      if (!filtered.length) return [];
+      return filtered
+        .map(e => e.EmployeeName)
+        .filter(name => {
+          const emp = filtered.find(e => e.EmployeeName === name);
+          if (!emp || !emp.days) return true;
+          const day = emp.days.find(d => d.dayName === dayName);
+          if (!day || !Array.isArray(day.shifts) || day.shifts.length === 0) return true;
+          const hasNonEmpty = day.shifts.some(s => {
+            const st = (s.status || "").trim();
+            return st !== "";
+          });
+          return !hasNonEmpty;
+        })
+        .sort();
+    }
+
+    function openAddEmployeeModal(dayName) {
+      const modal = document.getElementById("add-employee-modal");
+      const list = document.getElementById("modal-employee-list");
+      const emptyMsg = document.getElementById("modal-empty-msg");
+      const dayLabel = document.getElementById("modal-day-label");
+
+      dayLabel.textContent = dayName;
+      list.innerHTML = "";
+
+      const eligible = getEligibleEmployeesForDay(dayName);
+
+      if (eligible.length === 0) {
+        list.style.display = "none";
+        emptyMsg.style.display = "block";
+      } else {
+        list.style.display = "flex";
+        emptyMsg.style.display = "none";
+        eligible.forEach(name => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "modal-emp-btn";
+          btn.textContent = name;
+          btn.addEventListener("click", function () {
+            // One click: set O at 08:00 and close
+            editScheduleBlock(name, dayName, "08:00", "O");
+            closeAddEmployeeModal();
+          });
+          list.appendChild(btn);
+        });
+      }
+
+      modal.classList.remove("hidden");
+      modal.setAttribute("aria-hidden", "false");
+    }
+
+    function closeAddEmployeeModal() {
+      const modal = document.getElementById("add-employee-modal");
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    // ============================================================
+    //  RENDER – builds the table from the location-filtered schedule
+    // ============================================================
+    //  Always reads through getFilteredEmployees() so only employees
+    //  matching selectedLocation appear as columns. Day headers,
+    //  uncovered cells, and sidebar summaries are derived from the
+    //  same filtered set.
+    // ============================================================
+
+    function renderSchedule() {
+      // Keep known location list + filter <select> in sync with data
+      syncKnownLocationsFromData();
+      rebuildLocationSelect();
+
+      const dayHeaderRow = document.getElementById("day-headers");
+      const driverHeaderRow = document.getElementById("driver-headers");
+      const tbody = document.getElementById("schedule-body");
+
+      dayHeaderRow.innerHTML = "";
+      driverHeaderRow.innerHTML = "";
+      tbody.innerHTML = "";
+
+      const dataMap = new Map();
+      const employeesByDay = new Map();
+      const filtered = getFilteredEmployees();
+
+      if (filtered.length) {
+        filtered.forEach(emp => {
+          (emp.days || []).forEach(day => {
+            (day.shifts || []).forEach(shift => {
+              if (shift.timeBlock) {
+                const status = shift.status ? shift.status.trim().toUpperCase() : "";
+                const key = `${day.dayName}|${emp.EmployeeName}|${shift.timeBlock}`;
+                dataMap.set(key, status);
+                // Only show this employee under this day if they have at least one non-empty status
+                if (status) {
+                  if (!employeesByDay.has(day.dayName)) employeesByDay.set(day.dayName, new Set());
+                  employeesByDay.get(day.dayName).add(emp.EmployeeName);
+                }
+              }
+            });
+          });
+        });
+      }
+
+      const uniqueHours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+      const dayGroups = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+      // Earliest "O" timeBlock for an employee on a given day (HH:00). No O → "99:99" so they sort last.
+      function earliestO(dayName, empName) {
+        for (let i = 0; i < uniqueHours.length; i++) {
+          const st = dataMap.get(`${dayName}|${empName}|${uniqueHours[i]}`) || "";
+          if (st === "O") return uniqueHours[i];
+        }
+        return "99:99";
+      }
+
+      // Per-day employee columns ordered by earliest O that day (then name).
+      const sortedEmpsByDay = new Map();
+      dayGroups.forEach(dayName => {
+        const emps = employeesByDay.get(dayName);
+        if (emps && emps.size > 0) {
+          const sorted = Array.from(emps).sort((a, b) => {
+            const ea = earliestO(dayName, a);
+            const eb = earliestO(dayName, b);
+            if (ea !== eb) return ea.localeCompare(eb);
+            return a.localeCompare(b);
+          });
+          sortedEmpsByDay.set(dayName, sorted);
+        }
+      });
+
+      // Corner cell
+      dayHeaderRow.appendChild(document.createElement("th"));
+
+      // Always show all 7 day groups. If a day has no active employees, colspan = 1 (empty placeholder).
+      dayGroups.forEach(dayName => {
+        const emps = employeesByDay.get(dayName);
+        const th = document.createElement("th");
+        th.colSpan = (emps && emps.size > 0) ? emps.size : 1;
+        th.classList.add("day-group");
+
+        const label = document.createElement("span");
+        label.textContent = dayName;
+        th.appendChild(label);
+
+        const addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "add-day-btn";
+        addBtn.textContent = "+";
+        addBtn.title = `Add employee to ${dayName}`;
+        addBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          openAddEmployeeModal(dayName);
+        });
+        th.appendChild(addBtn);
+
+        dayHeaderRow.appendChild(th);
+      });
+
+      const hourTh = document.createElement("th");
+      hourTh.textContent = "Hour";
+      driverHeaderRow.appendChild(hourTh);
+
+      dayGroups.forEach(dayName => {
+        const sortedEmps = sortedEmpsByDay.get(dayName);
+        if (sortedEmps && sortedEmps.length > 0) {
+          sortedEmps.forEach((empName, empIdx) => {
+            const th = document.createElement("th");
+            if (empIdx === 0) th.classList.add("day-start");
+            th.dataset.empName = empName;
+
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = empName;
+            th.appendChild(nameSpan);
+
+            const clearBtn = document.createElement("button");
+            clearBtn.type = "button";
+            clearBtn.className = "clear-day-btn";
+            clearBtn.textContent = "×";
+            clearBtn.title = `Clear all statuses for ${empName} on ${dayName}`;
+            clearBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              clearEmployeeDay(empName, dayName);
+            });
+            th.appendChild(clearBtn);
+
+            driverHeaderRow.appendChild(th);
+          });
+        } else {
+          // Empty placeholder column under this day group
+          const th = document.createElement("th");
+          th.textContent = "";
+          th.classList.add("empty-col", "day-start");
+          driverHeaderRow.appendChild(th);
+        }
+      });
+
+      // ----- Uncovered slots: (day, hour) with no O/B across any employee column -----
+      // Days with zero active employees count every hour as uncovered.
+      const uncoveredSet = new Set();
+      dayGroups.forEach(dayName => {
+        const emps = employeesByDay.get(dayName);
+        uniqueHours.forEach(hour => {
+          let covered = false;
+          if (emps && emps.size > 0) {
+            for (const empName of emps) {
+              const st = dataMap.get(`${dayName}|${empName}|${hour}`) || "";
+              if (st === "O" || st === "B") {
+                covered = true;
+                break;
+              }
+            }
+          }
+          // No employees → not covered; or all empty → not covered
+          if (!covered) {
+            uncoveredSet.add(`${dayName}|${hour}`);
+          }
+        });
+      });
+      const uncoveredCount = uncoveredSet.size;
+
+      uniqueHours.forEach(hour => {
+        const tr = document.createElement("tr");
+        const hourTd = document.createElement("td");
+        hourTd.textContent = hour;
+        tr.appendChild(hourTd);
+
+        dayGroups.forEach(dayName => {
+          const sortedEmps = sortedEmpsByDay.get(dayName);
+          const isUncovered = uncoveredSet.has(`${dayName}|${hour}`);
+
+          if (sortedEmps && sortedEmps.length > 0) {
+            sortedEmps.forEach((empName, empIdx) => {
+              const key = `${dayName}|${empName}|${hour}`;
+              const status = dataMap.get(key) || "";
+              const td = document.createElement("td");
+              if (empIdx === 0) td.classList.add("day-start");
+              td.dataset.empName = empName;
+              td.style.cursor = "pointer";
+              td.title = "Click to cycle: empty → O → B → empty";
+
+              if (status === "O") {
+                td.textContent = "O";
+                td.classList.add("o");
+              } else if (status === "B") {
+                td.textContent = "B";
+                td.classList.add("b");
+              } else if (isUncovered) {
+                td.textContent = "–";
+                td.classList.add("uncovered");
+              } else {
+                td.textContent = "";
+                td.classList.add("empty");
+              }
+
+              // Cycle status on click: "" → "O" → "B" → ""
+              td.addEventListener("click", function () {
+                const next =
+                  status === ""  ? "O" :
+                  status === "O" ? "B" : "";
+                editScheduleBlock(empName, dayName, hour, next);
+              });
+
+              tr.appendChild(td);
+            });
+          } else {
+            // Empty placeholder column — every hour is uncovered
+            const td = document.createElement("td");
+            td.textContent = "–";
+            td.classList.add("uncovered", "day-start");
+            tr.appendChild(td);
+          }
+        });
+        tbody.appendChild(tr);
+      });
+
+      // ----- Sidebar summaries -----
+      renderUncoveredSummary(uncoveredCount);
+      renderEmployeeCounts();
+      bindColumnHover();
+      scaleTableToFit();
+    }
+
+    /** Remove column hover/focus classes from every schedule cell/header. */
+    function clearColHover() {
+      const table = document.getElementById("schedule-table");
+      if (!table) return;
+      table.classList.remove("is-emp-focus");
+      table.querySelectorAll(".col-hover, .col-focus").forEach(el => {
+        el.classList.remove("col-hover", "col-focus");
+      });
+    }
+
+    /**
+     * Background-highlight one or more columns by 0-based cell index.
+     * Column 0 is the sticky hour label — skipped.
+     * Used by in-table cell/header hover.
+     */
+    function applyColHoverIndexes(colIndexes) {
+      clearColHover();
+      const driverHeaderRow = document.getElementById("driver-headers");
+      const tbody = document.getElementById("schedule-body");
+      if (!driverHeaderRow || !tbody) return;
+
+      const indexes = (Array.isArray(colIndexes) ? colIndexes : [colIndexes])
+        .filter(i => i >= 1);
+
+      indexes.forEach(colIndex => {
+        const headerCell = driverHeaderRow.children[colIndex];
+        if (headerCell) headerCell.classList.add("col-hover");
+        tbody.querySelectorAll("tr").forEach(tr => {
+          const cell = tr.children[colIndex];
+          if (cell) cell.classList.add("col-hover");
+        });
+      });
+    }
+
+    /**
+     * Focus every column belonging to the given employee name:
+     * dim all other employee columns, accent matching driver headers.
+     * Used by sidebar employee-name hover.
+     */
+    function applyEmpColumnsHover(empName) {
+      clearColHover();
+      if (!empName) return;
+      const table = document.getElementById("schedule-table");
+      const driverHeaderRow = document.getElementById("driver-headers");
+      const tbody = document.getElementById("schedule-body");
+      if (!table || !driverHeaderRow || !tbody) return;
+
+      const indexes = [];
+      Array.from(driverHeaderRow.children).forEach((th, idx) => {
+        if (idx >= 1 && th.dataset.empName === empName) indexes.push(idx);
+      });
+      if (!indexes.length) return;
+
+      table.classList.add("is-emp-focus");
+      indexes.forEach(colIndex => {
+        const headerCell = driverHeaderRow.children[colIndex];
+        if (headerCell) headerCell.classList.add("col-focus");
+        tbody.querySelectorAll("tr").forEach(tr => {
+          const cell = tr.children[colIndex];
+          if (cell) cell.classList.add("col-focus");
+        });
+      });
+    }
+
+    /**
+     * Highlight the full employee column (driver header + all body cells
+     * in that column) on hover. Day-group headers are left alone.
+     * Column 0 is the sticky hour label — skipped.
+     */
+    function bindColumnHover() {
+      const tbody = document.getElementById("schedule-body");
+      const driverHeaderRow = document.getElementById("driver-headers");
+      if (!driverHeaderRow || !tbody) return;
+
+      // Body cells
+      tbody.querySelectorAll("td").forEach(td => {
+        td.addEventListener("mouseenter", function () {
+          applyColHoverIndexes(td.cellIndex);
+        });
+        td.addEventListener("mouseleave", clearColHover);
+      });
+
+      // Driver name headers (skip hour header at index 0)
+      Array.from(driverHeaderRow.children).forEach((th, idx) => {
+        if (idx === 0) return;
+        th.addEventListener("mouseenter", function () {
+          applyColHoverIndexes(idx);
+        });
+        th.addEventListener("mouseleave", clearColHover);
+      });
+    }
+
+    /**
+     * Sidebar: total uncovered hour-slots for the current location filter
+     * (1 count per day+hour once). Count is computed inside renderSchedule
+     * from the filtered employee set.
+     */
+    function renderUncoveredSummary(count) {
+      const container = document.getElementById("uncovered-summary");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const title = document.createElement("div");
+      title.className = "uncovered-summary-title";
+      title.textContent = "Uncovered shifts";
+      container.appendChild(title);
+
+      const row = document.createElement("div");
+      row.className = "uncovered-summary-row";
+      row.innerHTML = `<span class="swatch uncovered">–</span> = ${count}`;
+      container.appendChild(row);
+    }
+
+    /**
+     * Build the per-employee O / B totals in the left sidebar.
+     * Uses getSidebarEmployees() so soft-deleted can appear when the
+     * "Show deleted" toggle is on. Schedule table always uses
+     * getFilteredEmployees() (deleted excluded).
+     */
+    function renderEmployeeCounts() {
+      const container = document.getElementById("employee-counts");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const filtered = getSidebarEmployees();
+
+      if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "emp-count-empty";
+        empty.textContent = "No employees scheduled";
+        container.appendChild(empty);
+        return;
+      }
+
+      // Aggregate counts (location-filtered) + keep location + workweek for menu/tags
+      const counts = new Map(); // EmployeeName -> { O, B, location, workweek }
+
+      filtered.forEach(emp => {
+        const name = emp.EmployeeName;
+        if (!counts.has(name)) {
+          const ww = String(emp.workweek || "CA").trim().toUpperCase();
+          counts.set(name, {
+            O: 0,
+            B: 0,
+            location: (emp.location == null) ? "" : String(emp.location),
+            workweek: (ww === "AWS") ? "AWS" : "CA"
+          });
+        }
+        const c = counts.get(name);
+        (emp.days || []).forEach(day => {
+          (day.shifts || []).forEach(shift => {
+            const st = (shift.status || "").trim().toUpperCase();
+            if (st === "O") c.O += 1;
+            else if (st === "B") c.B += 1;
+          });
+        });
+      });
+
+      const sortedNames = Array.from(counts.keys()).sort((a, b) => a.localeCompare(b));
+
+      sortedNames.forEach(name => {
+        const c = counts.get(name);
+        const deleted = isDeletedName(name);
+        const displayName = deleted ? getBaseName(name) : name;
+        const block = document.createElement("div");
+        block.className = "emp-count-block" + (deleted ? " is-deleted" : "");
+
+        // Clickable name button — name + workweek tag (CA | AWS) + chevron
+        const nameBtn = document.createElement("button");
+        nameBtn.type = "button";
+        nameBtn.className = "emp-count-name";
+        nameBtn.setAttribute("aria-expanded", "false");
+        nameBtn.innerHTML =
+          `<span class="emp-name-text"></span>` +
+          `<span class="emp-workweek-tag"></span>` +
+          `<span class="chevron" aria-hidden="true">▾</span>`;
+        nameBtn.querySelector(".emp-name-text").textContent = displayName + (deleted ? " (deleted)" : "");
+        nameBtn.querySelector(".emp-workweek-tag").textContent = deleted ? "" : c.workweek;
+        nameBtn.dataset.empName = name;
+        // Hover sidebar name → highlight all of this employee's day columns
+        nameBtn.addEventListener("mouseenter", function () {
+          if (!deleted) applyEmpColumnsHover(name);
+        });
+        nameBtn.addEventListener("mouseleave", clearColHover);
+        nameBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const isOpen = nameBtn.getAttribute("aria-expanded") === "true";
+          closeAllEmpMenus(isOpen ? null : block);
+          if (!isOpen) {
+            nameBtn.setAttribute("aria-expanded", "true");
+            menu.classList.add("open");
+          }
+        });
+        block.appendChild(nameBtn);
+
+        // Sliding action menu
+        const menu = document.createElement("div");
+        menu.className = "emp-menu";
+        const menuInner = document.createElement("div");
+        menuInner.className = "emp-menu-inner";
+        const menuList = document.createElement("div");
+        menuList.className = "emp-menu-list";
+
+        // Deleted employees: only Un-delete is available
+        if (deleted) {
+          const undelBtn = document.createElement("button");
+          undelBtn.type = "button";
+          undelBtn.className = "emp-menu-item";
+          undelBtn.textContent = "Un-delete";
+          undelBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            undeleteEmployee(name);
+          });
+          menuList.appendChild(undelBtn);
+          menuInner.appendChild(menuList);
+          menu.appendChild(menuInner);
+          block.appendChild(menu);
+          container.appendChild(block);
+          return;
+        }
+
+        // --- Change Location (expands submenu) ---
+        const locToggle = document.createElement("button");
+        locToggle.type = "button";
+        locToggle.className = "emp-menu-item has-sub";
+        locToggle.setAttribute("aria-expanded", "false");
+        locToggle.innerHTML = `Change Location<span class="sub-chevron" aria-hidden="true">▸</span>`;
+        locToggle.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const open = locToggle.getAttribute("aria-expanded") === "true";
+          // Collapse the other submenu when opening this one
+          if (!open) {
+            wwToggle.setAttribute("aria-expanded", "false");
+            wwSubmenu.classList.remove("open");
+          }
+          locToggle.setAttribute("aria-expanded", open ? "false" : "true");
+          submenu.classList.toggle("open", !open);
+          if (open) newLocPanel.classList.remove("open");
+        });
+        menuList.appendChild(locToggle);
+
+        // Location submenu
+        const submenu = document.createElement("div");
+        submenu.className = "emp-submenu";
+        const subInner = document.createElement("div");
+        subInner.className = "emp-submenu-inner";
+        const subList = document.createElement("div");
+        subList.className = "emp-submenu-list";
+
+        // Unassigned option
+        const unBtn = document.createElement("button");
+        unBtn.type = "button";
+        unBtn.className = "emp-loc-btn" + (c.location === "" ? " current" : "");
+        unBtn.textContent = "Unassigned";
+        unBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          setEmployeeLocation(name, "");
+        });
+        subList.appendChild(unBtn);
+
+        knownLocations.forEach(code => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "emp-loc-btn" + (c.location === code ? " current" : "");
+          btn.textContent = code;
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            setEmployeeLocation(name, code);
+          });
+          subList.appendChild(btn);
+        });
+
+        // Create new location trigger
+        const createBtn = document.createElement("button");
+        createBtn.type = "button";
+        createBtn.className = "emp-loc-btn";
+        createBtn.textContent = "+ New location…";
+        createBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          newLocPanel.classList.toggle("open");
+          if (newLocPanel.classList.contains("open")) {
+            const input = newLocPanel.querySelector("input");
+            if (input) {
+              input.value = "";
+              setTimeout(() => input.focus(), 50);
+            }
+          }
+        });
+        subList.appendChild(createBtn);
+
+        // Inline new-location form (slides under the + New button)
+        const newLocPanel = document.createElement("div");
+        newLocPanel.className = "emp-new-loc";
+        const newLocInner = document.createElement("div");
+        newLocInner.className = "emp-new-loc-inner";
+        const form = document.createElement("div");
+        form.className = "emp-new-loc-form";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.placeholder = "Code";
+        input.maxLength = 12;
+        input.addEventListener("click", e => e.stopPropagation());
+        input.addEventListener("keydown", function (e) {
+          e.stopPropagation();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            confirmBtn.click();
+          }
+        });
+        const confirmBtn = document.createElement("button");
+        confirmBtn.type = "button";
+        confirmBtn.textContent = "Set";
+        confirmBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const val = (input.value || "").trim().toUpperCase();
+          if (!val) return;
+          setEmployeeLocation(name, val);
+        });
+        form.appendChild(input);
+        form.appendChild(confirmBtn);
+        newLocInner.appendChild(form);
+        newLocPanel.appendChild(newLocInner);
+        subList.appendChild(newLocPanel);
+
+        subInner.appendChild(subList);
+        submenu.appendChild(subInner);
+        menuList.appendChild(submenu);
+
+        // --- Change Workweek (expands submenu: CA | AWS) ---
+        const wwToggle = document.createElement("button");
+        wwToggle.type = "button";
+        wwToggle.className = "emp-menu-item has-sub";
+        wwToggle.setAttribute("aria-expanded", "false");
+        wwToggle.innerHTML = `Change Workweek<span class="sub-chevron" aria-hidden="true">▸</span>`;
+        wwToggle.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const open = wwToggle.getAttribute("aria-expanded") === "true";
+          // Collapse the location submenu when opening this one
+          if (!open) {
+            locToggle.setAttribute("aria-expanded", "false");
+            submenu.classList.remove("open");
+            newLocPanel.classList.remove("open");
+          }
+          wwToggle.setAttribute("aria-expanded", open ? "false" : "true");
+          wwSubmenu.classList.toggle("open", !open);
+        });
+        menuList.appendChild(wwToggle);
+
+        const wwSubmenu = document.createElement("div");
+        wwSubmenu.className = "emp-submenu";
+        const wwSubInner = document.createElement("div");
+        wwSubInner.className = "emp-submenu-inner";
+        const wwSubList = document.createElement("div");
+        wwSubList.className = "emp-submenu-list";
+
+        // CA option (default / California standard)
+        const caBtn = document.createElement("button");
+        caBtn.type = "button";
+        caBtn.className = "emp-loc-btn" + (c.workweek === "CA" ? " current" : "");
+        caBtn.textContent = "CA";
+        caBtn.title = "California standard (default)";
+        caBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          setEmployeeWorkweek(name, "CA");
+        });
+        wwSubList.appendChild(caBtn);
+
+        // AWS option (Alternative Work Schedule)
+        const awsBtn = document.createElement("button");
+        awsBtn.type = "button";
+        awsBtn.className = "emp-loc-btn" + (c.workweek === "AWS" ? " current" : "");
+        awsBtn.textContent = "AWS";
+        awsBtn.title = "Alternative Work Schedule";
+        awsBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          setEmployeeWorkweek(name, "AWS");
+        });
+        wwSubList.appendChild(awsBtn);
+
+        wwSubInner.appendChild(wwSubList);
+        wwSubmenu.appendChild(wwSubInner);
+        menuList.appendChild(wwSubmenu);
+
+        // --- Delete ---
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "emp-menu-item danger";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          deleteEmployee(name);
+        });
+        menuList.appendChild(delBtn);
+
+        menuInner.appendChild(menuList);
+        menu.appendChild(menuInner);
+        block.appendChild(menu);
+
+        // O / B counts row
+        const row = document.createElement("div");
+        row.className = "emp-count-row";
+        const oItem = document.createElement("span");
+        oItem.className = "emp-count-item";
+        oItem.innerHTML = `<span class="swatch o">O</span> = ${c.O}`;
+        row.appendChild(oItem);
+        const bItem = document.createElement("span");
+        bItem.className = "emp-count-item";
+        bItem.innerHTML = `<span class="swatch b">B</span> = ${c.B}`;
+        row.appendChild(bItem);
+        block.appendChild(row);
+
+        container.appendChild(block);
+      });
+    }
+
+    /**
+     * Scale the schedule table so it fits entirely inside .table-wrap
+     * (no horizontal or vertical scroll). Uses CSS transform.
+     * Cap at scale 1 so we never enlarge past natural size.
+     */
+    function scaleTableToFit() {
+      const wrap = document.querySelector(".table-wrap");
+      const table = document.getElementById("schedule-table");
+      if (!wrap || !table) return;
+
+      // Reset so we measure natural size
+      table.style.transform = "scale(1)";
+
+      const tableW = table.scrollWidth;
+      const tableH = table.scrollHeight;
+      const availW = wrap.clientWidth;
+      const availH = wrap.clientHeight;
+
+      if (!tableW || !tableH || !availW || !availH) return;
+
+      const scale = Math.min(availW / tableW, availH / tableH, 1);
+      table.style.transform = `scale(${scale})`;
+    }
+
+    // Re-fit when the window is resized
+    let _scaleResizeTimer = null;
+    window.addEventListener("resize", function () {
+      clearTimeout(_scaleResizeTimer);
+      _scaleResizeTimer = setTimeout(scaleTableToFit, 100);
+    });
+
+  // Wire modal buttons (elements exist because HTML is above this script)
+  document.getElementById("modal-cancel-btn").addEventListener("click", closeAddEmployeeModal);
+  document.getElementById("add-employee-modal").addEventListener("click", function (e) {
+    if (e.target === this) closeAddEmployeeModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      closeAddEmployeeModal();
+      closeAllEmpMenus();
+    }
+  });
+  // Click outside any employee menu closes them
+  document.addEventListener("click", function () {
+    closeAllEmpMenus();
+  });
+
+  // =====================================================================
+  //  SAVE / AUTO-SAVE
+  // =====================================================================
+  // Auto-save interval (seconds). Countdown UI updates every 1s.
+  const AUTO_SAVE_INTERVAL_SEC = 60;
+  let autoSaveRemaining = AUTO_SAVE_INTERVAL_SEC;
+  let autoSaveCountdownId = null;
+
+  /**
+   * Update the circular progress ring + label from autoSaveRemaining.
+   * Ring uses path-length style: stroke-dasharray="100", offset 0 = full,
+   * offset 100 = empty. Progress depletes as time runs out.
+   */
+  function updateAutoSaveUI() {
+    const countEl = document.getElementById("save-countdown");
+    const labelEl = document.getElementById("save-timer-label");
+    const progressEl = document.getElementById("timer-progress");
+    if (!countEl || !labelEl || !progressEl) return;
+
+    const sec = Math.max(0, autoSaveRemaining);
+    countEl.textContent = String(sec);
+    labelEl.textContent = sec === 0
+      ? "Saving…"
+      : ("Auto-save in " + sec + "s");
+
+    // Deplete ring: remaining fraction → dashoffset
+    const pct = (sec / AUTO_SAVE_INTERVAL_SEC) * 100;
+    progressEl.style.strokeDashoffset = String(100 - pct);
+  }
+
+  /**
+   * Reset the 60s countdown (called after a successful/manual save).
+   */
+  function resetAutoSaveCountdown() {
+    autoSaveRemaining = AUTO_SAVE_INTERVAL_SEC;
+    updateAutoSaveUI();
+  }
+
+  /**
+   * Tick once per second. When remaining hits 0, call saveSchedule()
+   * (which resets the countdown).
+   */
+  function tickAutoSave() {
+    autoSaveRemaining -= 1;
+    if (autoSaveRemaining <= 0) {
+      saveSchedule();
+      return;
+    }
+    updateAutoSaveUI();
+  }
+
+  /**
+   * Start the 1-second countdown timer (idempotent).
+   */
+  function startAutoSaveTimer() {
+    if (autoSaveCountdownId !== null) return;
+    updateAutoSaveUI();
+    autoSaveCountdownId = setInterval(tickAutoSave, 1000);
+  }
+
+  /**
+   * saveSchedule()
+   * --------------
+   * Placeholder for persisting the live EmployeeSchedule array.
+   * Currently performs no I/O — only resets the auto-save countdown
+   * and gives brief UI feedback. Wire this to google.script.run later.
+   *
+   * Future persistence options (Google Apps Script):
+   *
+   * ─────────────────────────────────────────────────────────────────
+   * OPTION A — Serialize to JSON string and write to a Google Sheet
+   *            cell (or append a history row with timestamp)
+   * ─────────────────────────────────────────────────────────────────
+   *   • Large capacity (~50,000 characters per cell; multi-cell or
+   *     multi-row if the payload grows)
+   *   • Human-inspectable / exportable / versionable inside the
+   *     spreadsheet; non-devs can open the sheet and see the data
+   *   • Easy to keep history (append rows: timestamp + JSON)
+   *   • No hard per-value limit as tight as PropertiesService
+   *   • Can be queried or backed up with ordinary Sheets tools
+   */
+  function saveSchedule() {
+    const btn = document.getElementById("save-btn");
+    const ringWrap = document.getElementById("timer-ring-wrap");
+
+    // Visual feedback while "saving"
+    if (btn) {
+      btn.classList.add("is-saving");
+      btn.textContent = "Saving…";
+    }
+    if (ringWrap) ringWrap.classList.add("is-saving");
+
+    // TODO: persist EmployeeSchedule here (see comment block above).
+    // For now we only simulate a brief save and reset the countdown.
+
+    // Simulated async boundary so the UI can show the "Saving…" state
+    setTimeout(function () {
+      if (btn) {
+        btn.classList.remove("is-saving");
+        btn.classList.add("just-saved");
+        btn.textContent = "Saved";
+      }
+      if (ringWrap) ringWrap.classList.remove("is-saving");
+
+      resetAutoSaveCountdown();
+
+      // Return button label to "Save" after a short acknowledgement
+      setTimeout(function () {
+        if (btn) {
+          btn.classList.remove("just-saved");
+          btn.textContent = "Save";
+        }
+      }, 900);
+    }, 280);
+  }
+
+  // Kick off the auto-save countdown once the page is live
+  startAutoSaveTimer();
+
+  // =====================================================================
+  //  LOAD / POPULATE LIVE SCHEDULE
+  // =====================================================================
+  /**
+   * populateLiveSchedule()
+   * ----------------------
+   * Skeleton that runs on HTML load to seed the live EmployeeSchedule array.
+   *
+   * FUTURE (Google Apps Script):
+   *   1. Call google.script.run (or a doGet/doPost endpoint) to fetch the
+   *      most recent saved schedule from a Google Spreadsheet.
+   *      Typical pattern: a sheet with timestamped rows where the latest
+   *      row holds a JSON-serialized EmployeeSchedule (or multi-cell /
+   *      multi-row payload if the data grows).
+   *   2. On success, assign the returned array to EmployeeSchedule
+   *      (must match the shape documented at the top of this script:
+   *      EmployeeName, location, workweek, days[] with shifts[]).
+   *   3. Call syncKnownLocationsFromData() then renderSchedule() so the
+   *      table, sidebar counts, and location filter stay in sync.
+   *   4. On failure / empty result, leave EmployeeSchedule as [] (or a
+   *      safe default) and still call renderSchedule() so the UI is not blank.
+   *
+   * Until the Apps Script backend is wired, this is a no-op that leaves
+   * EmployeeSchedule empty and renders an empty schedule.
+   */
+  function populateLiveSchedule() {
+    // TODO: replace this body with a google.script.run call, e.g.:
+    //
+    //   google.script.run
+    //     .withSuccessHandler(function (data) {
+    //       EmployeeSchedule = Array.isArray(data) ? data : [];
+    //       syncKnownLocationsFromData();
+    //       renderSchedule();
+    //     })
+    //     .withFailureHandler(function (err) {
+    //       console.error("populateLiveSchedule failed:", err);
+    //       EmployeeSchedule = [];
+    //       renderSchedule();
+    //     })
+    //     .getMostRecentSchedule();  // server-side function that reads the Sheet
+    //
+    // For now: no remote load — keep the empty array and render.
+    EmployeeSchedule = EmployeeSchedule || [];
+    renderSchedule();
+  }
+
+  // Run on HTML load (script is at end of body, so DOM is ready)
+  populateLiveSchedule();
+
+    // =====================================================================
+    // TEMPORARY TEST LOADER – DO NOT CALL FROM OTHER CODE
+    // Entire block (function + sidebar button) is disposable.
+    // Safe to delete without affecting renderSchedule, editScheduleBlock,
+    // clearEmployeeDay, location filtering, or any other production logic.
+    // =====================================================================
+    function populateTestSchedule() {
+      // Live Schedule Rev 2.6 → EmployeeSchedule
+      // Rules: end-exclusive hours, overnight split to next day,
+      // main range = "O", "(on call …)" = "B", strip phone from name,
+      // each row carries location ("STK" | "OAK" | "") for the sidebar
+      // location filter, skip null rows + Kenny.
+
+      const dayNames = [
+        "Monday", "Tuesday", "Wednesday", "Thursday",
+        "Friday", "Saturday", "Sunday"
+      ];
+
+      // Raw rows from ODS
+      const raw = [
+        {
+          name: "Eathan",
+          location: "STK",
+          days: {
+            Monday: "5am-3pm",
+            Tuesday: "5am-3pm",
+            Wednesday: "off",
+            Thursday: "5am-3pm (on call 8pm-5am)",
+            Friday: "5am-3pm (on call 8pm-7am)",
+            Saturday: "off",
+            Sunday: "off"
+          }
+        },
+        {
+          name: "Raymond",
+          location: "STK",
+          days: {
+            Monday: "off",
+            Tuesday: "off",
+            Wednesday: "off",
+            Thursday: "8am-6pm",
+            Friday: "8am-6pm",
+            Saturday: "7am-5pm (on call 5pm-7am)",
+            Sunday: "7am-5pm (on call 5pm-7am)"
+          }
+        },
+        {
+          name: "Cheng",
+          location: "STK",
+          days: {
+            Monday: "7pm-5am",
+            Tuesday: "7pm-5am",
+            Wednesday: "7pm-5am",
+            Thursday: "7pm-5am",
+            Friday: "off",
+            Saturday: "off",
+            Sunday: "off"
+          }
+        },
+        {
+          name: "Ivan",
+          location: "STK",
+          days: {
+            Monday: "10am-8pm (on call 8pm-5am)",
+            Tuesday: "10am-8pm (on call 8pm-5am)",
+            Wednesday: "8am-6pm",
+            Thursday: "10am-8pm",
+            Friday: "off",
+            Saturday: "off",
+            Sunday: "off"
+          }
+        },
+        {
+          name: "Steve",
+          location: "",
+          days: {
+            Monday: "off",
+            Tuesday: "8-5",
+            Wednesday: "8-5",
+            Thursday: "8-5",
+            Friday: "8-5",
+            Saturday: "8-5",
+            Sunday: "off"
+          }
+        },
+        {
+          name: "Charles",
+          location: "OAK",
+          days: {
+            Monday: "8AM-5PM",
+            Tuesday: "8AM-5PM",
+            Wednesday: "8AM-5PM",
+            Thursday: "off",
+            Friday: "OFF",
+            Saturday: "OFF",
+            Sunday: "8AM-5PM"
+          }
+        }
+      ];
+
+      // ---------- helpers ----------
+      function parseHour(token) {
+        // Accepts: 5am, 5AM, 12pm, 8, 08, 8:00am, etc.
+        token = String(token).trim().toLowerCase().replace(/\s+/g, "");
+        const m = token.match(/^(\d{1,2})(?::00)?(am|pm)?$/);
+        if (!m) return null;
+        let h = parseInt(m[1], 10);
+        const ap = m[2] || "";
+        if (ap === "pm" && h !== 12) h += 12;
+        if (ap === "am" && h === 12) h = 0;
+        // bare number 1-11 treated as am-style for 8-5 shorthand; 12+ left as-is
+        if (!ap && h >= 1 && h <= 11) {
+          // leave as-is (caller context decides am/pm for "8-5")
+        }
+        if (h < 0 || h > 23) return null;
+        return h;
+      }
+
+      function parseRange(rangeStr) {
+        // Returns { start, end } in 0-23, end exclusive semantics applied later.
+        // Handles "5am-3pm", "8-5", "8AM-5PM", "7pm-5am"
+        rangeStr = String(rangeStr).trim().toLowerCase().replace(/\s+/g, "");
+        // Normalise "8-5" → treat as 8am-5pm
+        if (/^\d{1,2}-\d{1,2}$/.test(rangeStr)) {
+          const parts = rangeStr.split("-");
+          rangeStr = parts[0] + "am-" + parts[1] + "pm";
+        }
+        const m = rangeStr.match(/^(.+?)-(.+)$/);
+        if (!m) return null;
+        const start = parseHour(m[1]);
+        const end = parseHour(m[2]);
+        if (start === null || end === null) return null;
+        return { start: start, end: end };
+      }
+
+      function nextDay(dayName) {
+        const idx = dayNames.indexOf(dayName);
+        return dayNames[(idx + 1) % 7];
+      }
+
+      // Ensure employee + day exist and return the shifts array
+      function ensureDay(emp, dayName) {
+        let day = emp.days.find(function (d) { return d.dayName === dayName; });
+        if (!day) {
+          day = { dayName: dayName, shifts: [] };
+          emp.days.push(day);
+        }
+        return day.shifts;
+      }
+
+      function setBlock(emp, dayName, hour, status) {
+        const timeBlock = (hour < 10 ? "0" : "") + hour + ":00";
+        const shifts = ensureDay(emp, dayName);
+        let s = shifts.find(function (x) { return x.timeBlock === timeBlock; });
+        if (!s) {
+          shifts.push({ timeBlock: timeBlock, status: status });
+        } else {
+          // Prefer O over B if both try to write the same hour
+          if (status === "O" || s.status !== "O") {
+            s.status = status;
+          }
+        }
+      }
+
+      // Apply a single range (O or B) with overnight split, end-exclusive
+      function applyRange(emp, dayName, rangeStr, status) {
+        const r = parseRange(rangeStr);
+        if (!r) return;
+        const start = r.start;
+        const end = r.end; // exclusive target
+
+        if (start < end) {
+          // Same calendar day
+          for (let h = start; h < end; h++) {
+            setBlock(emp, dayName, h, status);
+          }
+        } else if (start > end) {
+          // Overnight: start→23 on this day, 0→end-1 on next day
+          for (let h = start; h <= 23; h++) {
+            setBlock(emp, dayName, h, status);
+          }
+          const nd = nextDay(dayName);
+          for (let h = 0; h < end; h++) {
+            setBlock(emp, nd, h, status);
+          }
+        }
+        // start === end → zero-length, ignore
+      }
+
+      function processCell(emp, dayName, cellText) {
+        cellText = String(cellText || "").trim();
+        if (!cellText || /^off$/i.test(cellText)) return;
+
+        // Split main range and optional "(on call …)"
+        const onCallMatch = cellText.match(/\(on\s*call\s+([^)]+)\)/i);
+        let mainPart = cellText;
+        let onCallPart = null;
+        if (onCallMatch) {
+          onCallPart = onCallMatch[1].trim();
+          mainPart = cellText.replace(onCallMatch[0], "").trim();
+        }
+
+        if (mainPart) {
+          applyRange(emp, dayName, mainPart, "O");
+        }
+        if (onCallPart) {
+          applyRange(emp, dayName, onCallPart, "B");
+        }
+      }
+
+      // ---------- build ----------
+      // Produces EmployeeSchedule entries with EmployeeName, location,
+      // workweek, and a complete days[] (all 7 dayNames, shifts filled
+      // from the raw cells).
+      // location is required for the sidebar Location filter.
+      // workweek defaults to "CA" (California); use "AWS" for Alternative
+      // Work Schedule. Test data uses the default unless a row supplies it.
+      EmployeeSchedule = [];
+
+      raw.forEach(function (row) {
+        const emp = {
+          EmployeeName: row.name,
+          location: row.location || "",  // "STK" | "OAK" | ""
+          workweek: row.workweek || "CA",  // "CA" (default) | "AWS"
+          days: []
+        };
+        // Pre-create all 7 days so structure is complete
+        dayNames.forEach(function (d) {
+          emp.days.push({ dayName: d, shifts: [] });
+        });
+
+        dayNames.forEach(function (d) {
+          processCell(emp, d, row.days[d]);
+        });
+
+        EmployeeSchedule.push(emp);
+      });
+
+      renderSchedule();
+    }
+    // =====================================================================
+    // END TEMPORARY TEST LOADER – delete from opening comment to here
+    // =====================================================================
+   </script>
+</body>
+</html>

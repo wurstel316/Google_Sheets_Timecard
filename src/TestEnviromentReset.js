@@ -370,10 +370,18 @@ function isBlankSheetRow_(row) {
 }
 
 function isTestDataHeaderRow_(row) {
-    if (!row || row.length < DATA_ENTRY_HEADERS.length) {
+    if (!row || row.length === 0) {
         return false;
     }
-    for (let i = 0; i < DATA_ENTRY_HEADERS.length; i++) {
+
+    // Backward compatibility: generated CSV may still use the legacy 10-column
+    // header (without Entry ID) while runtime schema now includes Entry ID.
+    const expectedHeaderLength = Math.min(DATA_ENTRY_HEADERS.length, 10);
+    if (row.length < expectedHeaderLength) {
+        return false;
+    }
+
+    for (let i = 0; i < expectedHeaderLength; i++) {
         if (normalizeHeaderKey(row[i]) !== normalizeHeaderKey(DATA_ENTRY_HEADERS[i])) {
             return false;
         }

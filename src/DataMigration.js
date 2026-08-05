@@ -39,13 +39,19 @@ function runDataMigration() {
                 const typeValues = dataEntry.getRange(2, dataCol('ENTRY_TYPE'), dataLastRow - 1, 1).getValues();
                 const normalizedTypes = typeValues.map(row => [normalizeEntryType(row[0])]);
                 dataEntry.getRange(2, dataCol('ENTRY_TYPE'), dataLastRow - 1, 1).setValues(normalizedTypes);
+                const entryIdValues = dataEntry.getRange(2, dataCol('ENTRY_ID'), dataLastRow - 1, 1).getValues();
+                const nextEntryIds = entryIdValues.map(row => {
+                    const existing = String(row[0] || '').trim();
+                    return [existing || generateEntryId()];
+                });
+                dataEntry.getRange(2, dataCol('ENTRY_ID'), dataLastRow - 1, 1).setValues(nextEntryIds);
                 const hoursFormulas = [];
                 for (let r = 2; r <= dataLastRow; r++) {
                     hoursFormulas.push([`=IF(IF(H${r}<>"",H${r},C${r})<>"",(IF(H${r}<>"",H${r},C${r})-IF(G${r}<>"",G${r},B${r}))*24,"")`]);
                 }
                 dataEntry.getRange(2, 4, dataLastRow - 1, 1).setFormulas(hoursFormulas);
             }
-            log.push('DataEntry: cleared formatting/validations, updated headers, reapplied Hours formula');
+            log.push('DataEntry: cleared formatting/validations, updated headers, backfilled Entry IDs, reapplied Hours formula');
         }
         else {
             log.push('DataEntry: sheet not found');
