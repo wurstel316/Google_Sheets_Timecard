@@ -10,6 +10,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
+- _None yet._
+
+### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.2.1] - 2026-08-05
+
+### Added
+- _None yet._
+
+### Changed
 - Summary: Hardened automated release commands to clear injected Git author/committer environment variables before running version and git steps.
 - Why: Prevents signed release commits from failing when editor tooling injects generic identity values (for example GitHub noreply committer values).
 - Files: run-release.mjs
