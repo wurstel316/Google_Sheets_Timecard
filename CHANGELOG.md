@@ -10,10 +10,16 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
-- _None yet._
+- Summary: Reworked release commands into a single automated release orchestrator that stages changes, versions, tags, pushes Git, and then performs live clasp deployment.
+- Why: Removes manual release sequencing and enforces a consistent release pipeline from command execution through deployment.
+- Files: package.json, run-release.mjs, README.md
+- Validation: Verified release scripts now route through run-release.mjs and confirmed script execution path with local syntax and command checks.
 
 ### Fixed
-- _None yet._
+- Summary: Fixed release version drift risk between remote Git and clasp deployment by pushing Git commit and tags before live clasp push/deploy.
+- Why: Prevents deploying a release version to clasp that has not been successfully pushed to remote Git.
+- Files: run-release.mjs, README.md
+- Validation: Confirmed deployment step order in orchestrator is git push -> git push --tags -> env:live -> clasp push -> clasp deploy.
 
 ### Removed
 - _None yet._
