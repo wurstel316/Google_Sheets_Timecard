@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.0 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.1-push.0 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -43,7 +43,7 @@ const ENTRY_TYPE_VACATION = 'vacation';
 const ENTRY_TYPE_SICK = 'sick';
 const ENTRY_TYPE_VALUES = new Set([ENTRY_TYPE_WORKED, ENTRY_TYPE_VACATION, ENTRY_TYPE_SICK]);
 const DATA_ENTRY_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Entry ID'];
-const ARCHIVE_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Archived Date'];
+const ARCHIVE_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Entry ID', 'Archived Date'];
 function toDateOrNull(value) {
     if (value instanceof Date && !isNaN(value.getTime())) {
         return value;
@@ -294,6 +294,7 @@ function normalizeArchiveColumnsForMigration(archive, log) {
     if (rows > 0 && archive.getLastColumn() >= targetCount) {
         const liveHeaderRow = archive.getRange(1, 1, 1, targetCount).getValues()[0];
         const targetIndex = ARCHIVE_COLUMNS.ARCHIVED_DATE;
+        const entryIdTargetIndex = ARCHIVE_COLUMNS.ENTRY_ID;
         let sourceIndex = -1;
         for (let i = 0; i < liveHeaderRow.length; i++) {
             if (String(liveHeaderRow[i] || '').toLowerCase().includes('archived date')) {
@@ -437,7 +438,8 @@ const ARCHIVE_COLUMNS = {
     CLOCK_OUT_MODIFIED: 7,
     DELETED: 8,
     ENTRY_TYPE: 9,
-    ARCHIVED_DATE: 10
+    ENTRY_ID: 10,
+    ARCHIVED_DATE: 11
 };
 const ARCHIVE_COL_COUNT = Object.keys(ARCHIVE_COLUMNS).length;
 // Helper function to convert zero-based column index to letter (A, B, C, etc.)
@@ -681,7 +683,7 @@ const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
 const EMPLOYEE_EMAIL_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const SCRIPT_VERSION = '2.2.0';
+const SCRIPT_VERSION = '2.2.1-push.0';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -1465,6 +1467,7 @@ function getArchivedEntriesForUser(startDateISO, endDateISO) {
         const hoursValue = data[i][ARCHIVE_COLUMNS.HOURS];
         const notesValue = data[i][ARCHIVE_COLUMNS.NOTES];
         const verifiedValue = data[i][ARCHIVE_COLUMNS.VERIFIED];
+        const entryIdValue = data[i][ARCHIVE_COLUMNS.ENTRY_ID];
         const archivedDateValue = data[i][ARCHIVE_COLUMNS.ARCHIVED_DATE];
         results.push({
             sortKey: clockIn.getTime(),
@@ -1476,6 +1479,7 @@ function getArchivedEntriesForUser(startDateISO, endDateISO) {
             verified: isSheetBooleanTrue(verifiedValue),
             notes: notesValue || '',
             entryType: getArchiveRowEntryType(data[i]),
+            entryId: String(entryIdValue || '').trim(),
             archivedDate: (archivedDateValue instanceof Date && !isNaN(archivedDateValue.getTime()))
                 ? Utilities.formatDate(archivedDateValue, tz, 'MM/dd/yyyy')
                 : ''
@@ -1489,6 +1493,7 @@ function getArchivedEntriesForUser(startDateISO, endDateISO) {
         verified: item.verified,
         notes: item.notes,
         entryType: item.entryType,
+        entryId: item.entryId,
         archivedDate: item.archivedDate
     }));
     Logger.log('getArchivedEntriesForUser: success with %s row(s)', entries.length);
@@ -3597,7 +3602,8 @@ function _archiveOldEntriesCore(archiveDate) {
                 data[i][DATA_COLUMNS.CLOCK_IN_MODIFIED],
                 data[i][DATA_COLUMNS.CLOCK_OUT_MODIFIED],
                 data[i][DATA_COLUMNS.DELETED],
-                data[i][DATA_COLUMNS.ENTRY_TYPE]
+                data[i][DATA_COLUMNS.ENTRY_TYPE],
+                data[i][DATA_COLUMNS.ENTRY_ID]
             ];
             archiveRow.push(new Date());
             toArchive.push(archiveRow);

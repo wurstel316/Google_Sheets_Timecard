@@ -10,33 +10,24 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
-- _None yet._
+- Summary: Hardened automated release commands to clear injected Git author/committer environment variables before running version and git steps.
+- Why: Prevents signed release commits from failing when editor tooling injects generic identity values (for example GitHub noreply committer values).
+- Files: run-release.mjs
+- Validation: Verified release script now runs all child commands with sanitized env and no inherited GIT_AUTHOR/GIT_COMMITTER overrides.
 
 ### Fixed
-- _None yet._
+- Summary: Preserved Entry ID values when archiving entries so archived rows keep the same identifier as their DataEntry source.
+- Why: Archive rows previously lost the new Entry ID column and could not carry the same identifier forward for downstream review or matching.
+- Files: src/Code.js
+- Validation: Reviewed the archive row construction and header/schema setup paths to confirm Entry ID is now included in archived payloads and archive results.
 
 ### Removed
 - _None yet._
 
-## [2.2.0] - 2026-08-05
-
-### Added
-- _None yet._
+## [2.1.0] - 2026-08-05
 
 ### Changed
-- Summary: Reworked release commands into a single automated release orchestrator that stages changes, versions, tags, pushes Git, and then performs live clasp deployment.
-- Why: Removes manual release sequencing and enforces a consistent release pipeline from command execution through deployment.
-- Files: package.json, run-release.mjs, README.md
-- Validation: Verified release scripts now route through run-release.mjs and confirmed script execution path with local syntax and command checks.
-
-### Fixed
-- Summary: Fixed release version drift risk between remote Git and clasp deployment by pushing Git commit and tags before live clasp push/deploy.
-- Why: Prevents deploying a release version to clasp that has not been successfully pushed to remote Git.
-- Files: run-release.mjs, README.md
-- Validation: Confirmed deployment step order in orchestrator is git push -> git push --tags -> env:live -> clasp push -> clasp deploy.
-
-### Removed
-- _None yet._
+- No documented changes were recorded in Unreleased before this release.
 
 ## [2.0.1] - 2026-07-30
 

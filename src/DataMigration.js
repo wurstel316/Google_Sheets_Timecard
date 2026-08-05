@@ -80,13 +80,19 @@ function runDataMigration() {
                 const typeValues = archive.getRange(2, archiveCol('ENTRY_TYPE'), archLastRow - 1, 1).getValues();
                 const normalizedTypes = typeValues.map(row => [normalizeEntryType(row[0])]);
                 archive.getRange(2, archiveCol('ENTRY_TYPE'), archLastRow - 1, 1).setValues(normalizedTypes);
+                const entryIdValues = archive.getRange(2, archiveCol('ENTRY_ID'), archLastRow - 1, 1).getValues();
+                const nextEntryIds = entryIdValues.map(row => {
+                    const existing = String(row[0] || '').trim();
+                    return [existing || generateEntryId()];
+                });
+                archive.getRange(2, archiveCol('ENTRY_ID'), archLastRow - 1, 1).setValues(nextEntryIds);
                 const hoursFormulas = [];
                 for (let r = 2; r <= archLastRow; r++) {
                     hoursFormulas.push([`=IF(IF(H${r}<>"",H${r},C${r})<>"",(IF(H${r}<>"",H${r},C${r})-IF(G${r}<>"",G${r},B${r}))*24,"")`]);
                 }
                 archive.getRange(2, 4, archLastRow - 1, 1).setFormulas(hoursFormulas);
             }
-            log.push('Archive: cleared formatting/validations, updated headers');
+            log.push('Archive: cleared formatting/validations, updated headers, backfilled Entry IDs');
         }
         else {
             log.push('Archive: sheet not found');
