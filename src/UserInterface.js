@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.1-push.0 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.17 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -22,6 +22,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
   const canRunPayrollPreview = normalizedPermissionFlags.canPayroll;
   const canExportPayrollReport = normalizedPermissionFlags.canExport;
   const canManageAwsConfig = normalizedPermissionFlags.canPayroll;
+  const canManageScheduleTool = canManageEntries && canRunPayrollPreview;
     let entriesHtml = '';
     const preloadedManualRange = manualAllowedRange && manualAllowedRange.minDateISO && manualAllowedRange.maxDateISO
         ? {
@@ -2278,6 +2279,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <div class="admin-toolbar-row">
                 <button class="admin-toolbar-btn" onclick="loadAdminEntries()">Refresh Entries</button>
                 <button id="adminHtmlPreviewBtn" class="admin-toolbar-btn" onclick="openAdminHtmlPreviewModal()"${canRunPayrollPreview ? '' : ' disabled title="Payroll permission required."'}>Create Payroll Report</button>
+                <button id="adminScheduleToolBtn" class="admin-toolbar-btn secondary" onclick="openScheduleToolModal()"${canManageScheduleTool ? '' : ' disabled title="Payroll and edit permissions required."'}>Schedule Tool</button>
                 <button id="adminMoreReportsBtn" class="admin-toolbar-btn secondary" onclick="openMoreReportsModal()"${canAccessAdminView ? '' : ' disabled title="Admin view permission required."'}>More Reports</button>
               </div>
               <div class="admin-switches">
@@ -2315,6 +2317,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             <div class="modal-content admin-modal-content" style="width:min(46rem,96vw); height:min(48rem,92vh); padding:0; overflow:hidden; position:relative;">
               <button class="admin-close-btn" type="button" aria-label="Close more reports" title="Close" onclick="closeMoreReportsModal()">&#10005;</button>
               <iframe id="moreReportsFrame" title="Create Report" style="width:100%; height:100%; border:0; background:#fff;"></iframe>
+            </div>
+          </div>
+
+          <div id="scheduleToolModal" class="modal" style="display: none;">
+            <div class="modal-content admin-modal-content" style="width:min(98vw,120rem); height:min(96vh,78rem); padding:0; overflow:hidden; position:relative;">
+              <button class="admin-close-btn" type="button" aria-label="Close schedule tool" title="Close" onclick="closeScheduleToolModal()">&#10005;</button>
+              <iframe id="scheduleToolFrame" title="Schedule Tool" style="width:100%; height:100%; border:0; background:#fff;"></iframe>
             </div>
           </div>
 
@@ -3730,6 +3739,62 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'none';
             }
+          }
+
+          function openScheduleToolModal() {
+            if (adminPermissions.canPayroll !== true || adminPermissions.canEdit !== true) {
+              const msg = document.getElementById('adminLoadMsg');
+              if (msg) msg.innerText = 'Payroll and edit permissions are required.';
+              return;
+            }
+            const modal = document.getElementById('scheduleToolModal');
+            const frame = document.getElementById('scheduleToolFrame');
+            const msg = document.getElementById('adminLoadMsg');
+            if (msg) msg.innerText = 'Loading Schedule Tool...';
+            google.script.run
+              .withSuccessHandler((html) => {
+                if (!frame || !modal) {
+                  if (msg) msg.innerText = 'Schedule Tool modal unavailable.';
+                  return;
+                }
+                frame.srcdoc = buildScheduleToolFrameHtml(html || '');
+                modal.style.display = 'flex';
+                if (msg) msg.innerText = 'Schedule Tool loaded.';
+              })
+              .withFailureHandler((error) => {
+                const message = (error && error.message) ? error.message : 'Unable to load Schedule Tool.';
+                if (msg) msg.innerText = message;
+                alert(message);
+              })
+              .getScheduleToolDialogHtml();
+          }
+
+          function closeScheduleToolModal() {
+            const modal = document.getElementById('scheduleToolModal');
+            const frame = document.getElementById('scheduleToolFrame');
+            if (frame) {
+              frame.srcdoc = '';
+            }
+            if (modal) {
+              modal.style.display = 'none';
+            }
+          }
+
+          function buildScheduleToolFrameHtml(rawHtml) {
+            const html = String(rawHtml || '');
+            const scriptOpen = '<scr' + 'ipt>';
+            const scriptClose = '</scr' + 'ipt>';
+            const bridgeScript = scriptOpen + '(function(){' +
+              'var p=window.parent;' +
+              'window.google=window.google||{};' +
+              'window.google.script=window.google.script||{};' +
+              'if(p&&p.google&&p.google.script&&p.google.script.run){window.google.script.run=p.google.script.run;}' +
+              'window.google.script.host={close:function(){if(p&&typeof p.closeScheduleToolModal==="function"){p.closeScheduleToolModal();}}};' +
+              '})();' + scriptClose;
+            if (html.indexOf('<body>') > -1) {
+              return html.replace('<body>', '<body>' + bridgeScript);
+            }
+            return bridgeScript + html;
           }
 
           function buildMoreReportsFrameHtml(rawHtml) {

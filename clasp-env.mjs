@@ -8,8 +8,8 @@ const __filename = fileURLToPath(import.meta.url);
 const ROOT = dirname(__filename) + '/';
 const ACTIVE_PATH = resolve(ROOT, '.clasp.json');
 const CONFIG_BY_ENV = {
-  live: resolve(ROOT, '.clasp.live.json'),
-  test: resolve(ROOT, '.clasp.test.json')
+  live: resolve(ROOT, 'clasp.live.json'),
+  test: resolve(ROOT, 'clasp.test.json')
 };
 
 function readJson(pathUrl) {
@@ -47,7 +47,7 @@ function switchEnv(envName) {
     throw new Error(`Unknown env "${envName}". Use live, test, or status.`);
   }
   if (!existsSync(sourcePath)) {
-    throw new Error(`Missing config file: ${sourcePath.pathname}`);
+    throw new Error(`Missing config file: ${sourcePath}`);
   }
 
   const source = readJson(sourcePath);

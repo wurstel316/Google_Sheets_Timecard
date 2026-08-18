@@ -113,6 +113,29 @@
     .sidebar-btn.save-btn.just-saved {
       background: #16a34a;
     }
+    .sidebar-btn.save-btn:disabled:not(.is-saving) {
+      opacity: 0.62;
+      cursor: not-allowed;
+      filter: saturate(0.78) brightness(0.92);
+    }
+    .sidebar-btn.save-btn:disabled:not(.is-saving):hover {
+      filter: saturate(0.78) brightness(0.92);
+    }
+    .sidebar-btn.secondary {
+      background: var(--b);
+      color: #0f1419;
+      border: 1px solid rgba(15, 20, 25, 0.12);
+    }
+    .sidebar-btn.secondary:hover {
+      filter: brightness(1.04);
+    }
+    .schedule-status {
+      font-size: 0.72rem;
+      line-height: 1.35;
+      color: var(--text-muted);
+      min-height: 1em;
+      word-break: break-word;
+    }
     .save-timer-row {
       display: flex;
       align-items: center;
@@ -883,12 +906,10 @@
       <div class="sidebar-title">
         <h1>Employee Schedule</h1>
       </div>
-      <!-- TEMPORARY – delete this button when populateTestSchedule is removed -->
-      <button class="sidebar-btn" onclick="populateTestSchedule()">PopulateTestSchedule</button>
-      <!-- /TEMPORARY -->
 
       <div class="save-block">
         <button type="button" class="sidebar-btn save-btn" id="save-btn" onclick="saveSchedule()">Save</button>
+        <button type="button" class="sidebar-btn secondary" id="check-new-employees-btn" onclick="checkForNewEmployees()">Check for new employees</button>
         <div class="save-timer-row" title="Auto-saves every 60 seconds">
           <div class="timer-ring-wrap" id="timer-ring-wrap">
             <svg class="timer-ring" viewBox="0 0 36 36" aria-hidden="true">
@@ -900,6 +921,7 @@
           </div>
           <span class="save-timer-label" id="save-timer-label">Auto-save in 60s</span>
         </div>
+        <div class="schedule-status" id="schedule-status"></div>
       </div>
 
       <div class="location-filter">
@@ -944,7 +966,7 @@
         </table>
       </div>
       <p class="note">
-        Data lives in the <code>EmployeeSchedule</code> array (each employee has <code>EmployeeName</code>, <code>location</code>, <code>workweek</code>, and <code>days[]</code>).
+        Data lives in the active <code>EmployeeSchedule</code> array and the separate <code>DeletedEmployeeSchedule</code> array. Employee identity is email-based (<code>EmployeeEmail</code>), with <code>location</code>, <code>workweek</code>, and <code>days[]</code> stored per employee.
         The sidebar Location dropdown filters the view; edit the array and the table rebuilds automatically.
       </p>
     </section>
@@ -967,11 +989,16 @@
     //  SCHEDULE DATA  –  edit this section for future updates
     // ============================================================
     //
-    //  EmployeeSchedule is an array of employee objects. Shape:
+    //  EmployeeSchedule is the active employee array. DeletedEmployeeSchedule
+    //  stores removed employees separately so they can be restored on demand.
+    //  Employee identity is email-based.
+    //
+    //  Employee records use this shape:
     //
     //    [
     //      {
-    //        EmployeeName: "string",   // display name
+    //        EmployeeEmail: "string",  // stable identity / primary key
+    //        EmployeeName: "string",   // kept in sync with EmployeeEmail
     //        location: "STK" | "OAK" | "",
     //            // STK  = Stockton
     //            // OAK  = Oakhurst
@@ -1015,6 +1042,7 @@
     // ============================================================
 
     let EmployeeSchedule = [];
+    let DeletedEmployeeSchedule = [];
 
     /**
      * Active location filter driven by the sidebar <select id="location-select">.
@@ -1024,9 +1052,8 @@
     let selectedLocation = "ALL";
 
     /**
-     * When false (default), soft-deleted employees (name ends with "-deleted")
-     * are hidden from the schedule table and sidebar lists.
-     * Toggled by the sidebar "Show deleted" checkbox.
+     * When false (default), deleted employees are hidden from the schedule
+     * table and sidebar lists. Toggled by the sidebar "Show deleted" checkbox.
      */
     let showDeleted = false;
 
@@ -1036,15 +1063,96 @@
      */
     let knownLocations = ["STK", "OAK"];
 
-    /** True when EmployeeName ends with the soft-delete marker "-deleted". */
-    function isDeletedName(name) {
-      return typeof name === "string" && name.endsWith("-deleted");
+    function normalizeEmployeeEmail(value) {
+      return String(value || "").trim().toLowerCase();
     }
 
-    /** Strip the "-deleted" suffix; returns original if not present. */
-    function getBaseName(name) {
-      if (!isDeletedName(name)) return name;
-      return name.slice(0, -"-deleted".length);
+    function getEmployeeEmail(employee) {
+      if (!employee || typeof employee !== "object") return "";
+      return normalizeEmployeeEmail(employee.EmployeeEmail || employee.EmployeeName);
+    }
+
+    function getEmployeeDisplayLabel(employeeOrEmail) {
+      const value = employeeOrEmail && typeof employeeOrEmail === "object"
+        ? (employeeOrEmail.EmployeeEmail || employeeOrEmail.EmployeeName || "")
+        : employeeOrEmail;
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      const normalized = normalizeEmployeeEmail(raw);
+      const atIndex = normalized.indexOf("@");
+      if (atIndex > 0) return normalized.slice(0, atIndex);
+      return raw;
+    }
+
+    function normalizeEmployeeDays(days) {
+      const dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+      const sourceByName = new Map();
+      if (Array.isArray(days)) {
+        days.forEach(day => {
+          if (!day || typeof day !== "object") return;
+          const dayName = String(day.dayName || "").trim();
+          if (dayName) sourceByName.set(dayName, day);
+        });
+      }
+      return dayNames.map(dayName => {
+        const source = sourceByName.get(dayName);
+        const shifts = source && Array.isArray(source.shifts) ? source.shifts : [];
+        return {
+          dayName: dayName,
+          shifts: shifts.map(shift => ({
+            timeBlock: String(shift && shift.timeBlock != null ? shift.timeBlock : ""),
+            status: String(shift && shift.status != null ? shift.status : "")
+          }))
+        };
+      });
+    }
+
+    function normalizeEmployeeRecord(employee) {
+      const source = employee && typeof employee === "object" ? employee : {};
+      const email = getEmployeeEmail(source);
+      return {
+        EmployeeEmail: email,
+        EmployeeName: email,
+        location: (source.location == null) ? "" : String(source.location).trim(),
+        workweek: String(source.workweek || "CA").trim().toUpperCase() === "AWS" ? "AWS" : "CA",
+        days: normalizeEmployeeDays(source.days),
+        awsEffectiveDate: String(source.awsEffectiveDate || source.AWSEffectiveDate || "").trim(),
+        deletedAt: String(source.deletedAt || "").trim(),
+        deletedBy: String(source.deletedBy || "").trim()
+      };
+    }
+
+    function cloneEmployeeRecord(employee) {
+      return JSON.parse(JSON.stringify(normalizeEmployeeRecord(employee)));
+    }
+
+    function findEmployeeIndexByEmail(list, email) {
+      const normalized = normalizeEmployeeEmail(email);
+      if (!normalized || !Array.isArray(list)) return -1;
+      return list.findIndex(emp => getEmployeeEmail(emp) === normalized);
+    }
+
+    function removeEmployeeFromList(list, email) {
+      const idx = findEmployeeIndexByEmail(list, email);
+      if (idx < 0) return null;
+      return list.splice(idx, 1)[0] || null;
+    }
+
+    function hydrateScheduleState(state) {
+      const payload = state && typeof state === "object" ? state : {};
+      const active = Array.isArray(payload.Employee_data) ? payload.Employee_data : [];
+      const deleted = Array.isArray(payload.deleted_employee_data) ? payload.deleted_employee_data : [];
+      EmployeeSchedule = active.map(normalizeEmployeeRecord).sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
+      DeletedEmployeeSchedule = deleted.map(normalizeEmployeeRecord).sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
+    }
+
+    function buildScheduleStatePayload() {
+      return {
+        schemaVersion: 1,
+        updatedAt: new Date().toISOString(),
+        Employee_data: (EmployeeSchedule || []).map(normalizeEmployeeRecord),
+        deleted_employee_data: (DeletedEmployeeSchedule || []).map(normalizeEmployeeRecord)
+      };
     }
 
     /**
@@ -1053,7 +1161,7 @@
      */
     function syncKnownLocationsFromData() {
       const fromData = new Set();
-      (EmployeeSchedule || []).forEach(emp => {
+      (EmployeeSchedule || []).concat(DeletedEmployeeSchedule || []).forEach(emp => {
         const loc = (emp.location == null) ? "" : String(emp.location).trim();
         if (loc) fromData.add(loc);
       });
@@ -1098,14 +1206,13 @@
     }
 
     /**
-     * Returns employees matching selectedLocation, always excluding soft-deleted.
+    * Returns employees matching selectedLocation, always excluding deleted rows.
      * Used by renderSchedule, getEligibleEmployeesForDay, and any schedule logic
      * so deleted employees never appear in the table or eligibility lists.
      */
     function getFilteredEmployees() {
       if (!EmployeeSchedule || !EmployeeSchedule.length) return [];
       return EmployeeSchedule.filter(emp => {
-        if (isDeletedName(emp.EmployeeName)) return false;
         if (selectedLocation === "ALL") return true;
         const loc = (emp.location == null) ? "" : String(emp.location);
         return loc === selectedLocation;
@@ -1113,14 +1220,21 @@
     }
 
     /**
-     * Same location filter as getFilteredEmployees, but includes soft-deleted
+    * Same location filter as getFilteredEmployees, but includes deleted rows
      * when showDeleted is true. Used only by the sidebar employee list so
      * deleted staff can be viewed and un-deleted.
      */
     function getSidebarEmployees() {
-      if (!EmployeeSchedule || !EmployeeSchedule.length) return [];
-      return EmployeeSchedule.filter(emp => {
-        if (!showDeleted && isDeletedName(emp.EmployeeName)) return false;
+      const active = (EmployeeSchedule || []).map(emp => Object.assign({ __deleted: false }, emp));
+      if (!showDeleted) {
+        return active.filter(emp => {
+          if (selectedLocation === "ALL") return true;
+          const loc = (emp.location == null) ? "" : String(emp.location);
+          return loc === selectedLocation;
+        });
+      }
+      const deleted = (DeletedEmployeeSchedule || []).map(emp => Object.assign({ __deleted: true }, emp));
+      return active.concat(deleted).filter(emp => {
         if (selectedLocation === "ALL") return true;
         const loc = (emp.location == null) ? "" : String(emp.location);
         return loc === selectedLocation;
@@ -1138,7 +1252,7 @@
      * syncs the filter dropdown, then re-renders.
      */
     function setEmployeeLocation(employeeName, newLocation) {
-      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      const emp = EmployeeSchedule.find(e => getEmployeeEmail(e) === normalizeEmployeeEmail(employeeName));
       if (!emp) return;
       const loc = (newLocation == null) ? "" : String(newLocation).trim();
       emp.location = loc;
@@ -1146,6 +1260,7 @@
         knownLocations.push(loc);
         knownLocations.sort((a, b) => a.localeCompare(b));
       }
+      markScheduleDirty();
       rebuildLocationSelect();
       renderSchedule();
     }
@@ -1156,39 +1271,48 @@
      * Invalid values fall back to "CA". Re-renders so the sidebar tag updates.
      */
     function setEmployeeWorkweek(employeeName, newWorkweek) {
-      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      const emp = EmployeeSchedule.find(e => getEmployeeEmail(e) === normalizeEmployeeEmail(employeeName));
       if (!emp) return;
       const ww = String(newWorkweek || "").trim().toUpperCase();
       emp.workweek = (ww === "AWS") ? "AWS" : "CA";
+      markScheduleDirty();
       renderSchedule();
     }
 
     /**
-     * Soft-delete: append "-deleted" to the employee name so they are
-     * hidden from render (unless "Show deleted" is on). Data is kept.
+     * Move an employee from the active list to the deleted list.
+     * Data is preserved so it can be restored later.
      */
     function deleteEmployee(employeeName) {
-      if (isDeletedName(employeeName)) return;
-      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      const email = normalizeEmployeeEmail(employeeName);
+      const emp = removeEmployeeFromList(EmployeeSchedule, email);
       if (!emp) return;
-      emp.EmployeeName = employeeName + "-deleted";
+      emp.deletedAt = new Date().toISOString();
+      emp.deletedBy = "";
+      DeletedEmployeeSchedule.push(cloneEmployeeRecord(emp));
+      DeletedEmployeeSchedule.sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
+      markScheduleDirty();
       renderSchedule();
     }
 
     /**
-     * Restore a soft-deleted employee by removing the "-deleted" suffix.
+     * Restore an employee by moving it back from the deleted list.
      */
     function undeleteEmployee(employeeName) {
-      if (!isDeletedName(employeeName)) return;
-      const emp = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
-      if (!emp) return;
-      const base = getBaseName(employeeName);
-      // Avoid colliding with an active employee that already has the base name
-      if (EmployeeSchedule.some(e => e.EmployeeName === base)) {
-        console.warn(`Cannot undelete "${employeeName}": active employee "${base}" already exists`);
+      const email = normalizeEmployeeEmail(employeeName);
+      const deletedIndex = findEmployeeIndexByEmail(DeletedEmployeeSchedule, email);
+      if (deletedIndex < 0) return;
+      if (findEmployeeIndexByEmail(EmployeeSchedule, email) >= 0) {
+        console.warn(`Cannot undelete "${email}": active employee already exists`);
         return;
       }
-      emp.EmployeeName = base;
+      const emp = DeletedEmployeeSchedule.splice(deletedIndex, 1)[0];
+      if (!emp) return;
+      emp.deletedAt = "";
+      emp.deletedBy = "";
+      EmployeeSchedule.push(cloneEmployeeRecord(emp));
+      EmployeeSchedule.sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
+      markScheduleDirty();
       renderSchedule();
     }
 
@@ -1216,20 +1340,20 @@
       // ---------------------------------------------------------
       // VALIDATION CHECKS AT TOP (returns early if invalid):
       // ---------------------------------------------------------
-      
+
       // 1. Validate employeeName must be a valid string
       if (typeof employeeName !== "string" || employeeName.trim() === "") {
         console.error(`Invalid employeeName: "${employeeName}" - must be non-empty string`);
         return;
       }
-      
+
       // 2. Validate dayName must be one of: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
       const validDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
       if (!validDays.includes(dayName) || typeof dayName !== "string") {
         console.error(`Invalid dayName: "${dayName}" - must be one of ${validDays.join(", ")}`);
         return;
       }
-      
+
       // 3. Validate timeBlock must be "xx:00" format (e.g., "05:00", "23:00")
       const timeBlockRegex = /^(\d{1,2}):00$/;
       if (!timeBlockRegex.test(timeBlock) || typeof timeBlock !== "string") {
@@ -1242,28 +1366,34 @@
       if (!allowed.includes(status)) {
         status = "";
       }
-      
+
       // ---------------------------------------------------------
       // MAIN LOGIC (only runs if all validations pass):
       // ---------------------------------------------------------
-      
+
       // 1. Find or create employee
       //    New entries get location "" (Unassigned) and workweek "CA" (default).
       //    workweek is "CA" | "AWS"; only the default is set here so existing
       //    callers of editScheduleBlock stay unchanged.
-      let employee = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      let employee = EmployeeSchedule.find(e => getEmployeeEmail(e) === normalizeEmployeeEmail(employeeName));
       if (!employee) {
-        employee = { EmployeeName: employeeName, location: "", workweek: "CA", days: [] };
+        employee = {
+          EmployeeName: normalizeEmployeeEmail(employeeName),
+          EmployeeEmail: normalizeEmployeeEmail(employeeName),
+          location: "",
+          workweek: "CA",
+          days: []
+        };
         EmployeeSchedule.push(employee);
       }
-      
+
       // 2. Find or create the day for this employee
       let day = employee.days.find(d => d.dayName === dayName);
       if (!day) {
         day = { dayName: dayName, shifts: [] };
         employee.days.push(day);
       }
-        
+
       // 3. Find or create the timeBlock within this day, then set status
       let shift = day.shifts.find(s => s.timeBlock === timeBlock);
       if (!shift) {
@@ -1272,9 +1402,10 @@
       } else {
         shift.status = status;
       }
-      
+
+      markScheduleDirty();
       renderSchedule();
-      
+
       // No return → silent mutation only (user's preference)
     }
 
@@ -1283,7 +1414,7 @@
      * Re-renders afterward so the column drops if fully empty.
      */
     function clearEmployeeDay(employeeName, dayName) {
-      const employee = EmployeeSchedule.find(e => e.EmployeeName === employeeName);
+      const employee = EmployeeSchedule.find(e => getEmployeeEmail(e) === normalizeEmployeeEmail(employeeName));
       if (!employee) return;
 
       const day = employee.days.find(d => d.dayName === dayName);
@@ -1293,6 +1424,7 @@
         shift.status = "";
       });
 
+      markScheduleDirty();
       renderSchedule();
     }
 
@@ -1313,9 +1445,9 @@
       const filtered = getFilteredEmployees();
       if (!filtered.length) return [];
       return filtered
-        .map(e => e.EmployeeName)
+        .map(e => getEmployeeEmail(e))
         .filter(name => {
-          const emp = filtered.find(e => e.EmployeeName === name);
+          const emp = filtered.find(e => getEmployeeEmail(e) === normalizeEmployeeEmail(name));
           if (!emp || !emp.days) return true;
           const day = emp.days.find(d => d.dayName === dayName);
           if (!day || !Array.isArray(day.shifts) || day.shifts.length === 0) return true;
@@ -1345,14 +1477,15 @@
       } else {
         list.style.display = "flex";
         emptyMsg.style.display = "none";
-        eligible.forEach(name => {
+        eligible.forEach(email => {
           const btn = document.createElement("button");
           btn.type = "button";
           btn.className = "modal-emp-btn";
-          btn.textContent = name;
+          btn.textContent = getEmployeeDisplayLabel(email);
+          btn.title = email;
           btn.addEventListener("click", function () {
             // One click: set O at 08:00 and close
-            editScheduleBlock(name, dayName, "08:00", "O");
+            editScheduleBlock(email, dayName, "08:00", "O");
             closeAddEmployeeModal();
           });
           list.appendChild(btn);
@@ -1397,16 +1530,17 @@
 
       if (filtered.length) {
         filtered.forEach(emp => {
+          const email = getEmployeeEmail(emp);
           (emp.days || []).forEach(day => {
             (day.shifts || []).forEach(shift => {
               if (shift.timeBlock) {
                 const status = shift.status ? shift.status.trim().toUpperCase() : "";
-                const key = `${day.dayName}|${emp.EmployeeName}|${shift.timeBlock}`;
+                const key = `${day.dayName}|${email}|${shift.timeBlock}`;
                 dataMap.set(key, status);
                 // Only show this employee under this day if they have at least one non-empty status
                 if (status) {
                   if (!employeesByDay.has(day.dayName)) employeesByDay.set(day.dayName, new Set());
-                  employeesByDay.get(day.dayName).add(emp.EmployeeName);
+                  employeesByDay.get(day.dayName).add(email);
                 }
               }
             });
@@ -1476,23 +1610,23 @@
       dayGroups.forEach(dayName => {
         const sortedEmps = sortedEmpsByDay.get(dayName);
         if (sortedEmps && sortedEmps.length > 0) {
-          sortedEmps.forEach((empName, empIdx) => {
+          sortedEmps.forEach((empEmail, empIdx) => {
             const th = document.createElement("th");
             if (empIdx === 0) th.classList.add("day-start");
-            th.dataset.empName = empName;
+            th.dataset.empName = empEmail;
 
             const nameSpan = document.createElement("span");
-            nameSpan.textContent = empName;
+            nameSpan.textContent = getEmployeeDisplayLabel(empEmail);
             th.appendChild(nameSpan);
 
             const clearBtn = document.createElement("button");
             clearBtn.type = "button";
             clearBtn.className = "clear-day-btn";
             clearBtn.textContent = "×";
-            clearBtn.title = `Clear all statuses for ${empName} on ${dayName}`;
+            clearBtn.title = `Clear all statuses for ${getEmployeeDisplayLabel(empEmail)} on ${dayName}`;
             clearBtn.addEventListener("click", function (e) {
               e.stopPropagation();
-              clearEmployeeDay(empName, dayName);
+              clearEmployeeDay(empEmail, dayName);
             });
             th.appendChild(clearBtn);
 
@@ -1542,14 +1676,14 @@
           const isUncovered = uncoveredSet.has(`${dayName}|${hour}`);
 
           if (sortedEmps && sortedEmps.length > 0) {
-            sortedEmps.forEach((empName, empIdx) => {
-              const key = `${dayName}|${empName}|${hour}`;
+            sortedEmps.forEach((empEmail, empIdx) => {
+              const key = `${dayName}|${empEmail}|${hour}`;
               const status = dataMap.get(key) || "";
               const td = document.createElement("td");
               if (empIdx === 0) td.classList.add("day-start");
-              td.dataset.empName = empName;
+              td.dataset.empName = empEmail;
               td.style.cursor = "pointer";
-              td.title = "Click to cycle: empty → O → B → empty";
+              td.title = `Click to cycle: empty → O → B → empty (${getEmployeeDisplayLabel(empEmail)})`;
 
               if (status === "O") {
                 td.textContent = "O";
@@ -1570,7 +1704,7 @@
                 const next =
                   status === ""  ? "O" :
                   status === "O" ? "B" : "";
-                editScheduleBlock(empName, dayName, hour, next);
+                editScheduleBlock(empEmail, dayName, hour, next);
               });
 
               tr.appendChild(td);
@@ -1708,7 +1842,7 @@
 
     /**
      * Build the per-employee O / B totals in the left sidebar.
-     * Uses getSidebarEmployees() so soft-deleted can appear when the
+    * Uses getSidebarEmployees() so deleted employees can appear when the
      * "Show deleted" toggle is on. Schedule table always uses
      * getFilteredEmployees() (deleted excluded).
      */
@@ -1728,20 +1862,21 @@
       }
 
       // Aggregate counts (location-filtered) + keep location + workweek for menu/tags
-      const counts = new Map(); // EmployeeName -> { O, B, location, workweek }
+      const counts = new Map(); // EmployeeEmail -> { O, B, location, workweek, deleted }
 
       filtered.forEach(emp => {
-        const name = emp.EmployeeName;
-        if (!counts.has(name)) {
+        const email = getEmployeeEmail(emp);
+        if (!counts.has(email)) {
           const ww = String(emp.workweek || "CA").trim().toUpperCase();
-          counts.set(name, {
+          counts.set(email, {
             O: 0,
             B: 0,
             location: (emp.location == null) ? "" : String(emp.location),
-            workweek: (ww === "AWS") ? "AWS" : "CA"
+            workweek: (ww === "AWS") ? "AWS" : "CA",
+            deleted: emp.__deleted === true
           });
         }
-        const c = counts.get(name);
+        const c = counts.get(email);
         (emp.days || []).forEach(day => {
           (day.shifts || []).forEach(shift => {
             const st = (shift.status || "").trim().toUpperCase();
@@ -1753,10 +1888,10 @@
 
       const sortedNames = Array.from(counts.keys()).sort((a, b) => a.localeCompare(b));
 
-      sortedNames.forEach(name => {
-        const c = counts.get(name);
-        const deleted = isDeletedName(name);
-        const displayName = deleted ? getBaseName(name) : name;
+      sortedNames.forEach(email => {
+        const c = counts.get(email);
+        const deleted = c.deleted === true;
+        const displayName = getEmployeeDisplayLabel(email);
         const block = document.createElement("div");
         block.className = "emp-count-block" + (deleted ? " is-deleted" : "");
 
@@ -1771,10 +1906,10 @@
           `<span class="chevron" aria-hidden="true">▾</span>`;
         nameBtn.querySelector(".emp-name-text").textContent = displayName + (deleted ? " (deleted)" : "");
         nameBtn.querySelector(".emp-workweek-tag").textContent = deleted ? "" : c.workweek;
-        nameBtn.dataset.empName = name;
+        nameBtn.dataset.empName = email;
         // Hover sidebar name → highlight all of this employee's day columns
         nameBtn.addEventListener("mouseenter", function () {
-          if (!deleted) applyEmpColumnsHover(name);
+          if (!deleted) applyEmpColumnsHover(email);
         });
         nameBtn.addEventListener("mouseleave", clearColHover);
         nameBtn.addEventListener("click", function (e) {
@@ -1804,7 +1939,7 @@
           undelBtn.textContent = "Un-delete";
           undelBtn.addEventListener("click", function (e) {
             e.stopPropagation();
-            undeleteEmployee(name);
+            undeleteEmployee(email);
           });
           menuList.appendChild(undelBtn);
           menuInner.appendChild(menuList);
@@ -1849,7 +1984,7 @@
         unBtn.textContent = "Unassigned";
         unBtn.addEventListener("click", function (e) {
           e.stopPropagation();
-          setEmployeeLocation(name, "");
+          setEmployeeLocation(email, "");
         });
         subList.appendChild(unBtn);
 
@@ -1860,7 +1995,7 @@
           btn.textContent = code;
           btn.addEventListener("click", function (e) {
             e.stopPropagation();
-            setEmployeeLocation(name, code);
+            setEmployeeLocation(email, code);
           });
           subList.appendChild(btn);
         });
@@ -1909,7 +2044,7 @@
           e.stopPropagation();
           const val = (input.value || "").trim().toUpperCase();
           if (!val) return;
-          setEmployeeLocation(name, val);
+          setEmployeeLocation(email, val);
         });
         form.appendChild(input);
         form.appendChild(confirmBtn);
@@ -1956,7 +2091,7 @@
         caBtn.title = "California standard (default)";
         caBtn.addEventListener("click", function (e) {
           e.stopPropagation();
-          setEmployeeWorkweek(name, "CA");
+          setEmployeeWorkweek(email, "CA");
         });
         wwSubList.appendChild(caBtn);
 
@@ -1968,7 +2103,7 @@
         awsBtn.title = "Alternative Work Schedule";
         awsBtn.addEventListener("click", function (e) {
           e.stopPropagation();
-          setEmployeeWorkweek(name, "AWS");
+          setEmployeeWorkweek(email, "AWS");
         });
         wwSubList.appendChild(awsBtn);
 
@@ -1983,7 +2118,7 @@
         delBtn.textContent = "Delete";
         delBtn.addEventListener("click", function (e) {
           e.stopPropagation();
-          deleteEmployee(name);
+          deleteEmployee(email);
         });
         menuList.appendChild(delBtn);
 
@@ -2062,6 +2197,22 @@
   const AUTO_SAVE_INTERVAL_SEC = 60;
   let autoSaveRemaining = AUTO_SAVE_INTERVAL_SEC;
   let autoSaveCountdownId = null;
+  let hasUnsavedChanges = false;
+
+  function setSaveButtonState() {
+    const btn = document.getElementById("save-btn");
+    if (!btn) return;
+    btn.disabled = !hasUnsavedChanges;
+  }
+
+  function markScheduleDirty() {
+    if (!hasUnsavedChanges) {
+      autoSaveRemaining = AUTO_SAVE_INTERVAL_SEC;
+    }
+    hasUnsavedChanges = true;
+    setSaveButtonState();
+    updateAutoSaveUI();
+  }
 
   /**
    * Update the circular progress ring + label from autoSaveRemaining.
@@ -2073,6 +2224,13 @@
     const labelEl = document.getElementById("save-timer-label");
     const progressEl = document.getElementById("timer-progress");
     if (!countEl || !labelEl || !progressEl) return;
+
+    if (!hasUnsavedChanges) {
+      countEl.textContent = "-";
+      labelEl.textContent = "Waiting for changes";
+      progressEl.style.strokeDashoffset = "100";
+      return;
+    }
 
     const sec = Math.max(0, autoSaveRemaining);
     countEl.textContent = String(sec);
@@ -2098,6 +2256,9 @@
    * (which resets the countdown).
    */
   function tickAutoSave() {
+    if (!hasUnsavedChanges) {
+      return;
+    }
     autoSaveRemaining -= 1;
     if (autoSaveRemaining <= 0) {
       saveSchedule();
@@ -2111,9 +2272,17 @@
    */
   function startAutoSaveTimer() {
     if (autoSaveCountdownId !== null) return;
+    setSaveButtonState();
     updateAutoSaveUI();
     autoSaveCountdownId = setInterval(tickAutoSave, 1000);
   }
+
+    function setScheduleStatus(message, isError) {
+      const el = document.getElementById("schedule-status");
+      if (!el) return;
+      el.style.color = isError ? "#b91c1c" : "var(--text-muted)";
+      el.textContent = String(message || "");
+    }
 
   /**
    * saveSchedule()
@@ -2140,26 +2309,61 @@
     const btn = document.getElementById("save-btn");
     const ringWrap = document.getElementById("timer-ring-wrap");
 
+    if (!hasUnsavedChanges) {
+      setScheduleStatus("No changes to save.", false);
+      return;
+    }
+
     // Visual feedback while "saving"
     if (btn) {
       btn.classList.add("is-saving");
+      btn.disabled = true;
       btn.textContent = "Saving…";
     }
     if (ringWrap) ringWrap.classList.add("is-saving");
 
-    // TODO: persist EmployeeSchedule here (see comment block above).
-    // For now we only simulate a brief save and reset the countdown.
+    if (!(window.google && google.script && google.script.run)) {
+      if (btn) {
+        btn.classList.remove("is-saving");
+        btn.textContent = "Save";
+      }
+      if (ringWrap) ringWrap.classList.remove("is-saving");
+      setSaveButtonState();
+      alert("Unable to save: Apps Script bridge is not available.");
+      return;
+    }
 
-    // Simulated async boundary so the UI can show the "Saving…" state
-    setTimeout(function () {
+    setScheduleStatus("Saving schedule…", false);
+
+    google.script.run
+      .withSuccessHandler(function (result) {
+        if (!result || result.success !== true) {
+          if (btn) {
+            btn.classList.remove("is-saving");
+            btn.textContent = "Save";
+          }
+          if (ringWrap) ringWrap.classList.remove("is-saving");
+          setSaveButtonState();
+          setScheduleStatus((result && result.message) ? result.message : "Failed to save schedule.", true);
+          alert((result && result.message) ? result.message : "Failed to save schedule.");
+          return;
+        }
+
+      if (result && result.state) {
+        hydrateScheduleState(result.state);
+      }
+
       if (btn) {
         btn.classList.remove("is-saving");
         btn.classList.add("just-saved");
         btn.textContent = "Saved";
       }
       if (ringWrap) ringWrap.classList.remove("is-saving");
+      setScheduleStatus((result && result.message) ? result.message : "Schedule saved.", false);
 
+      hasUnsavedChanges = false;
       resetAutoSaveCountdown();
+      setSaveButtonState();
 
       // Return button label to "Save" after a short acknowledgement
       setTimeout(function () {
@@ -2168,7 +2372,64 @@
           btn.textContent = "Save";
         }
       }, 900);
-    }, 280);
+      })
+      .withFailureHandler(function (err) {
+        if (btn) {
+          btn.classList.remove("is-saving");
+          btn.textContent = "Save";
+        }
+        if (ringWrap) ringWrap.classList.remove("is-saving");
+        setSaveButtonState();
+        setScheduleStatus((err && err.message) ? err.message : "Failed to save schedule.", true);
+        alert((err && err.message) ? err.message : "Failed to save schedule.");
+      })
+      .saveScheduleToolData(buildScheduleStatePayload());
+  }
+
+  function checkForNewEmployees() {
+    const btn = document.getElementById("check-new-employees-btn");
+    if (!(window.google && google.script && google.script.run)) {
+      setScheduleStatus("Unable to check for new employees: Apps Script bridge is not available.", true);
+      alert("Unable to check for new employees: Apps Script bridge is not available.");
+      return;
+    }
+    if (btn) {
+      btn.disabled = true;
+      btn.dataset.originalLabel = btn.textContent;
+      btn.textContent = "Checking…";
+    }
+    setScheduleStatus("Checking for new employees…", false);
+
+    google.script.run
+      .withSuccessHandler(function (result) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = btn.dataset.originalLabel || "Check for new employees";
+        }
+        if (!result || result.success !== true) {
+          const message = (result && result.message) ? result.message : "Failed to check for new employees.";
+          setScheduleStatus(message, true);
+          alert(message);
+          return;
+        }
+        if (result.state) {
+          hydrateScheduleState(result.state);
+        }
+        syncKnownLocationsFromData();
+        renderSchedule();
+        const message = (result && result.message) ? result.message : "No new employees found.";
+        setScheduleStatus(message, false);
+      })
+      .withFailureHandler(function (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = btn.dataset.originalLabel || "Check for new employees";
+        }
+        const message = (err && err.message) ? err.message : "Failed to check for new employees.";
+        setScheduleStatus(message, true);
+        alert(message);
+      })
+      .checkForNewEmployees();
   }
 
   // Kick off the auto-save countdown once the page is live
@@ -2200,24 +2461,32 @@
    * EmployeeSchedule empty and renders an empty schedule.
    */
   function populateLiveSchedule() {
-    // TODO: replace this body with a google.script.run call, e.g.:
-    //
-    //   google.script.run
-    //     .withSuccessHandler(function (data) {
-    //       EmployeeSchedule = Array.isArray(data) ? data : [];
-    //       syncKnownLocationsFromData();
-    //       renderSchedule();
-    //     })
-    //     .withFailureHandler(function (err) {
-    //       console.error("populateLiveSchedule failed:", err);
-    //       EmployeeSchedule = [];
-    //       renderSchedule();
-    //     })
-    //     .getMostRecentSchedule();  // server-side function that reads the Sheet
-    //
-    // For now: no remote load — keep the empty array and render.
-    EmployeeSchedule = EmployeeSchedule || [];
-    renderSchedule();
+    if (!(window.google && google.script && google.script.run)) {
+      EmployeeSchedule = EmployeeSchedule || [];
+      DeletedEmployeeSchedule = DeletedEmployeeSchedule || [];
+      renderSchedule();
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function (result) {
+        const payload = result && result.state && typeof result.state === "object"
+          ? result.state
+          : (result && Array.isArray(result.schedule)
+            ? { Employee_data: result.schedule, deleted_employee_data: [] }
+            : (Array.isArray(result)
+              ? { Employee_data: result, deleted_employee_data: [] }
+              : { Employee_data: [], deleted_employee_data: [] }));
+        hydrateScheduleState(payload);
+        syncKnownLocationsFromData();
+        renderSchedule();
+      })
+      .withFailureHandler(function () {
+        EmployeeSchedule = [];
+        DeletedEmployeeSchedule = [];
+        renderSchedule();
+      })
+      .fetchScheduleToolData();
   }
 
   // Run on HTML load (script is at end of body, so DOM is ready)
@@ -2441,6 +2710,7 @@
       // workweek defaults to "CA" (California); use "AWS" for Alternative
       // Work Schedule. Test data uses the default unless a row supplies it.
       EmployeeSchedule = [];
+      DeletedEmployeeSchedule = [];
 
       raw.forEach(function (row) {
         const emp = {

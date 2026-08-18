@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.1 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.17 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -398,6 +398,7 @@ function initializeSheets() {
                 .setFontColor('#ffffff');
             archive.setFrozenRows(1);
         }
+        ensureScheduleSheet_(ss);
         // Initialize AWS config with current employees (all disabled by default)
         if (dataEntry) {
             buildAndCacheAWSConfig(dataEntry);
@@ -407,6 +408,84 @@ function initializeSheets() {
     catch (e) {
         ui.alert('❌ Error', `Failed to initialize: ${e.message}`, ui.ButtonSet.OK);
         Logger.log('initializeSheets: error=%s', e.message);
+    }
+}
+function ensureScheduleSheet_(ss) {
+    const spreadsheet = ss || SpreadsheetApp.getActiveSpreadsheet();
+    let schedule = spreadsheet.getSheetByName(SCHEDULE_SHEET_NAME);
+    if (!schedule) {
+        schedule = spreadsheet.insertSheet(SCHEDULE_SHEET_NAME);
+        schedule.getRange(1, 1, 1, SCHEDULE_SETTINGS_HEADERS.length).setValues([SCHEDULE_SETTINGS_HEADERS]);
+        schedule.getRange(1, 1, 1, SCHEDULE_SETTINGS_HEADERS.length)
+            .setFontWeight('bold')
+            .setBackground('#0f766e')
+            .setFontColor('#ffffff');
+        schedule.setFrozenRows(1);
+        schedule.setColumnWidth(1, 240);
+        schedule.setColumnWidth(2, 560);
+        schedule.setColumnWidth(3, 180);
+        schedule.setColumnWidth(4, 280);
+        return schedule;
+    }
+    if (schedule.getMaxColumns() < SCHEDULE_SETTINGS_HEADERS.length) {
+        schedule.insertColumnsAfter(schedule.getMaxColumns(), SCHEDULE_SETTINGS_HEADERS.length - schedule.getMaxColumns());
+    }
+    const headerValues = schedule.getRange(1, 1, 1, SCHEDULE_SETTINGS_HEADERS.length).getValues()[0];
+    let mismatch = false;
+    for (let i = 0; i < SCHEDULE_SETTINGS_HEADERS.length; i++) {
+        if (String(headerValues[i] || '') !== SCHEDULE_SETTINGS_HEADERS[i]) {
+            mismatch = true;
+            break;
+        }
+    }
+    if (mismatch) {
+        schedule.getRange(1, 1, 1, SCHEDULE_SETTINGS_HEADERS.length).setValues([SCHEDULE_SETTINGS_HEADERS]);
+    }
+    schedule.setFrozenRows(1);
+    return schedule;
+}
+function findScheduleSettingRowByKey_(sheet, key) {
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1)
+        return -1;
+    const keyValues = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < keyValues.length; i++) {
+        if (String(keyValues[i][0] || '') === key) {
+            return i + 2;
+        }
+    }
+    return -1;
+}
+function readScheduleSetting_(key, fallback = '') {
+    const sheet = ensureScheduleSheet_();
+    const row = findScheduleSettingRowByKey_(sheet, key);
+    if (row < 0)
+        return fallback;
+    const value = sheet.getRange(row, 2).getValue();
+    if (value === null || value === undefined || value === '')
+        return fallback;
+    return String(value);
+}
+function writeScheduleSetting_(key, value) {
+    const sheet = ensureScheduleSheet_();
+    const actorEmail = String(Session.getActiveUser().getEmail() || 'unknown').trim().toLowerCase() || 'unknown';
+    const updatedAtIso = new Date().toISOString();
+    const normalizedValue = value === null || value === undefined ? '' : String(value);
+    const row = findScheduleSettingRowByKey_(sheet, key);
+    if (row < 0) {
+        sheet.appendRow([key, normalizedValue, updatedAtIso, actorEmail]);
+        return;
+    }
+    sheet.getRange(row, 1, 1, 4).setValues([[key, normalizedValue, updatedAtIso, actorEmail]]);
+}
+function parseScheduleJsonValue_(raw, fallbackValue) {
+    if (!raw)
+        return fallbackValue;
+    try {
+        return JSON.parse(String(raw));
+    }
+    catch (e) {
+        return fallbackValue;
     }
 }
 
@@ -682,8 +761,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const EMPLOYEE_EMAIL_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
-const SCRIPT_VERSION = '2.2.1';
+const SCRIPT_VERSION = '2.2.2-push.17';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -691,6 +769,10 @@ const MIGRATION_VERSION = 'v2.1';
 const AWS_CONFIG_KEY = 'aws_employees_config';
 const AWS_CONFIG_UPDATED_AT_KEY = 'aws_employees_config_timestamp';
 const AWS_DAILY_THRESHOLD = 10; // 10 hours before daily OT kicks in for AWS
+const SCHEDULE_SHEET_NAME = 'Schedule';
+const SCHEDULE_SETTINGS_HEADERS = ['Key', 'Value', 'Updated At', 'Updated By'];
+const SCHEDULE_STATE_KEY = 'schedule_state_json';
+const SCHEDULE_STATE_SCHEMA_VERSION = 1;
 /**
  * @typedef {Object} AWSConfigEntry
  * @property {boolean} enabled
@@ -837,7 +919,11 @@ function getCurrentStatus(email, dataEntry) {
  */
 function getEmployeeEntries(email, sheet, customMinDate = null, customMaxDate = null) {
     const startMs = Date.now();
-    const data = sheet.getDataRange().getValues();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+        return [];
+    }
+    const data = sheet.getRange(2, 1, lastRow - 1, DATA_COL_COUNT).getValues();
     // Use custom date range if provided, otherwise default to last 30 days
     let cutoffMin, cutoffMax;
     if (customMinDate) {
@@ -856,7 +942,7 @@ function getEmployeeEntries(email, sheet, customMinDate = null, customMaxDate = 
         cutoffMax.setHours(23, 59, 59, 999);
     }
     const twoWeekEntries = [];
-    for (let i = 1; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
         if (data[i][DATA_COLUMNS.EMAIL] === email && !isDeletedDataRow(data[i])) {
             const clockIn = getEffectiveClockInFromRow(data[i]);
             const clockOut = getEffectiveClockOutFromRow(data[i]);
@@ -866,7 +952,7 @@ function getEmployeeEntries(email, sheet, customMinDate = null, customMaxDate = 
             const modifiedClockOut = getRowModifiedClockOut(data[i]);
             if (clockIn instanceof Date && !isNaN(clockIn.getTime()) && clockIn >= cutoffMin && clockIn <= cutoffMax) {
                 twoWeekEntries.push({
-                    rowIndex: i + 1,
+                    rowIndex: i + 2,
                     email: data[i][DATA_COLUMNS.EMAIL],
                     clockIn: clockIn,
                     clockOut: clockOut || null,
@@ -902,7 +988,7 @@ function getEmployeeEntries(email, sheet, customMinDate = null, customMaxDate = 
     Logger.log('getEmployeeEntries: returned %s entries', mappedEntries.length);
     debugLog('getEmployeeEntries complete', {
         email: email,
-        scannedRows: Math.max(data.length - 1, 0),
+        scannedRows: data.length,
         returned: mappedEntries.length,
         minDate: Utilities.formatDate(cutoffMin, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
         maxDate: Utilities.formatDate(cutoffMax, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
@@ -2233,10 +2319,14 @@ function insertRowChronologically(sheet, clockInDateTime, values) {
  */
 function findLatestEmployeeEntry(email, dataEntry) {
     const startMs = Date.now();
-    const data = dataEntry.getDataRange().getValues();
+    const lastRow = dataEntry.getLastRow();
+    if (lastRow <= 1) {
+        return null;
+    }
+    const data = dataEntry.getRange(2, 1, lastRow - 1, DATA_COL_COUNT).getValues();
     let latestEntry = null;
     let maxTimestamp = -Infinity;
-    for (let i = 1; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
         if (data[i][DATA_COLUMNS.EMAIL] === email && !isDeletedDataRow(data[i])) {
             const clockIn = getEffectiveClockInFromRow(data[i]);
             const clockOut = getEffectiveClockOutFromRow(data[i]);
@@ -2245,7 +2335,7 @@ function findLatestEmployeeEntry(email, dataEntry) {
                 if (timestamp > maxTimestamp) {
                     maxTimestamp = timestamp;
                     latestEntry = {
-                        rowIndex: i + 1,
+                        rowIndex: i + 2,
                         email: data[i][DATA_COLUMNS.EMAIL],
                         clockIn: clockIn,
                         clockOut: clockOut || null,
@@ -2406,99 +2496,32 @@ function findUnsplitMidnightEntries(dataEntry, rowNumbers) {
  * @returns {string[]}
  */
 function buildUniqueEmployeeEmailList(dataEntry) {
-    const lastRow = dataEntry.getLastRow();
-    if (lastRow <= 1)
-        return [];
-    const emails = dataEntry.getRange(2, dataCol('EMAIL'), lastRow - 1, 1).getValues();
-    /** @type {Set<string>} */
-    const uniqueEmails = new Set();
-    for (let i = 0; i < emails.length; i++) {
-        const email = emails[i][0];
-        if (email && typeof email === 'string') {
-            uniqueEmails.add(email);
-        }
-    }
-    const list = Array.from(uniqueEmails)
-        .map(String)
-        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    const state = getStoredScheduleState_();
+    const list = collectScheduleEmployeeEmailsFromState_(state, false);
     Logger.log('buildUniqueEmployeeEmailList: found %s unique employee email(s)', list.length);
-    debugLog('buildUniqueEmployeeEmailList complete', { sourceRows: lastRow - 1, uniqueCount: list.length });
+    debugLog('buildUniqueEmployeeEmailList complete', { sourceRows: Array.isArray(state.Employee_data) ? state.Employee_data.length : 0, uniqueCount: list.length });
     return list;
 }
 function refreshEmployeeEmailCacheFromSheet(dataEntry) {
     const startMs = Date.now();
     const list = buildUniqueEmployeeEmailList(dataEntry);
-    const props = PropertiesService.getScriptProperties();
-    props.setProperty(EMPLOYEE_EMAIL_CACHE_KEY, JSON.stringify(list));
-    props.setProperty(EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY, String(Date.now()));
     Logger.log('refreshEmployeeEmailCacheFromSheet: cached %s employee(s)', list.length);
     debugLog('refreshEmployeeEmailCacheFromSheet complete', { count: list.length, durationMs: Date.now() - startMs });
     return list;
 }
 function getCachedEmployeeEmails(forceRefresh = false) {
-    const props = PropertiesService.getScriptProperties();
-    const cached = props.getProperty(EMPLOYEE_EMAIL_CACHE_KEY);
-    const cachedAt = Number(props.getProperty(EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY) || 0);
-    const now = Date.now();
-    if (!forceRefresh && cached && cachedAt && (now - cachedAt) < EMPLOYEE_EMAIL_CACHE_TTL_MS) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed)) {
-                Logger.log('getCachedEmployeeEmails: cache hit');
-                debugLog('getCachedEmployeeEmails cache hit', { forceRefresh: forceRefresh, ageMs: now - cachedAt, count: parsed.length });
-                return parsed;
-            }
-        }
-        catch (e) {
-            debugLog('getCachedEmployeeEmails cache parse failed', { ageMs: now - cachedAt });
-        }
-    }
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const dataEntry = ss.getSheetByName('DataEntry');
-    if (!dataEntry) {
-        Logger.log('getCachedEmployeeEmails: DataEntry sheet missing, returning empty');
-        return [];
-    }
-    Logger.log('getCachedEmployeeEmails: cache miss, rebuilding');
-    debugLog('getCachedEmployeeEmails cache miss', { forceRefresh: forceRefresh, hasCached: !!cached, ageMs: cachedAt ? now - cachedAt : null });
-    return refreshEmployeeEmailCacheFromSheet(dataEntry);
+    const state = getStoredScheduleState_();
+    const list = collectScheduleEmployeeEmailsFromState_(state, false);
+    Logger.log('getCachedEmployeeEmails: derived %s employee(s) from schedule state', list.length);
+    debugLog('getCachedEmployeeEmails derived from schedule state', { forceRefresh: forceRefresh, count: list.length });
+    return list;
 }
 function addEmailToEmployeeCache(email) {
     if (!email || typeof email !== 'string') {
         debugLog('addEmailToEmployeeCache skipped invalid email input', { emailType: typeof email });
         return;
     }
-    const props = PropertiesService.getScriptProperties();
-    const cached = props.getProperty(EMPLOYEE_EMAIL_CACHE_KEY);
-    const now = Date.now();
-    if (!cached) {
-        props.setProperty(EMPLOYEE_EMAIL_CACHE_KEY, JSON.stringify([email]));
-        props.setProperty(EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY, String(now));
-        Logger.log('addEmailToEmployeeCache: initialized cache with new email');
-        debugLog('addEmailToEmployeeCache initialized', { added: true });
-        return;
-    }
-    let list;
-    try {
-        list = JSON.parse(cached);
-    }
-    catch (e) {
-        list = [];
-    }
-    if (!Array.isArray(list))
-        list = [];
-    const exists = list.some(e => String(e).toLowerCase() === email.toLowerCase());
-    if (!exists) {
-        list.push(email);
-        list.sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-        props.setProperty(EMPLOYEE_EMAIL_CACHE_KEY, JSON.stringify(list));
-        props.setProperty(EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY, String(now));
-        Logger.log('addEmailToEmployeeCache: added email to cache');
-        debugLog('addEmailToEmployeeCache updated', { added: true, count: list.length });
-    }
-    else {
-        debugLog('addEmailToEmployeeCache skipped existing email', { added: false });
-    }
+    debugLog('addEmailToEmployeeCache is a no-op with unified schedule state', { email: String(email).toLowerCase() });
 }
 function getEmployeeEmailOptions(forceRefresh) {
     const list = getCachedEmployeeEmails(!!forceRefresh);
@@ -2516,32 +2539,10 @@ function getEmployeeEmailOptions(forceRefresh) {
  * @returns {AWSConfigMap}
  */
 function getAWSConfig(forceRefresh = false) {
-    const props = PropertiesService.getScriptProperties();
-    const cached = props.getProperty(AWS_CONFIG_KEY);
-    const cachedAt = Number(props.getProperty(AWS_CONFIG_UPDATED_AT_KEY) || 0);
-    const now = Date.now();
-    if (!forceRefresh && cached && cachedAt && (now - cachedAt) < EMPLOYEE_EMAIL_CACHE_TTL_MS) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (parsed && typeof parsed === 'object') {
-                Logger.log('getAWSConfig: cache hit');
-                debugLog('getAWSConfig cache hit', { ageMs: now - cachedAt, employeeCount: Object.keys(parsed).length });
-                return parsed;
-            }
-        }
-        catch (e) {
-            debugLog('getAWSConfig cache parse failed', { ageMs: now - cachedAt });
-        }
-    }
-    // Auto-sync with DataEntry on cache miss/refresh
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const dataEntry = ss.getSheetByName('DataEntry');
-    if (!dataEntry) {
-        Logger.log('getAWSConfig: DataEntry missing, returning empty config');
-        return {};
-    }
-    Logger.log('getAWSConfig: cache miss, rebuilding');
-    return buildAndCacheAWSConfig(dataEntry);
+    const config = buildAWSConfigFromScheduleState_(getStoredScheduleState_());
+    Logger.log('getAWSConfig: derived config for %s employee(s)', Object.keys(config).length);
+    debugLog('getAWSConfig derived from schedule state', { forceRefresh: forceRefresh, employeeCount: Object.keys(config).length });
+    return config;
 }
 /**
  * Sync AWS config with current employees in DataEntry
@@ -2554,42 +2555,12 @@ function getAWSConfig(forceRefresh = false) {
  */
 function buildAndCacheAWSConfig(dataEntry) {
     const startMs = Date.now();
-    // Get unique emails from DataEntry
-    /** @type {string[]} */
-    const employeeEmails = buildUniqueEmployeeEmailList(dataEntry);
-    // Fetch current AWS config
-    const props = PropertiesService.getScriptProperties();
-    const existing = {};
-    try {
-        const cached = props.getProperty(AWS_CONFIG_KEY);
-        Object.assign(existing, cached ? JSON.parse(cached) : {});
-    }
-    catch (e) {
-        // Leave existing empty on parse failure.
-    }
-    // Merge: keep existing config, auto-add new employees as disabled
-    const config = /** @type {AWSConfigMap} */ ({});
-    employeeEmails.forEach(email => {
-        const existingConfig = /** @type {AWSConfigMap} */ (existing);
-        if (existingConfig[email]) {
-            config[email] = existingConfig[email]; // Keep existing setting
-        }
-        else {
-            config[email] = {
-                enabled: false,
-                effectiveDate: '' // New employees default OFF with no effective date until explicitly set
-            };
-        }
-    });
-    // Save to cache with TTL
-    props.setProperty(AWS_CONFIG_KEY, JSON.stringify(config));
-    props.setProperty(AWS_CONFIG_UPDATED_AT_KEY, String(Date.now()));
-    const newEmployeesCount = employeeEmails.filter(email => !existing[email]).length;
-    Logger.log('buildAndCacheAWSConfig: rebuilt config for %s employee(s)', employeeEmails.length);
+    const config = buildAWSConfigFromScheduleState_(getStoredScheduleState_());
+    Logger.log('buildAndCacheAWSConfig: derived config for %s employee(s)', Object.keys(config).length);
     debugLog('buildAndCacheAWSConfig complete', {
-        totalEmployees: employeeEmails.length,
-        addedEmployees: newEmployeesCount,
-        preservedEntries: employeeEmails.length - newEmployeesCount,
+        totalEmployees: Object.keys(config).length,
+        addedEmployees: 0,
+        preservedEntries: Object.keys(config).length,
         durationMs: Date.now() - startMs
     });
     return config;
@@ -2601,15 +2572,25 @@ function buildAndCacheAWSConfig(dataEntry) {
  * @param effectiveDate Date when AWS status takes effect (YYYY-MM-DD)
  */
 function updateAWSEmployeeStatus(email, enabled, effectiveDate) {
-    const config = getAWSConfig(true); // Refresh first
-    const previous = config[email] || null;
-    config[email] = { enabled, effectiveDate };
-    const props = PropertiesService.getScriptProperties();
-    props.setProperty(AWS_CONFIG_KEY, JSON.stringify(config));
-    props.setProperty(AWS_CONFIG_UPDATED_AT_KEY, String(Date.now()));
+    const normalizedEmail = normalizeScheduleEmail_(email);
+    const state = getStoredScheduleState_();
+    const previous = buildAWSConfigFromScheduleState_(state)[normalizedEmail] || null;
+    const applyToList = (list) => list.map(employee => {
+        const employeeEmail = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+        if (employeeEmail !== normalizedEmail) {
+            return employee;
+        }
+        const next = Object.assign({}, employee);
+        next.workweek = enabled === true ? 'AWS' : 'CA';
+        next.awsEffectiveDate = String(effectiveDate || '').trim();
+        return next;
+    });
+    state.Employee_data = applyToList(state.Employee_data);
+    state.deleted_employee_data = applyToList(state.deleted_employee_data);
+    writeStoredScheduleState_(state);
     Logger.log('updateAWSEmployeeStatus: updated AWS status for employee');
     debugLog('updateAWSEmployeeStatus complete', {
-        email: email,
+        email: normalizedEmail,
         previousEnabled: previous ? previous.enabled : null,
         previousEffectiveDate: previous ? previous.effectiveDate : null,
         enabled: enabled,
@@ -3007,18 +2988,314 @@ function fetchAWSConfigForDialog() {
     if (!hasPermission('payroll')) {
         return {};
     }
-    // Sync with DataEntry first to auto-add new employees
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const dataEntry = ss.getSheetByName('DataEntry');
-    let synced = false;
-    if (dataEntry) {
-        buildAndCacheAWSConfig(dataEntry);
-        synced = true;
-    }
     const config = getAWSConfig();
     Logger.log('fetchAWSConfigForDialog: returned %s employee config entries', Object.keys(config).length);
-    debugLog('fetchAWSConfigForDialog complete', { syncedFromSheet: synced, employeeCount: Object.keys(config).length });
+    debugLog('fetchAWSConfigForDialog complete', { employeeCount: Object.keys(config).length });
     return config;
+}
+function getScheduleToolDialogHtml() {
+    if (!hasPermission('payroll') || !hasPermission('edit')) {
+        return '<div style="font-family:Arial,sans-serif;padding:16px;color:#b91c1c;">Payroll and edit permissions are required.</div>';
+    }
+    return HtmlService.createHtmlOutputFromFile('ScheduleHTML').getContent();
+}
+function getStoredScheduleToolData_() {
+    return getStoredScheduleState_();
+}
+function buildBlankScheduleDays_() {
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return dayNames.map(dayName => ({ dayName: dayName, shifts: [] }));
+}
+function normalizeScheduleEmail_(value) {
+    return String(value || '').trim().toLowerCase();
+}
+function normalizeScheduleDays_(days) {
+    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const sourceByName = new Map();
+    if (Array.isArray(days)) {
+        for (let i = 0; i < days.length; i++) {
+            const day = days[i];
+            if (!day || typeof day !== 'object')
+                continue;
+            const dayName = String(day.dayName || '').trim();
+            if (!dayName)
+                continue;
+            sourceByName.set(dayName, day);
+        }
+    }
+    return dayNames.map(dayName => {
+        const source = sourceByName.get(dayName);
+        const shifts = source && Array.isArray(source.shifts) ? source.shifts : [];
+        return {
+            dayName: dayName,
+            shifts: shifts.map(shift => ({
+                timeBlock: String(shift && shift.timeBlock != null ? shift.timeBlock : ''),
+                status: String(shift && shift.status != null ? shift.status : '')
+            }))
+        };
+    });
+}
+function createBlankScheduleEmployeeRecord_(email) {
+    const normalizedEmail = normalizeScheduleEmail_(email);
+    return {
+        EmployeeEmail: normalizedEmail,
+        EmployeeName: normalizedEmail,
+        location: '',
+        workweek: 'CA',
+        days: buildBlankScheduleDays_(),
+        awsEffectiveDate: '',
+        deletedAt: '',
+        deletedBy: ''
+    };
+}
+function normalizeScheduleEmployeeRecord_(employee, keepDeletedMeta = false) {
+    const source = employee && typeof employee === 'object' ? employee : {};
+    const normalizedEmail = normalizeScheduleEmail_(source.EmployeeEmail || source.employeeEmail || source.EmployeeName || source.employeeName);
+    const normalized = Object.assign({}, source);
+    normalized.EmployeeEmail = normalizedEmail;
+    normalized.EmployeeName = normalizedEmail;
+    normalized.location = source.location == null ? '' : String(source.location).trim();
+    const workweek = String(source.workweek || 'CA').trim().toUpperCase();
+    normalized.workweek = workweek === 'AWS' ? 'AWS' : 'CA';
+    normalized.days = normalizeScheduleDays_(source.days);
+    normalized.awsEffectiveDate = String(source.awsEffectiveDate || source.AWSEffectiveDate || '').trim();
+    delete normalized.awsEnabled;
+    delete normalized.AWSEnabled;
+    if (keepDeletedMeta) {
+        normalized.deletedAt = String(source.deletedAt || '').trim();
+        normalized.deletedBy = String(source.deletedBy || '').trim();
+    }
+    else {
+        delete normalized.deletedAt;
+        delete normalized.deletedBy;
+    }
+    return normalized;
+}
+function normalizeScheduleState_(rawState) {
+    const source = rawState && typeof rawState === 'object' ? rawState : {};
+    const activeSource = Array.isArray(source.Employee_data)
+        ? source.Employee_data
+        : Array.isArray(source.employee_data)
+            ? source.employee_data
+            : Array.isArray(source.activeEmployees)
+                ? source.activeEmployees
+                : Array.isArray(source.schedule_data && source.schedule_data.employees)
+                    ? source.schedule_data.employees
+                    : Array.isArray(rawState)
+                        ? rawState
+                        : [];
+    const deletedSource = Array.isArray(source.deleted_employee_data)
+        ? source.deleted_employee_data
+        : Array.isArray(source.deletedEmployees)
+            ? source.deletedEmployees
+            : Array.isArray(source.schedule_data && source.schedule_data.deleted_employee_data)
+                ? source.schedule_data.deleted_employee_data
+                : [];
+    const activeMap = new Map();
+    for (let i = 0; i < activeSource.length; i++) {
+        const record = normalizeScheduleEmployeeRecord_(activeSource[i], false);
+        if (record.EmployeeEmail) {
+            activeMap.set(record.EmployeeEmail, record);
+        }
+    }
+    const deletedMap = new Map();
+    for (let i = 0; i < deletedSource.length; i++) {
+        const record = normalizeScheduleEmployeeRecord_(deletedSource[i], true);
+        if (record.EmployeeEmail && !activeMap.has(record.EmployeeEmail)) {
+            deletedMap.set(record.EmployeeEmail, record);
+        }
+    }
+    const updatedAt = String(source.updatedAt || source.lastUpdatedAt || new Date().toISOString()).trim();
+    return {
+        schemaVersion: Number(source.schemaVersion) || SCHEDULE_STATE_SCHEMA_VERSION,
+        updatedAt: updatedAt,
+        Employee_data: Array.from(activeMap.values()).sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail)),
+        deleted_employee_data: Array.from(deletedMap.values()).sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail))
+    };
+}
+function getStoredScheduleState_() {
+    const raw = readScheduleSetting_(SCHEDULE_STATE_KEY, '');
+    if (!raw) {
+        return normalizeScheduleState_({});
+    }
+    return normalizeScheduleState_(parseScheduleJsonValue_(raw, {}));
+}
+function writeStoredScheduleState_(state) {
+    const normalized = normalizeScheduleState_(state);
+    normalized.updatedAt = new Date().toISOString();
+    writeScheduleSetting_(SCHEDULE_STATE_KEY, JSON.stringify(normalized));
+    return normalized;
+}
+function collectScheduleEmployeeEmailsFromState_(state, includeDeleted = true) {
+    const normalized = normalizeScheduleState_(state);
+    const unique = new Set();
+    normalized.Employee_data.forEach(employee => {
+        const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+        if (email) {
+            unique.add(email);
+        }
+    });
+    if (includeDeleted) {
+        normalized.deleted_employee_data.forEach(employee => {
+            const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+            if (email) {
+                unique.add(email);
+            }
+        });
+    }
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+}
+function buildAWSConfigFromScheduleState_(state) {
+    const normalized = normalizeScheduleState_(state);
+    const config = {};
+    const addEmployee = (employee) => {
+        const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+        if (!email)
+            return;
+        config[email] = {
+            enabled: employee.workweek === 'AWS',
+            effectiveDate: String(employee.awsEffectiveDate || employee.AWSEffectiveDate || '').trim()
+        };
+    };
+    normalized.Employee_data.forEach(addEmployee);
+    normalized.deleted_employee_data.forEach(addEmployee);
+    return config;
+}
+function applyAWSConfigToScheduleState_(state, awsConfig) {
+    const normalized = normalizeScheduleState_(state);
+    const source = awsConfig && typeof awsConfig === 'object' ? awsConfig : {};
+    const applyToList = (list) => list.map(employee => {
+        const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+        const next = Object.assign({}, employee);
+        const nextAws = source[email];
+        if (nextAws && typeof nextAws === 'object') {
+            next.workweek = nextAws.enabled === true ? 'AWS' : 'CA';
+            next.awsEffectiveDate = String(nextAws.effectiveDate || '').trim();
+        }
+        else {
+            next.workweek = employee.workweek === 'AWS' ? 'AWS' : 'CA';
+            next.awsEffectiveDate = String(employee.awsEffectiveDate || employee.AWSEffectiveDate || '').trim();
+        }
+        return next;
+    });
+    normalized.Employee_data = applyToList(normalized.Employee_data);
+    normalized.deleted_employee_data = applyToList(normalized.deleted_employee_data);
+    return normalized;
+}
+function appendMissingScheduleEmployees_(state, sourceEmails) {
+    const normalized = normalizeScheduleState_(state);
+    const activeEmails = new Set(collectScheduleEmployeeEmailsFromState_(normalized, false));
+    const deletedEmails = new Set(collectScheduleEmployeeEmailsFromState_(normalized, true));
+    const existingEmails = new Set([...activeEmails, ...deletedEmails]);
+    const addedEmails = [];
+    Array.from(sourceEmails || []).sort((a, b) => a.localeCompare(b)).forEach(email => {
+        const normalizedEmail = normalizeScheduleEmail_(email);
+        if (!normalizedEmail || existingEmails.has(normalizedEmail)) {
+            return;
+        }
+        normalized.Employee_data.push(createBlankScheduleEmployeeRecord_(normalizedEmail));
+        existingEmails.add(normalizedEmail);
+        addedEmails.push(normalizedEmail);
+    });
+    normalized.Employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
+    return {
+        state: normalized,
+        addedEmails: addedEmails
+    };
+}
+function collectUniqueEmailsFromSheet_(sheet, oneBasedColumn) {
+    if (!sheet || oneBasedColumn < 1) {
+        return [];
+    }
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+        return [];
+    }
+    const values = sheet.getRange(2, oneBasedColumn, lastRow - 1, 1).getValues();
+    const unique = new Set();
+    for (let i = 0; i < values.length; i++) {
+        const candidate = String(values[i][0] || '').trim().toLowerCase();
+        if (candidate && candidate.indexOf('@') > 0) {
+            unique.add(candidate);
+        }
+    }
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+}
+function checkForNewUsers_(schedulePayload) {
+    const state = normalizeScheduleState_(schedulePayload);
+    const existingEmails = new Set(collectScheduleEmployeeEmailsFromState_(state, true));
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dataEntry = ss.getSheetByName('DataEntry');
+    const archive = ss.getSheetByName('Archive');
+    const sourceEmails = new Set([
+        ...collectUniqueEmailsFromSheet_(dataEntry, dataCol('EMAIL')),
+        ...collectUniqueEmailsFromSheet_(archive, archiveCol('EMAIL'))
+    ]);
+    let addedCount = 0;
+    const addedEmails = [];
+    Array.from(sourceEmails).sort((a, b) => a.localeCompare(b)).forEach(email => {
+        const normalizedEmail = normalizeScheduleEmail_(email);
+        if (!normalizedEmail || existingEmails.has(normalizedEmail)) {
+            return;
+        }
+        state.Employee_data.push(createBlankScheduleEmployeeRecord_(normalizedEmail));
+        existingEmails.add(normalizedEmail);
+        addedEmails.push(normalizedEmail);
+        addedCount++;
+    });
+    state.Employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
+    return { state: state, addedCount: addedCount, addedEmails: addedEmails };
+}
+function extractScheduleEmployeeEmails_(schedulePayload) {
+    return collectScheduleEmployeeEmailsFromState_(schedulePayload, true);
+}
+function extractScheduleAWSConfig_(schedulePayload) {
+    return buildAWSConfigFromScheduleState_(schedulePayload);
+}
+function fetchScheduleToolData() {
+    if (!hasPermission('payroll') || !hasPermission('edit')) {
+        return { success: false, message: 'Payroll and edit permissions are required.', state: getStoredScheduleState_() };
+    }
+    return { success: true, state: getStoredScheduleState_() };
+}
+function saveScheduleToolData(schedulePayload) {
+    try {
+        if (!hasPermission('payroll') || !hasPermission('edit')) {
+            return { success: false, message: 'Payroll and edit permissions are required.' };
+        }
+        const savedState = writeStoredScheduleState_(schedulePayload);
+        return { success: true, message: 'Schedule saved.', state: savedState };
+    }
+    catch (e) {
+        Logger.log('saveScheduleToolData: error=%s', e.toString());
+        return { success: false, message: e.toString() };
+    }
+}
+function checkForNewEmployees() {
+    try {
+        if (!hasPermission('payroll') || !hasPermission('edit')) {
+            return { success: false, message: 'Payroll and edit permissions are required.', addedCount: 0, addedEmails: [], state: getStoredScheduleState_() };
+        }
+        const checked = checkForNewUsers_(getStoredScheduleState_());
+        if (checked.addedCount > 0) {
+            const savedState = writeStoredScheduleState_(checked.state);
+            const addedList = checked.addedEmails.join(', ');
+            return {
+                success: true,
+                message: checked.addedCount === 1
+                    ? ('Added 1 new employee: ' + addedList)
+                    : ('Added ' + checked.addedCount + ' new employees: ' + addedList),
+                addedCount: checked.addedCount,
+                addedEmails: checked.addedEmails,
+                state: savedState
+            };
+        }
+        return { success: true, message: 'No new employees found.', addedCount: 0, addedEmails: [], state: checked.state };
+    }
+    catch (e) {
+        Logger.log('checkForNewEmployees: error=%s', e.toString());
+        return { success: false, message: e.toString(), addedCount: 0, addedEmails: [], state: getStoredScheduleState_() };
+    }
 }
 /**
  * Persist AWS config from web UI without generating preview.
@@ -3031,12 +3308,10 @@ function saveAWSConfigFromWeb(awsEnrolled) {
         if (!awsEnrolled || typeof awsEnrolled !== 'object') {
             return { success: false, message: 'Invalid AWS configuration payload.' };
         }
-        const props = PropertiesService.getScriptProperties();
-        props.setProperty(AWS_CONFIG_KEY, JSON.stringify(awsEnrolled));
-        props.setProperty(AWS_CONFIG_UPDATED_AT_KEY, String(Date.now()));
+        const savedState = writeStoredScheduleState_(applyAWSConfigToScheduleState_(getStoredScheduleState_(), awsEnrolled));
         Logger.log('saveAWSConfigFromWeb: saved AWS config for %s employee(s)', Object.keys(awsEnrolled).length);
         debugLog('saveAWSConfigFromWeb complete', { employeeCount: Object.keys(awsEnrolled).length });
-        return { success: true, message: 'AWS settings saved.' };
+        return { success: true, message: 'AWS settings saved.', state: savedState };
     }
     catch (e) {
         Logger.log('saveAWSConfigFromWeb: error=%s', e.toString());
@@ -3745,9 +4020,7 @@ function exportPayrollPreviewFromWeb(startDateIso, awsEnrolled, options) {
             return { success: false, message: 'Invalid start date.' };
         }
         if (awsEnrolled && typeof awsEnrolled === 'object') {
-            const props = PropertiesService.getScriptProperties();
-            props.setProperty(AWS_CONFIG_KEY, JSON.stringify(awsEnrolled));
-            props.setProperty(AWS_CONFIG_UPDATED_AT_KEY, String(Date.now()));
+            writeStoredScheduleState_(applyAWSConfigToScheduleState_(getStoredScheduleState_(), awsEnrolled));
         }
         const opts = options || {};
         const forceUnverified = opts.forceUnverified === true;

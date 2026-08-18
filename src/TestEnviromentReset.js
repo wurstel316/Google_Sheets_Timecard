@@ -58,12 +58,9 @@ function resetTestEnvironmentFromWorksheet(password) {
     }
     resetDataEntrySheetForTest_(dataEntry);
     resetArchiveSheetForTest_(archive);
+    resetScheduleSheetForTest_(ss);
     clearTestEnvironmentState_();
     const insertedRows = bulkLoadTestRows_(dataEntry, parsed.rows);
-    setActivePayPeriod(parsed.startDate, parsed.endDate);
-    syncActivePayPeriodHeaders(parsed.startDateStr, parsed.endDateStr);
-    refreshEmployeeEmailCacheFromSheet(dataEntry);
-    buildAndCacheAWSConfig(dataEntry);
     SpreadsheetApp.flush();
     Logger.log('resetTestEnvironmentFromWorksheet: loaded %s row(s)', insertedRows);
     debugLog('resetTestEnvironmentFromWorksheet complete', {
@@ -160,13 +157,27 @@ function resetArchiveSheetForTest_(sheet) {
     sheet.setColumnWidths(1, ARCHIVE_COL_COUNT, 150);
 }
 
+function resetScheduleSheetForTest_(ss) {
+    const schedule = ss.getSheetByName('Schedule');
+    if (!schedule) {
+        return;
+    }
+    schedule.clear();
+    Logger.log('resetScheduleSheetForTest_: cleared Schedule sheet state');
+    debugLog('resetScheduleSheetForTest complete', { cleared: true });
+}
+
 function clearTestEnvironmentState_() {
     const props = PropertiesService.getScriptProperties();
     const transientKeys = [
         'cachedPreviewRows',
         'currentPreviewStartDate',
         'currentPreviewEndDate',
+        'lastPreviewStartDate',
         'lastPreviewEndDate',
+        ACTIVE_PAY_PERIOD_START_KEY,
+        ACTIVE_PAY_PERIOD_END_KEY,
+        SCHEDULE_STATE_KEY,
         EMPLOYEE_EMAIL_CACHE_KEY,
         EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY,
         AWS_CONFIG_KEY,
