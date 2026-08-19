@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.44 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.51 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -761,7 +761,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.44';
+const SCRIPT_VERSION = '2.2.2-push.51';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -845,7 +845,9 @@ function doGet(e) {
             maxDateStr: allowedRange.maxDateStr
         };
         const permissionFlags = getCurrentUserPermissionFlags();
-        return HtmlService.createHtmlOutput(createMobileHtml(userEmail, statusObj, entries, ss.getId(), activePayPeriod.startDateStr, activePayPeriod.endDateStr, allowedRangeForClient, getScriptVersion(), permissionFlags))
+        const schedulePreviewResult = getCurrentUserSchedulePreview();
+        const preloadedSchedulePreview = schedulePreviewResult && schedulePreviewResult.preview ? schedulePreviewResult.preview : null;
+        return HtmlService.createHtmlOutput(createMobileHtml(userEmail, statusObj, entries, ss.getId(), activePayPeriod.startDateStr, activePayPeriod.endDateStr, allowedRangeForClient, getScriptVersion(), permissionFlags, preloadedSchedulePreview))
             .setTitle('TimeCard System')
             .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
@@ -1419,6 +1421,189 @@ function getRecentEntriesJson() {
     Logger.log('getRecentEntriesJson: returned %s entry/entries', serializedEntries.length);
     debugLog('getRecentEntriesJson complete', { entriesCount: serializedEntries.length, durationMs: Date.now() - startMs });
     return serializedEntries;
+}
+
+function getScheduleDayNames_() {
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+}
+
+function parseScheduleTimeBlockHour_(timeBlock) {
+    const value = String(timeBlock || '').trim();
+    const match = value.match(/^(\d{1,2}):\d{2}$/);
+    if (!match) {
+        return null;
+    }
+    const hour = Number(match[1]);
+    if (!isFinite(hour) || hour < 0 || hour > 23) {
+        return null;
+    }
+    return hour;
+}
+
+function formatScheduleHourLabel_(hour24) {
+    const normalized = Number(hour24);
+    if (!isFinite(normalized)) {
+        return '';
+    }
+    const wrapped = ((normalized % 24) + 24) % 24;
+    const suffix = wrapped >= 12 ? 'PM' : 'AM';
+    const twelveHour = wrapped % 12 === 0 ? 12 : wrapped % 12;
+    return String(twelveHour) + ':00 ' + suffix;
+}
+
+function buildScheduleSegmentsFromDay_(dayRecord) {
+    const shifts = dayRecord && Array.isArray(dayRecord.shifts) ? dayRecord.shifts : [];
+    const hourStatus = new Map();
+    for (let i = 0; i < shifts.length; i++) {
+        const shift = shifts[i] || {};
+        const status = String(shift.status || '').trim().toUpperCase();
+        if (status !== 'O' && status !== 'B') {
+            continue;
+        }
+        const hour = parseScheduleTimeBlockHour_(shift.timeBlock);
+        if (hour === null) {
+            continue;
+        }
+        // Latest shift assignment for an hour wins if duplicates exist.
+        hourStatus.set(hour, status);
+    }
+    const sortedHours = Array.from(hourStatus.keys()).sort((a, b) => a - b);
+    const statusLabelMap = { O: 'On Duty', B: 'Backup' };
+    const segments = [];
+
+    let runStartHour = null;
+    let runEndHour = null;
+    let runStatus = '';
+
+    for (let i = 0; i < sortedHours.length; i++) {
+        const hour = sortedHours[i];
+        const status = hourStatus.get(hour) || '';
+        const startsNewRun = runStartHour === null
+            || status !== runStatus
+            || hour !== (runEndHour + 1);
+
+        if (startsNewRun) {
+            if (runStartHour !== null && runStatus) {
+                const endHourExclusive = runEndHour + 1;
+                segments.push({
+                    status: runStatus,
+                    label: statusLabelMap[runStatus] || runStatus,
+                    startHour: runStartHour,
+                    endHourExclusive: endHourExclusive,
+                    rangeText: formatScheduleHourLabel_(runStartHour) + '-' + formatScheduleHourLabel_(endHourExclusive)
+                });
+            }
+            runStartHour = hour;
+            runEndHour = hour;
+            runStatus = status;
+            continue;
+        }
+
+        runEndHour = hour;
+    }
+
+    if (runStartHour !== null && runStatus) {
+        const endHourExclusive = runEndHour + 1;
+        segments.push({
+            status: runStatus,
+            label: statusLabelMap[runStatus] || runStatus,
+            startHour: runStartHour,
+            endHourExclusive: endHourExclusive,
+            rangeText: formatScheduleHourLabel_(runStartHour) + '-' + formatScheduleHourLabel_(endHourExclusive)
+        });
+    }
+
+    return segments;
+}
+
+function buildEmployeeScheduleDaySummary_(dayRecord) {
+    const dayName = String(dayRecord && dayRecord.dayName ? dayRecord.dayName : '').trim();
+    const segments = buildScheduleSegmentsFromDay_(dayRecord);
+    const hasSchedule = segments.length > 0;
+    const summaryText = hasSchedule
+        ? segments.map(segment => segment.rangeText + ' ' + segment.label).join(' | ')
+        : 'Not scheduled';
+    return {
+        dayName: dayName,
+        hasSchedule: hasSchedule,
+        summaryText: summaryText,
+        segments: segments
+    };
+}
+
+function buildDefaultEmployeeSchedulePreview_() {
+    const dayNames = getScheduleDayNames_();
+    const week = dayNames.map(dayName => ({
+        dayName: dayName,
+        hasSchedule: false,
+        summaryText: 'Not scheduled',
+        segments: []
+    }));
+    return {
+        week: week,
+        today: week[0],
+        tomorrow: week[1],
+        updatedAt: ''
+    };
+}
+
+function buildEmployeeSchedulePreviewFromRecord_(employeeRecord, updatedAt) {
+    const dayNames = getScheduleDayNames_();
+    const normalizedDays = normalizeScheduleDays_(employeeRecord && employeeRecord.days ? employeeRecord.days : []);
+    const week = normalizedDays.map(day => buildEmployeeScheduleDaySummary_(day));
+    const tz = Session.getScriptTimeZone();
+    const isoDayValue = Number(Utilities.formatDate(new Date(), tz, 'u'));
+    const isoDay = isFinite(isoDayValue) && isoDayValue >= 1 && isoDayValue <= 7 ? isoDayValue : 1;
+    const todayIndex = isoDay - 1;
+    const tomorrowIndex = (todayIndex + 1) % 7;
+    const today = Object.assign({}, week[todayIndex] || buildEmployeeScheduleDaySummary_({ dayName: dayNames[todayIndex], shifts: [] }));
+    const tomorrow = Object.assign({}, week[tomorrowIndex] || buildEmployeeScheduleDaySummary_({ dayName: dayNames[tomorrowIndex], shifts: [] }));
+    if (!today.hasSchedule) {
+        today.summaryText = 'Not scheduled today';
+    }
+    if (!tomorrow.hasSchedule) {
+        tomorrow.summaryText = 'Not scheduled tomorrow';
+    }
+    return {
+        week: week,
+        today: today,
+        tomorrow: tomorrow,
+        updatedAt: String(updatedAt || '')
+    };
+}
+
+function getCurrentUserSchedulePreview() {
+    const startMs = Date.now();
+    const userEmail = Session.getActiveUser().getEmail();
+    const normalizedEmail = normalizeScheduleEmail_(userEmail);
+    Logger.log('getCurrentUserSchedulePreview: requested');
+    if (!normalizedEmail) {
+        const fallbackPreview = buildDefaultEmployeeSchedulePreview_();
+        fallbackPreview.today.summaryText = 'Not scheduled today';
+        fallbackPreview.tomorrow.summaryText = 'Not scheduled tomorrow';
+        debugLog('getCurrentUserSchedulePreview missing user email', { durationMs: Date.now() - startMs });
+        return { success: false, message: 'Unable to identify user.', preview: fallbackPreview };
+    }
+    try {
+        const state = ensureScheduleEmployeeRosterLoaded_(normalizedEmail);
+        const employee = (state.Employee_data || []).find(record => normalizeScheduleEmail_(record.EmployeeEmail || record.EmployeeName) === normalizedEmail);
+        const preview = buildEmployeeSchedulePreviewFromRecord_(employee || null, state.updatedAt);
+        debugLog('getCurrentUserSchedulePreview complete', {
+            email: normalizedEmail,
+            hasEmployeeRecord: !!employee,
+            todayHasSchedule: !!(preview.today && preview.today.hasSchedule),
+            tomorrowHasSchedule: !!(preview.tomorrow && preview.tomorrow.hasSchedule),
+            durationMs: Date.now() - startMs
+        });
+        return { success: true, preview: preview };
+    }
+    catch (e) {
+        Logger.log('getCurrentUserSchedulePreview: error=%s', e.toString());
+        const fallbackPreview = buildDefaultEmployeeSchedulePreview_();
+        fallbackPreview.today.summaryText = 'Not scheduled today';
+        fallbackPreview.tomorrow.summaryText = 'Not scheduled tomorrow';
+        return { success: false, message: e.toString(), preview: fallbackPreview };
+    }
 }
 // DEPRECATED (commented out intentionally for rollback safety):
 // Manual Add Time UIs now receive preloaded allowed-range data from initial HTML render,

@@ -7,6 +7,34 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Removed first-load clock-in note-requirement lag by preloading the signed-in employee schedule preview into initial HTML and using it for immediate client-side gating before async schedule refresh completes.
+- Why: Prevents delayed transitions in required vs not-required note state that previously depended on a post-load RPC round trip.
+- Files: src/Code.js, src/UserInterface.js
+- Validation: `doGet()` now passes preloaded schedule preview into `createMobileHtml(...)`, client initializes schedule state from that payload on boot, and the existing async refresh path remains for reconciliation.
+
+### Changed
+- Summary: Updated employee schedule preview segments to render in chronological day order with contiguous split blocks (for example separate overnight and evening Backup segments), and stack each time block pill vertically per day.
+- Why: Better mirrors how shifts appear on the schedule timeline and avoids collapsing non-contiguous periods into one misleading range.
+- Files: src/Code.js, src/UserInterface.js
+- Validation: Reworked day-segment builder to emit contiguous O/B runs in start-time order and adjusted schedule pill layout to column flow so each block appears on its own line.
+
+### Changed
+- Summary: Added UI-only note gating for clock actions so clock-in requires a note when no On Duty schedule window is within +/-15 minutes, and clock-out requires a note once an open shift exceeds 5 hours.
+- Why: Provides immediate employee guidance for off-schedule starts and long open-shift closures while keeping enforcement client-side only as requested.
+- Files: src/UserInterface.js
+- Validation: Wired note requirement checks into schedule preview updates, recent-entry refreshes, notes input typing, status refresh, and clock-toggle submit flow; confirmed no server-side verification changes were introduced.
+- Summary: Refined clock note UX to keep note input placeholders fixed (`Clock in note`/`Clock out note`), moved requirement guidance to the red helper text, and added a first-load clock-out fallback check from the current status text to prevent delayed disable.
+- Why: Keeps the input box text simple while making requirement messaging explicit below the field and tightening initial load behavior before recent-entry hydration completes.
+- Files: src/UserInterface.js
+- Validation: Confirmed the 5+ hour clock-out requirement now applies from either hydrated open-entry data or parsed status text and the helper text shows the full missed-break instruction copy.
+
+### Changed
+- Summary: Added an employee schedule preview directly below the clock button with today/tomorrow summaries, On Duty vs Backup color-coded pills, and a read-only full-week modal opened from the schedule pills.
+- Why: Gives employees immediate visibility into current and next-day schedule expectations without opening admin-only tools, while preserving clear fallback messaging when no shift exists.
+- Files: src/Code.js, src/UserInterface.js
+- Validation: Added a current-user-only schedule preview RPC that reuses existing schedule normalization/roster helpers, wired client rendering into startup + refresh + clock-toggle success flows, and verified touched files pass diagnostics checks.
+
+### Changed
 - Summary: Made the Admin View employee name grouping row stay sticky at the top while scrolling long entry lists.
 - Why: Keeps user context visible during long-scroll review and edit workflows without changing row actions or grouping logic.
 - Files: src/UserInterface.js

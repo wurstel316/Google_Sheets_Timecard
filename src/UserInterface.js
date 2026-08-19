@@ -1,5 +1,5 @@
-// Compiled using timecard-gas-project 2.2.2-push.44 (TypeScript 4.9.5)
-function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags) {
+// Compiled using timecard-gas-project 2.2.2-push.51 (TypeScript 4.9.5)
+function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
     ? {
@@ -1015,6 +1015,117 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             color: #546173;
             text-align: center;
             line-height: 1.2;
+          }
+          .clock-note-hint {
+            width: 90%;
+            max-width: 25rem;
+            margin: -0.35rem 0 0.45rem;
+            font-size: clamp(0.78rem, 2.5vw, 0.92rem);
+            color: #8d2f2f;
+            text-align: left;
+            line-height: 1.25;
+            display: none;
+          }
+          .employee-schedule-block {
+            width: 90%;
+            max-width: 25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.42rem;
+            margin: 0.15rem 0 0.5rem;
+          }
+          .schedule-summary-pill {
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0.6rem 0.75rem;
+            border-radius: 0.7rem;
+            border: 1px solid #c9daef;
+            background: #f6faff;
+            color: #243e63;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 0.4rem;
+            text-align: left;
+          }
+          .schedule-summary-pill:hover {
+            background: #edf5ff;
+          }
+          .schedule-pill-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #4d6380;
+          }
+          .schedule-pill-body {
+            display: block;
+            width: 100%;
+          }
+          .schedule-pill-segments {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.24rem;
+          }
+          .schedule-segment {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.17rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            font-size: 0.72rem;
+            font-weight: 700;
+            line-height: 1.2;
+            white-space: nowrap;
+          }
+          .schedule-segment.on-duty {
+            background: #eaf7ef;
+            color: #1f6a3b;
+            border-color: #bfe2cd;
+          }
+          .schedule-segment.backup {
+            background: #f1edff;
+            color: #5b46a8;
+            border-color: #d7ccff;
+          }
+          .schedule-segment-range {
+            font-family: 'Roboto Mono', monospace;
+            font-variant-numeric: tabular-nums;
+          }
+          .schedule-segment-label {
+            opacity: 0.88;
+          }
+          .schedule-pill-empty {
+            color: #5d6c80;
+            font-size: 0.8rem;
+            font-style: italic;
+          }
+          .employee-schedule-week-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+          }
+          .employee-schedule-day-row {
+            border: 1px solid #d8e2ee;
+            border-radius: 0.65rem;
+            padding: 0.55rem;
+            background: #fbfdff;
+          }
+          .employee-schedule-day-name {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: #40556f;
+            margin-bottom: 0.35rem;
+          }
+          .employee-schedule-day-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.32rem;
           }
           .ui-scale-controls {
             width: 90%;
@@ -2265,10 +2376,22 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           <p id="loading" class="loading">Processing...</p>
           
           <input type="text" id="notes" placeholder="Clock in note" maxlength="150">
+          <p id="clockNoteHint" class="clock-note-hint"></p>
           
            <button id="clockToggle" onclick="submitClockToggle()">
              ${statusObj.isClockedIn ? '🔴 Clock Out' : '🟢 Clock In'}
            </button>
+
+          <div id="employeeSchedulePreview" class="employee-schedule-block" aria-live="polite">
+            <button id="scheduleTodayPill" type="button" class="schedule-summary-pill" onclick="openEmployeeScheduleModal()" title="View full schedule">
+              <span class="schedule-pill-title">Today</span>
+              <span id="scheduleTodaySummary" class="schedule-pill-body"><span class="schedule-pill-empty">Loading schedule...</span></span>
+            </button>
+            <button id="scheduleTomorrowPill" type="button" class="schedule-summary-pill" onclick="openEmployeeScheduleModal()" title="View full schedule">
+              <span class="schedule-pill-title">Tomorrow</span>
+              <span id="scheduleTomorrowSummary" class="schedule-pill-body"><span class="schedule-pill-empty">Loading schedule...</span></span>
+            </button>
+          </div>
 
           <button id="manualEntryBtn" type="button" onclick="showManualEntryForm(event)">
             ➕ Add Time Entry
@@ -2361,6 +2484,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+          <div id="employeeScheduleModal" class="modal" style="display: none;">
+            <div class="modal-content" style="width:min(34rem,96vw);">
+              <button class="modal-close-x" onclick="closeEmployeeScheduleModal()" title="Close schedule" aria-label="Close schedule">x</button>
+              <h3>Your Schedule</h3>
+              <p id="employeeScheduleModalMeta" class="modal-note">Current week schedule</p>
+              <div id="employeeScheduleWeekList" class="employee-schedule-week-list"></div>
             </div>
           </div>
 
@@ -2583,6 +2715,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           // Refactor note: Manual Add Time range is preloaded by doGet/createMobileHtml
           // so the modal opens with constraints immediately and without a range RPC.
           const preloadedAllowedRange = ${JSON.stringify(preloadedManualRange)};
+          const preloadedSchedulePreview = ${JSON.stringify(preloadedSchedulePreviewFromServer || null)};
           const currentUserEmail = ${JSON.stringify(email || '')};
           const adminPermissions = ${JSON.stringify(normalizedPermissionFlags)};
           let activePayPeriodStartLabel = ${JSON.stringify(activePayPeriodStartDateStr || '')};
@@ -2627,6 +2760,180 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let pendingClockAction = false;
           let pendingRefreshStatus = false;
           let isClockedIn = ${statusObj.isClockedIn ? 'true' : 'false'};
+          let latestStatusTextRaw = ${JSON.stringify(statusObj && statusObj.status ? statusObj.status : '')};
+          let employeeSchedulePreview = null;
+          let employeeSchedulePreviewInFlight = false;
+          const CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS = 15 * 60 * 1000;
+          const CLOCK_OUT_NOTE_THRESHOLD_MS = 5 * 60 * 60 * 1000;
+
+          function getScheduleDayNamesClient() {
+            return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+          }
+
+          function getTodayScheduleDayIndex() {
+            const dayIndex = new Date().getDay();
+            return (dayIndex + 6) % 7;
+          }
+
+          function getDefaultEmployeeSchedulePreview() {
+            const dayNames = getScheduleDayNamesClient();
+            const week = dayNames.map((dayName) => ({ dayName: dayName, hasSchedule: false, summaryText: 'Not scheduled', segments: [] }));
+            const todayIndex = getTodayScheduleDayIndex();
+            const tomorrowIndex = (todayIndex + 1) % 7;
+            const today = Object.assign({}, week[todayIndex], { summaryText: 'Not scheduled today' });
+            const tomorrow = Object.assign({}, week[tomorrowIndex], { summaryText: 'Not scheduled tomorrow' });
+            return { week: week, today: today, tomorrow: tomorrow, updatedAt: '' };
+          }
+
+          function normalizeScheduleSegmentClient(segment) {
+            const source = segment && typeof segment === 'object' ? segment : {};
+            const status = String(source.status || '').trim().toUpperCase();
+            return {
+              status: status === 'O' || status === 'B' ? status : '',
+              label: String(source.label || ''),
+              rangeText: String(source.rangeText || '').trim(),
+              startHour: Number(source.startHour),
+              endHourExclusive: Number(source.endHourExclusive)
+            };
+          }
+
+          function normalizeScheduleDayClient(dayData, fallbackDayName, fallbackSummaryText) {
+            const source = dayData && typeof dayData === 'object' ? dayData : {};
+            const segments = Array.isArray(source.segments)
+              ? source.segments.map((segment) => normalizeScheduleSegmentClient(segment)).filter((segment) => !!segment.rangeText)
+              : [];
+            const hasSchedule = source.hasSchedule === true || segments.length > 0;
+            const summaryText = String(source.summaryText || '').trim() || (hasSchedule
+              ? segments.map((segment) => segment.rangeText + ' ' + (segment.status === 'O' ? 'On Duty' : 'Backup')).join(' | ')
+              : String(fallbackSummaryText || 'Not scheduled'));
+            return {
+              dayName: String(source.dayName || fallbackDayName || ''),
+              hasSchedule: hasSchedule,
+              summaryText: summaryText,
+              segments: segments
+            };
+          }
+
+          function normalizeSchedulePreviewClient(preview) {
+            const base = getDefaultEmployeeSchedulePreview();
+            const source = preview && typeof preview === 'object' ? preview : {};
+            const dayNames = getScheduleDayNamesClient();
+            const sourceWeek = Array.isArray(source.week) ? source.week : [];
+            const week = dayNames.map((dayName, index) => normalizeScheduleDayClient(sourceWeek[index], dayName, 'Not scheduled'));
+            const todayIndex = getTodayScheduleDayIndex();
+            const tomorrowIndex = (todayIndex + 1) % 7;
+            const today = normalizeScheduleDayClient(source.today || week[todayIndex], week[todayIndex].dayName, 'Not scheduled today');
+            const tomorrow = normalizeScheduleDayClient(source.tomorrow || week[tomorrowIndex], week[tomorrowIndex].dayName, 'Not scheduled tomorrow');
+            if (!today.hasSchedule) today.summaryText = 'Not scheduled today';
+            if (!tomorrow.hasSchedule) tomorrow.summaryText = 'Not scheduled tomorrow';
+            return {
+              week: week,
+              today: today,
+              tomorrow: tomorrow,
+              updatedAt: String(source.updatedAt || base.updatedAt || '')
+            };
+          }
+
+          // Initialize from server-preloaded schedule to avoid first-load gating lag.
+          employeeSchedulePreview = normalizeSchedulePreviewClient(preloadedSchedulePreview);
+
+          function buildScheduleSegmentsHtml(segments) {
+            const source = Array.isArray(segments) ? segments : [];
+            if (!source.length) {
+              return '<span class="schedule-pill-empty">Not scheduled</span>';
+            }
+            const chips = [];
+            for (let i = 0; i < source.length; i++) {
+              const segment = source[i] || {};
+              const status = String(segment.status || '').toUpperCase();
+              const className = status === 'O' ? 'on-duty' : 'backup';
+              const label = status === 'O' ? 'On Duty' : 'Backup';
+              chips.push(
+                '<span class="schedule-segment ' + className + '">' +
+                  '<span class="schedule-segment-range">' + escapeHtml(segment.rangeText || '') + '</span>' +
+                  '<span class="schedule-segment-label">' + escapeHtml(label) + '</span>' +
+                '</span>'
+              );
+            }
+            return '<span class="schedule-pill-segments">' + chips.join('') + '</span>';
+          }
+
+          function renderEmployeeSchedulePreview() {
+            if (!employeeSchedulePreview) {
+              employeeSchedulePreview = getDefaultEmployeeSchedulePreview();
+            }
+            const todaySummaryEl = document.getElementById('scheduleTodaySummary');
+            const tomorrowSummaryEl = document.getElementById('scheduleTomorrowSummary');
+            if (!todaySummaryEl || !tomorrowSummaryEl) return;
+            const today = employeeSchedulePreview.today || { hasSchedule: false, summaryText: 'Not scheduled today', segments: [] };
+            const tomorrow = employeeSchedulePreview.tomorrow || { hasSchedule: false, summaryText: 'Not scheduled tomorrow', segments: [] };
+            todaySummaryEl.innerHTML = today.hasSchedule ? buildScheduleSegmentsHtml(today.segments) : '<span class="schedule-pill-empty">' + escapeHtml(today.summaryText || 'Not scheduled today') + '</span>';
+            tomorrowSummaryEl.innerHTML = tomorrow.hasSchedule ? buildScheduleSegmentsHtml(tomorrow.segments) : '<span class="schedule-pill-empty">' + escapeHtml(tomorrow.summaryText || 'Not scheduled tomorrow') + '</span>';
+          }
+
+          function renderEmployeeScheduleModal() {
+            if (!employeeSchedulePreview) {
+              employeeSchedulePreview = getDefaultEmployeeSchedulePreview();
+            }
+            const weekList = document.getElementById('employeeScheduleWeekList');
+            const meta = document.getElementById('employeeScheduleModalMeta');
+            if (!weekList || !meta) return;
+            const week = Array.isArray(employeeSchedulePreview.week) ? employeeSchedulePreview.week : [];
+            const rows = [];
+            for (let i = 0; i < week.length; i++) {
+              const day = week[i] || {};
+              rows.push(
+                '<div class="employee-schedule-day-row">' +
+                  '<div class="employee-schedule-day-name">' + escapeHtml(day.dayName || '') + '</div>' +
+                  '<div class="employee-schedule-day-body">' +
+                    (day.hasSchedule ? buildScheduleSegmentsHtml(day.segments) : '<span class="schedule-pill-empty">Not scheduled</span>') +
+                  '</div>' +
+                '</div>'
+              );
+            }
+            weekList.innerHTML = rows.join('');
+            meta.innerText = employeeSchedulePreview.updatedAt ? 'Updated ' + employeeSchedulePreview.updatedAt : 'Current week schedule';
+          }
+
+          function loadEmployeeSchedulePreview() {
+            if (employeeSchedulePreviewInFlight) return;
+            employeeSchedulePreviewInFlight = true;
+            google.script.run
+              .withSuccessHandler((result) => {
+                employeeSchedulePreviewInFlight = false;
+                const preview = result && result.preview ? result.preview : null;
+                employeeSchedulePreview = normalizeSchedulePreviewClient(preview);
+                renderEmployeeSchedulePreview();
+                updateClockNotePlaceholder();
+              })
+              .withFailureHandler((error) => {
+                employeeSchedulePreviewInFlight = false;
+                debugClientError('loadEmployeeSchedulePreview.failure', {
+                  message: (error && error.message) ? error.message : 'Unknown error'
+                });
+                if (!employeeSchedulePreview) {
+                  employeeSchedulePreview = getDefaultEmployeeSchedulePreview();
+                }
+                renderEmployeeSchedulePreview();
+                updateClockNotePlaceholder();
+              })
+              .getCurrentUserSchedulePreview();
+          }
+
+          function openEmployeeScheduleModal() {
+            renderEmployeeScheduleModal();
+            const modal = document.getElementById('employeeScheduleModal');
+            if (modal) {
+              modal.style.display = 'flex';
+            }
+          }
+
+          function closeEmployeeScheduleModal() {
+            const modal = document.getElementById('employeeScheduleModal');
+            if (modal) {
+              modal.style.display = 'none';
+            }
+          }
 
           function formatCompactStatusText(statusText) {
             const raw = String(statusText || '').trim();
@@ -2827,7 +3134,107 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           function updateClockNotePlaceholder() {
             const notesInput = document.getElementById('notes');
             if (!notesInput) return;
+            const requirement = getClockNoteRequirement();
             notesInput.placeholder = isClockedIn ? 'Clock out note' : 'Clock in note';
+            updateClockNoteRequirementUi(requirement);
+          }
+
+          function parseClockInMsFromStatusText(statusText) {
+            const raw = String(statusText || '').trim();
+            if (!raw) return NaN;
+            const match = raw.match(/since\\s+(\\d{1,2}):(\\d{2})\\s*([AP]M)\\s+on\\s+(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/i);
+            if (!match) return NaN;
+            const hour12 = Number(match[1]);
+            const minute = Number(match[2]);
+            const meridiem = String(match[3] || '').toUpperCase();
+            const month = Number(match[4]);
+            const day = Number(match[5]);
+            const year = Number(match[6]);
+            if (!isFinite(hour12) || !isFinite(minute) || !isFinite(month) || !isFinite(day) || !isFinite(year)) return NaN;
+            let hour24 = hour12 % 12;
+            if (meridiem === 'PM') hour24 += 12;
+            const parsed = new Date(year, month - 1, day, hour24, minute, 0, 0);
+            const ms = parsed.getTime();
+            return isNaN(ms) ? NaN : ms;
+          }
+
+          function getClockNoteRequirement() {
+            if (isClockedIn) {
+              const openEntry = getLatestOpenRecentEntry();
+              let clockInMs = openEntry && openEntry.clockIn ? new Date(openEntry.clockIn).getTime() : NaN;
+              if (!isFinite(clockInMs)) {
+                clockInMs = parseClockInMsFromStatusText(latestStatusTextRaw);
+              }
+              if (isFinite(clockInMs) && (Date.now() - clockInMs) > CLOCK_OUT_NOTE_THRESHOLD_MS) {
+                return {
+                  required: true,
+                  reason: 'clock-out-duration',
+                  placeholder: 'Clock out note',
+                  message: 'Clock out note required: this shift has been open for more than 5 hours. Please note reason for missed 5 hr break.'
+                };
+              }
+              return { required: false, reason: '', placeholder: 'Clock out note', message: '' };
+            }
+
+            const today = employeeSchedulePreview && employeeSchedulePreview.today ? employeeSchedulePreview.today : null;
+            const segments = today && Array.isArray(today.segments) ? today.segments : [];
+            const now = new Date();
+            const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const nowMs = now.getTime();
+            const hasOnDutyNearNow = segments.some((segment) => {
+              if (!segment || String(segment.status || '').toUpperCase() !== 'O') return false;
+              const startHour = Number(segment.startHour);
+              const endHour = Number(segment.endHourExclusive);
+              if (!isFinite(startHour) || !isFinite(endHour)) return false;
+              const startMs = dayStart + (startHour * 60 * 60 * 1000);
+              const endMs = dayStart + (endHour * 60 * 60 * 1000);
+              return nowMs >= (startMs - CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS)
+                && nowMs <= (endMs + CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS);
+            });
+
+            if (!hasOnDutyNearNow) {
+              return {
+                required: true,
+                reason: 'clock-in-off-schedule',
+                placeholder: 'Clock in note',
+                message: 'Clock in note required: no On Duty schedule found within 15 minutes of now.'
+              };
+            }
+
+            return { required: false, reason: '', placeholder: 'Clock in note', message: '' };
+          }
+
+          function updateClockNoteRequirementUi(requirement) {
+            const notesInput = document.getElementById('notes');
+            const clockToggleBtn = document.getElementById('clockToggle');
+            const hintEl = document.getElementById('clockNoteHint');
+            const noteText = notesInput ? String(notesInput.value || '').trim() : '';
+            const mustHaveNote = requirement && requirement.required === true;
+            const missingRequiredNote = mustHaveNote && !noteText;
+
+            if (hintEl) {
+              if (mustHaveNote) {
+                hintEl.innerText = requirement.message || 'A note is required before submitting this clock action.';
+                hintEl.style.display = 'block';
+              } else {
+                hintEl.innerText = '';
+                hintEl.style.display = 'none';
+              }
+            }
+
+            if (!clockToggleBtn) return;
+
+            if (missingRequiredNote) {
+              clockToggleBtn.disabled = true;
+              clockToggleBtn.title = requirement.message || 'Note required before continuing.';
+              return;
+            }
+
+            const shouldDisableForState = pendingClockAction || pendingRefreshStatus || !navigator.onLine;
+            clockToggleBtn.disabled = shouldDisableForState;
+            if (clockToggleBtn.title && clockToggleBtn.title.toLowerCase().indexOf('note required') >= 0) {
+              clockToggleBtn.title = '';
+            }
           }
 
           function setRefreshStatusBusy(isBusy) {
@@ -2990,6 +3397,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                    refreshStatusBtn.classList.toggle('is-spinning', pendingRefreshStatus);
                    refreshStatusBtn.setAttribute('aria-busy', pendingRefreshStatus ? 'true' : 'false');
                  }
+                 updateClockNotePlaceholder();
                }
              };
              
@@ -3004,6 +3412,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           initializeUiScale();
           setStatusText(document.getElementById('status') ? document.getElementById('status').innerText : '');
           updateClockNotePlaceholder();
+          const notesInput = document.getElementById('notes');
+          if (notesInput) {
+            notesInput.addEventListener('input', updateClockNotePlaceholder);
+          }
+          renderEmployeeSchedulePreview();
+          loadEmployeeSchedulePreview();
           refreshRecentEntries();
 
           function formatDisplayDate(value) {
@@ -3321,6 +3735,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 recentEntries = entries || [];
                 recentEntriesLastUpdated = Date.now();
                 renderEntriesTable(recentEntries);
+                updateClockNotePlaceholder();
                 if (isManualEntryModalVisible() && !adminManualEntryTargetEmail) {
                   refreshManualDateTimePickers(true);
                 }
@@ -3378,11 +3793,18 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                return;
              }
              const action = isClockedIn ? 'Clock Out' : 'Clock In';
+             const notes = document.getElementById('notes').value || '';
+             const noteRequirement = getClockNoteRequirement();
+             if (noteRequirement.required && !String(notes).trim()) {
+               endUiAction('clock-toggle');
+               setUiResultMessage(noteRequirement.message, true, 4500);
+               updateClockNotePlaceholder();
+               return;
+             }
              pendingClockAction = true;
              clockToggleBtn.disabled = true;
              clockToggleBtn.innerText = isClockedIn ? '⏳ Clock Out' : '⏳ Clock In';
              setUiResultMessage('Processing ' + action + '...', false);
-             const notes = document.getElementById('notes').value || '';
              const openEntry = isClockedIn ? getLatestOpenRecentEntry() : null;
              const actionEntryId = openEntry && openEntry.entryId ? String(openEntry.entryId).trim() : '';
              if (isClockedIn && !actionEntryId) {
@@ -3407,11 +3829,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                    clockToggleBtn.innerText = isClockedIn ? '🔴 Clock Out' : '🟢 Clock In';
                    clockToggleBtn.disabled = false;
                  }
+                 latestStatusTextRaw = String((result && result.status) || latestStatusTextRaw || '');
                  setStatusText((result && result.status) || document.getElementById('status').innerText);
                  document.getElementById('notes').value = '';
+                 updateClockNotePlaceholder();
                  if (result && result.success) {
                    setUiResultMessage(result.message || (action + ' successful.'), false, 3000);
                    refreshRecentEntries();
+                   loadEmployeeSchedulePreview();
                  } else if (result) {
                    setUiResultMessage(result.message || 'Action failed.', true, 4000);
                  }
@@ -3424,6 +3849,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                    clockToggleBtn.innerText = isClockedIn ? '🔴 Clock Out' : '🟢 Clock In';
                    clockToggleBtn.disabled = false;
                  }
+                 updateClockNotePlaceholder();
                  setUiResultMessage((error && error.message) || 'Unable to process request.', true, 4000);
                })
                  .submitClockAction(action, notes, actionEntryId);
@@ -6126,6 +6552,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   isClockedIn: !!(result && result.isClockedIn),
                   durationMs: Date.now() - startedAt
                 });
+                 latestStatusTextRaw = String((result && result.status) || latestStatusTextRaw || '');
                  setStatusText(result.status);
                   if (typeof result.isClockedIn === 'boolean') { isClockedIn = result.isClockedIn; }
                     updateClockNotePlaceholder();
@@ -6133,6 +6560,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   if (ct) { ct.innerText = isClockedIn ? '🔴 Clock Out' : '🟢 Clock In'; ct.disabled = false; }
                 
                 refreshRecentEntries();
+                  loadEmployeeSchedulePreview();
               })
               .withFailureHandler((error) => {
                 document.getElementById('loading').style.display = 'none';
