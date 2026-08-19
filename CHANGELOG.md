@@ -7,10 +7,22 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Made the Admin View employee name grouping row stay sticky at the top while scrolling long entry lists.
+- Why: Keeps user context visible during long-scroll review and edit workflows without changing row actions or grouping logic.
+- Files: src/UserInterface.js
+- Validation: Added CSS-only sticky positioning on `.admin-group-row td` with top anchoring and layering; confirmed existing admin list scroll container (`overflow:auto; max-height:60vh`) already provides the sticky context.
+
+### Changed
 - Summary: Set the payroll PDF export to render in landscape A4 orientation and widened the HTML table layout so the 14-day summary remains readable in exported PDFs.
 - Why: The payroll export was previously using a portrait default that compressed the 15-column summary, making the generated report harder to read and print.
 - Files: src/Code.js
 - Validation: Updated the PDF HTML `@page` rule and table sizing in `buildPayrollPdfHtml()`, and verified the export path still passes through the same preview cache and Drive-save flow without altering the actual payroll logic.
+
+### Changed
+- Summary: Auto-bootstrap schedule roster membership when the saved schedule is blank or missing the active user so the app discovers employees before admin or recent-entry loads.
+- Why: Prevents a brand-new or empty schedule state from remaining stale; the schedule now self-heals once by scanning DataEntry and Archive for missing employee emails before data is rendered.
+- Files: src/Code.js
+- Validation: Verified the new bootstrap helper is called from the admin load path, the schedule tool data fetch, and the current-user recent-entry loaders, and confirmed the file remains syntactically valid with a focused parse check.
 
 ### Changed
 - Summary: Limited all add-note inputs in the HTML interface to 150 characters using native maxlength attributes across employee and admin views.

@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.42 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.44 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -761,7 +761,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.42';
+const SCRIPT_VERSION = '2.2.2-push.44';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -1354,6 +1354,7 @@ function getRecentEntriesHtml() {
     if (!dataEntry) {
         throw new Error('DataEntry sheet not found.');
     }
+    ensureScheduleEmployeeRosterLoaded_(userEmail);
     const entries = getEmployeeEntries(userEmail, dataEntry, null, null);
     let entriesHtml = '';
     if (entries.length === 0) {
@@ -1390,6 +1391,7 @@ function getRecentEntriesJson() {
     if (!dataEntry) {
         throw new Error('DataEntry sheet not found.');
     }
+    ensureScheduleEmployeeRosterLoaded_(userEmail);
     const entries = getEmployeeEntries(userEmail, dataEntry, null, null);
     const serializedEntries = entries.map(entry => {
         const clockInDate = entry.clockIn ? new Date(entry.clockIn) : null;
@@ -1955,6 +1957,7 @@ function getAllEntriesForAdminView(includeDeleted) {
     if (!canAccessAdminView()) {
         throw new Error('Admin access required.');
     }
+    ensureScheduleEmployeeRosterLoaded_();
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const dataEntry = ss.getSheetByName('DataEntry');
     if (!dataEntry || dataEntry.getLastRow() <= 1)
@@ -3187,6 +3190,30 @@ function writeStoredScheduleState_(state) {
     writeScheduleSetting_(SCHEDULE_STATE_KEY, JSON.stringify(normalized));
     return normalized;
 }
+function ensureScheduleEmployeeRosterLoaded_(employeeEmail = null) {
+    const currentState = getStoredScheduleState_();
+    const normalizedEmail = employeeEmail ? normalizeScheduleEmail_(employeeEmail) : '';
+    const existingEmails = new Set(collectScheduleEmployeeEmailsFromState_(currentState, true));
+    const persistedStateExists = !!readScheduleSetting_(SCHEDULE_STATE_KEY, '');
+    const hasRosterEntries = Array.isArray(currentState.Employee_data) && currentState.Employee_data.length > 0;
+    if (normalizedEmail) {
+        const deletedMatch = currentState.deleted_employee_data.some(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName) === normalizedEmail);
+        if (deletedMatch) {
+            const restored = restoreDeletedScheduleEmployee_(currentState, normalizedEmail);
+            return writeStoredScheduleState_(restored.state);
+        }
+        if (!existingEmails.has(normalizedEmail)) {
+            const nextState = appendMissingScheduleEmployees_(currentState, [normalizedEmail]);
+            return writeStoredScheduleState_(nextState.state);
+        }
+    }
+    if (!persistedStateExists || !hasRosterEntries) {
+        const checked = checkForNewUsers_(currentState);
+        const savedState = writeStoredScheduleState_(checked.state);
+        return savedState;
+    }
+    return currentState;
+}
 function collectScheduleEmployeeEmailsFromState_(state, includeDeleted = true) {
     const normalized = normalizeScheduleState_(state);
     const unique = new Set();
@@ -3243,6 +3270,30 @@ function applyAWSConfigToScheduleState_(state, awsConfig) {
     normalized.deleted_employee_data = applyToList(normalized.deleted_employee_data);
     return normalized;
 }
+function restoreDeletedScheduleEmployee_(state, email) {
+    const normalized = normalizeScheduleState_(state);
+    const normalizedEmail = normalizeScheduleEmail_(email);
+    if (!normalizedEmail) {
+        return { state: normalized, restored: false, restoredEmail: '' };
+    }
+    const activeIndex = normalized.Employee_data.findIndex(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName) === normalizedEmail);
+    if (activeIndex >= 0) {
+        const deletedIndex = normalized.deleted_employee_data.findIndex(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName) === normalizedEmail);
+        if (deletedIndex >= 0) {
+            normalized.deleted_employee_data.splice(deletedIndex, 1);
+        }
+        return { state: normalized, restored: false, restoredEmail: normalizedEmail };
+    }
+    const deletedIndex = normalized.deleted_employee_data.findIndex(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName) === normalizedEmail);
+    if (deletedIndex < 0) {
+        return { state: normalized, restored: false, restoredEmail: normalizedEmail };
+    }
+    const [deletedEmployee] = normalized.deleted_employee_data.splice(deletedIndex, 1);
+    normalized.Employee_data.push(normalizeScheduleEmployeeRecord_(deletedEmployee, false));
+    normalized.Employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
+    normalized.deleted_employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
+    return { state: normalized, restored: true, restoredEmail: normalizedEmail };
+}
 function appendMissingScheduleEmployees_(state, sourceEmails) {
     const normalized = normalizeScheduleState_(state);
     const activeEmails = new Set(collectScheduleEmployeeEmailsFromState_(normalized, false));
@@ -3251,14 +3302,26 @@ function appendMissingScheduleEmployees_(state, sourceEmails) {
     const addedEmails = [];
     Array.from(sourceEmails || []).sort((a, b) => a.localeCompare(b)).forEach(email => {
         const normalizedEmail = normalizeScheduleEmail_(email);
-        if (!normalizedEmail || existingEmails.has(normalizedEmail)) {
+        if (!normalizedEmail) {
+            return;
+        }
+        if (existingEmails.has(normalizedEmail) && !activeEmails.has(normalizedEmail)) {
+            const restored = restoreDeletedScheduleEmployee_(normalized, normalizedEmail);
+            if (restored.restored) {
+                addedEmails.push(normalizedEmail);
+            }
+            return;
+        }
+        if (existingEmails.has(normalizedEmail)) {
             return;
         }
         normalized.Employee_data.push(createBlankScheduleEmployeeRecord_(normalizedEmail));
         existingEmails.add(normalizedEmail);
+        activeEmails.add(normalizedEmail);
         addedEmails.push(normalizedEmail);
     });
     normalized.Employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
+    normalized.deleted_employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
     return {
         state: normalized,
         addedEmails: addedEmails
@@ -3296,7 +3359,19 @@ function checkForNewUsers_(schedulePayload) {
     const addedEmails = [];
     Array.from(sourceEmails).sort((a, b) => a.localeCompare(b)).forEach(email => {
         const normalizedEmail = normalizeScheduleEmail_(email);
-        if (!normalizedEmail || existingEmails.has(normalizedEmail)) {
+        if (!normalizedEmail) {
+            return;
+        }
+        const inDeletedList = state.deleted_employee_data.some(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName) === normalizedEmail);
+        if (inDeletedList) {
+            const restored = restoreDeletedScheduleEmployee_(state, normalizedEmail);
+            if (restored.restored) {
+                addedEmails.push(normalizedEmail);
+                addedCount++;
+            }
+            return;
+        }
+        if (existingEmails.has(normalizedEmail)) {
             return;
         }
         state.Employee_data.push(createBlankScheduleEmployeeRecord_(normalizedEmail));
@@ -3305,6 +3380,7 @@ function checkForNewUsers_(schedulePayload) {
         addedCount++;
     });
     state.Employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
+    state.deleted_employee_data.sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail));
     return { state: state, addedCount: addedCount, addedEmails: addedEmails };
 }
 function extractScheduleEmployeeEmails_(schedulePayload) {
@@ -3317,7 +3393,7 @@ function fetchScheduleToolData() {
     if (!hasPermission('payroll') || !hasPermission('edit')) {
         return { success: false, message: 'Payroll and edit permissions are required.', state: getStoredScheduleState_() };
     }
-    return { success: true, state: getStoredScheduleState_() };
+    return { success: true, state: ensureScheduleEmployeeRosterLoaded_() };
 }
 function saveScheduleToolData(schedulePayload) {
     try {
