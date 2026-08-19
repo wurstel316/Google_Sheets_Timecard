@@ -62,6 +62,12 @@ function resetTestEnvironmentFromWorksheet(password) {
     clearTestEnvironmentState_();
     const insertedRows = bulkLoadTestRows_(dataEntry, parsed.rows);
     SpreadsheetApp.flush();
+    if (!(parsed.startDate instanceof Date) || isNaN(parsed.startDate.getTime()) ||
+        !(parsed.endDate instanceof Date) || isNaN(parsed.endDate.getTime())) {
+        Logger.log('resetTestEnvironmentFromWorksheet: parsed pay period dates invalid after load');
+        return { success: false, message: 'Suggested pay period dates are invalid in generated CSV test data.' };
+    }
+    setActivePayPeriod(parsed.startDate, parsed.endDate);
     Logger.log('resetTestEnvironmentFromWorksheet: loaded %s row(s)', insertedRows);
     debugLog('resetTestEnvironmentFromWorksheet complete', {
         insertedRows: insertedRows,

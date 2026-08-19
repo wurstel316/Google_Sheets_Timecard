@@ -66,6 +66,23 @@ This is a Google Apps Script time tracking application with a web interface for 
 - Auto-clock-out after 14 hours for stale entries
 - California overtime calculation rules implemented
 
+### Hold Spinner Icon Pattern
+- For destructive admin actions, use a 3-second press-and-hold interaction instead of confirm dialogs.
+- Keep icon and spinner in one shared asset container (`.admin-hold-asset`) so sizing stays paired.
+- Use a fixed-geometry SVG ring inside that container (`viewBox="0 0 100 100"`, `r="43"`, `stroke-width="14"`) and scale only the container size variable.
+- Animate progress with `stroke-dashoffset` over 3 seconds to show a full fill-to-complete spinner before firing the action.
+- Keep implementation minimal: one button, one asset wrapper, one SVG ring (`track` + `progress`), and existing hold start/cancel/complete handlers.
+
+### Optimistic UI Best Practices
+- Acknowledge user actions immediately with fast feedback before the server round-trip completes.
+- Update the targeted row or control state optimistically, but keep a clear pending/in-flight state so duplicate submits are blocked.
+- Use shared pending-action helpers and visible status chips/messages for actions such as missed-time creation, delete/restore, and save flows.
+- Preserve rollback data (`baseline`/`draft` state or a temp row snapshot) so the UI can revert cleanly if the server rejects the action.
+- Keep optimistic updates limited to the exact action being triggered; never lie about unrelated data or pretend a request succeeded without a valid server response.
+- For destructive or irreversible actions, prefer a brief hold-to-confirm pattern instead of blocking browser confirm dialogs.
+- Clear pending state on both success and failure, and refresh or rehydrate the affected data when validation/server responses require it.
+- When an optimistic update fails, show the user the error and restore the prior UI state rather than leaving stale “success” indicators behind.
+
 ## Critical Implementation Details
 
 ### Google Apps Script APIs Only

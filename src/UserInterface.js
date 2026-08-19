@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.17 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.37 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -269,9 +269,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 27.3rem;
             max-width: 27.3rem;
           }
-          .admin-grid td:nth-child(5),
-          .admin-grid td:nth-child(6) {
-            width: 3.6rem;
+          .admin-grid td:nth-child(5) {
+            width: 4.85rem;
           }
           .admin-save-clean {
             background: #9e9e9e;
@@ -396,6 +395,66 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             line-height: 1;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
           }
+          .admin-hold-action-btn {
+            position: relative;
+            overflow: visible;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            --admin-hold-size: 1.65rem;
+            --admin-hold-ring-circumference: 270.2;
+          }
+          .admin-hold-asset {
+            position: relative;
+            width: var(--admin-hold-size);
+            height: var(--admin-hold-size);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            overflow: hidden;
+          }
+          .admin-hold-ring {
+            position: absolute;
+            inset: 0;
+            transform: rotate(-90deg);
+            opacity: 0;
+            pointer-events: none;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.28));
+          }
+          .admin-hold-ring circle {
+            fill: none;
+          }
+          .admin-hold-ring .track {
+            stroke: rgba(255, 255, 255, 0.24);
+            stroke-width: 14;
+          }
+          .admin-hold-ring .progress {
+            stroke: rgba(255, 255, 255, 0.98);
+            stroke-width: 14;
+            stroke-linecap: round;
+            stroke-dasharray: var(--admin-hold-ring-circumference);
+            stroke-dashoffset: var(--admin-hold-ring-circumference);
+          }
+          .admin-hold-action-btn .admin-action-icon {
+            position: relative;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(var(--admin-hold-size) * 0.56);
+            line-height: 1;
+          }
+          .admin-hold-action-btn.is-holding .admin-hold-ring {
+            opacity: 1;
+          }
+          .admin-hold-action-btn.is-holding .admin-hold-ring .progress {
+            animation: adminHoldCountdownFill 3s linear 1 forwards;
+          }
+          @keyframes adminHoldCountdownFill {
+            from { stroke-dashoffset: var(--admin-hold-ring-circumference); }
+            to   { stroke-dashoffset: 0; }
+          }
           .admin-group-row td {
             background: #eceff1;
             font-weight: 700;
@@ -466,6 +525,35 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .admin-day-row.day-tone-mixed td {
             background: #d7d4ef;
             color: #3f3566;
+          }
+          .admin-pending-row {
+            position: relative;
+            background: linear-gradient(90deg, rgba(255, 243, 205, 0.45) 0%, rgba(255, 255, 255, 0) 100%);
+            animation: adminPendingPulse 1.4s ease-in-out infinite;
+          }
+          .admin-pending-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.35rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid #d9b95c;
+            background: #fff8e1;
+            color: #7a5a00;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+          }
+          .admin-deleted-chip {
+            border-color: #c8a8a8;
+            background: #f5e8e8;
+            color: #6b4444;
+          }
+          @keyframes adminPendingPulse {
+            0% { box-shadow: inset 0 0 0 0 rgba(217, 185, 92, 0.14); }
+            50% { box-shadow: inset 0 0 0 100vmax rgba(217, 185, 92, 0.06); }
+            100% { box-shadow: inset 0 0 0 0 rgba(217, 185, 92, 0.14); }
           }
           .admin-hours-cell,
           .admin-day-hours {
@@ -2289,7 +2377,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   <span class="admin-switch-label">Show raw times</span>
                 </label>
                 <label class="admin-switch">
-                  <input type="checkbox" id="adminShowDeleted" onchange="loadAdminEntries()">
+                  <input type="checkbox" id="adminShowDeleted" onchange="toggleAdminShowDeletedRows()">
                   <span class="admin-switch-track"></span>
                   <span class="admin-switch-label">Show deleted rows</span>
                 </label>
@@ -2508,6 +2596,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let adminVerifyQueueOrder = [];
           let adminVerifyQueueTimer = null;
           let adminVerifyQueueInFlight = false;
+          const ADMIN_HOLD_ACTION_MS = 3000;
+          const adminHoldActionStateByKey = {};
           let adminShowRawTimes = false;
           let adminShowOnlyActivePayPeriod = true;
           let adminAutoCollapseVerifiedDays = false;
@@ -2529,6 +2619,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let adminHtmlPreviewLastResult = null;
           let adminHtmlPreviewStartIso = '';
           let adminHtmlPreviewNotesByEmail = {};
+          const uiPendingActionsByKey = {};
           let pendingClockAction = false;
           let pendingRefreshStatus = false;
           let isClockedIn = ${statusObj.isClockedIn ? 'true' : 'false'};
@@ -2549,6 +2640,47 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const statusEl = document.getElementById('status');
             if (!statusEl) return;
             statusEl.innerText = formatCompactStatusText(statusText);
+          }
+
+          function beginUiAction(actionKey) {
+            const key = String(actionKey || '').trim();
+            if (!key) return false;
+            if (uiPendingActionsByKey[key]) return false;
+            uiPendingActionsByKey[key] = Date.now();
+            return true;
+          }
+
+          function endUiAction(actionKey) {
+            const key = String(actionKey || '').trim();
+            if (!key) return;
+            delete uiPendingActionsByKey[key];
+          }
+
+          function setUiResultMessage(message, isError, timeoutMs) {
+            const messageEl = document.getElementById('message');
+            const errorEl = document.getElementById('error');
+            const text = String(message || '').trim();
+            if (!messageEl || !errorEl) return;
+            if (!text) {
+              messageEl.style.display = 'none';
+              errorEl.style.display = 'none';
+              return;
+            }
+
+            const targetEl = isError ? errorEl : messageEl;
+            const otherEl = isError ? messageEl : errorEl;
+            otherEl.style.display = 'none';
+            targetEl.innerText = text;
+            targetEl.style.display = 'block';
+
+            if (timeoutMs && Number(timeoutMs) > 0) {
+              const expectedText = text;
+              setTimeout(() => {
+                if (targetEl.innerText === expectedText) {
+                  targetEl.style.display = 'none';
+                }
+              }, Number(timeoutMs));
+            }
           }
 
           function getDefaultUiScalePercent() {
@@ -3219,22 +3351,26 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
            function submitClockToggle() {
-             if (pendingClockAction) return;
+             if (pendingClockAction || !beginUiAction('clock-toggle')) return;
              const clockToggleBtn = document.getElementById('clockToggle');
-             if (!clockToggleBtn || clockToggleBtn.disabled) return;
+             if (!clockToggleBtn || clockToggleBtn.disabled) {
+               endUiAction('clock-toggle');
+               return;
+             }
              const action = isClockedIn ? 'Clock Out' : 'Clock In';
              pendingClockAction = true;
              clockToggleBtn.disabled = true;
              clockToggleBtn.innerText = isClockedIn ? '⏳ Clock Out' : '⏳ Clock In';
+             setUiResultMessage('Processing ' + action + '...', false);
              const notes = document.getElementById('notes').value || '';
              const startedAt = Date.now();
              document.getElementById('loading').style.display = 'block';
-             document.getElementById('message').style.display = 'none';
              document.getElementById('error').style.display = 'none';
              google.script.run
                .withSuccessHandler((result) => {
                  document.getElementById('loading').style.display = 'none';
                  pendingClockAction = false;
+                 endUiAction('clock-toggle');
                  isClockedIn = !!(result && result.isClockedIn);
                  updateClockNotePlaceholder();
                  if (clockToggleBtn) {
@@ -3244,24 +3380,21 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                  setStatusText((result && result.status) || document.getElementById('status').innerText);
                  document.getElementById('notes').value = '';
                  if (result && result.success) {
-                   document.getElementById('message').innerText = result.message;
-                   document.getElementById('message').style.display = 'block';
-                   setTimeout(() => { document.getElementById('message').style.display = 'none'; }, 3000);
+                   setUiResultMessage(result.message || (action + ' successful.'), false, 3000);
                    refreshRecentEntries();
                  } else if (result) {
-                   document.getElementById('error').innerText = result.message || 'Action failed.';
-                   document.getElementById('error').style.display = 'block';
+                   setUiResultMessage(result.message || 'Action failed.', true, 4000);
                  }
                })
                .withFailureHandler((error) => {
                  document.getElementById('loading').style.display = 'none';
                  pendingClockAction = false;
+                 endUiAction('clock-toggle');
                  if (clockToggleBtn) {
                    clockToggleBtn.innerText = isClockedIn ? '🔴 Clock Out' : '🟢 Clock In';
                    clockToggleBtn.disabled = false;
                  }
-                 document.getElementById('error').innerText = (error && error.message) || 'Unable to process request.';
-                 document.getElementById('error').style.display = 'block';
+                 setUiResultMessage((error && error.message) || 'Unable to process request.', true, 4000);
                })
                .submitClockAction(action, notes);
            }
@@ -3292,24 +3425,27 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
            function togglePendingComposer(rowIndex, view) {
             const composer = document.getElementById(getPendingComposerId(rowIndex, view));
             if (!composer) return;
-            // Auto-focus textarea when shown, blur when hidden
-            const onShow = () => {
-              setTimeout(() => {
-                composer.querySelector('textarea')?.focus();
-              }, 50);
-            };
-            const onHide = () => {
-              composer.querySelector('textarea')?.blur();
-            };
+            const textarea = composer.querySelector('textarea');
+            const hasText = !!(textarea && String(textarea.value || '').trim());
             if (composer.style.display === 'block') {
+              if (hasText) {
+                savePendingNote(rowIndex, view);
+                return;
+              }
               composer.style.display = 'none';
-              composer.onmouseleave = onHide;
-              composer.onfocusin = onHide;
-            } else {
-              composer.style.display = 'block';
-              composer.onmouseleave = onShow;
-              composer.onfocusout = onShow;
+              textarea?.blur();
+              composer.onmouseleave = null;
+              composer.onfocusin = null;
+              return;
             }
+            composer.style.display = 'block';
+            setTimeout(() => textarea?.focus(), 50);
+            composer.onmouseleave = () => {
+              setTimeout(() => textarea?.focus(), 50);
+            };
+            composer.onfocusout = () => {
+              setTimeout(() => textarea?.focus(), 50);
+            };
           }
            
            function savePendingNote(rowIndex, view) {
@@ -3602,6 +3738,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const composer = document.getElementById('adminNoteComposer_' + rowIndex);
             const textarea = document.getElementById('adminNewNote_' + rowIndex);
             if (!composer || !textarea) return;
+            const hasText = String(textarea.value || '').trim().length > 0;
+            if (composer.style.display === 'block') {
+              if (hasText) {
+                saveAdminRow(rowIndex);
+                return;
+              }
+              composer.style.display = 'none';
+              textarea.blur();
+              return;
+            }
             composer.style.display = 'block';
             textarea.focus();
             textarea.setSelectionRange(textarea.value.length, textarea.value.length);
@@ -4946,9 +5092,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return { by: match[1], at: match[2] };
           }
 
+          function getAdminShowDeletedState() {
+            return !!(document.getElementById('adminShowDeleted') && document.getElementById('adminShowDeleted').checked);
+          }
+
           function buildAdminVisibleRecords() {
             const rowIndices = Object.keys(adminEntriesByRow).map((v) => Number(v));
             if (rowIndices.length === 0) return [];
+            const showDeleted = getAdminShowDeletedState();
 
             return rowIndices.map((rowIndex) => {
               const entry = adminEntriesByRow[rowIndex];
@@ -4967,6 +5118,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 hoursForDisplay: hoursForDisplay
               };
             }).filter((record) => {
+              if (record.entry.deleted && !showDeleted) return false;
               if (!adminShowOnlyActivePayPeriod) return true;
               return isInActivePayPeriod(record.effective.clockIn);
             });
@@ -5024,9 +5176,110 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
+          function getAdminHoldActionKey(rowIndex, action) {
+            return String(action || '') + ':' + String(rowIndex || '');
+          }
+
+          function getAdminHoldButtonId(rowIndex, action) {
+            return 'adminHoldBtn_' + String(action || '') + '_' + String(rowIndex || '');
+          }
+
+          function applyAdminHoldVisualState(rowIndex, action, isHolding) {
+            const button = document.getElementById(getAdminHoldButtonId(rowIndex, action));
+            if (!button) return;
+            if (isHolding) {
+              button.classList.add('is-holding');
+              return;
+            }
+            button.classList.remove('is-holding');
+          }
+
+          function cancelAdminRowHoldAction(rowIndex, action) {
+            const key = getAdminHoldActionKey(rowIndex, action);
+            const state = adminHoldActionStateByKey[key];
+            if (!state) {
+              applyAdminHoldVisualState(rowIndex, action, false);
+              return;
+            }
+            if (state.timerId) {
+              clearTimeout(state.timerId);
+            }
+            delete adminHoldActionStateByKey[key];
+            applyAdminHoldVisualState(rowIndex, action, false);
+          }
+
+          function cancelAllAdminRowHoldActions() {
+            const keys = Object.keys(adminHoldActionStateByKey);
+            keys.forEach((key) => {
+              const state = adminHoldActionStateByKey[key];
+              if (state && state.timerId) {
+                clearTimeout(state.timerId);
+              }
+              delete adminHoldActionStateByKey[key];
+            });
+          }
+
+          function completeAdminRowHoldAction(rowIndex, action) {
+            const key = getAdminHoldActionKey(rowIndex, action);
+            const state = adminHoldActionStateByKey[key];
+            if (!state) return;
+
+            delete adminHoldActionStateByKey[key];
+            applyAdminHoldVisualState(rowIndex, action, false);
+
+            if (action === 'restore') {
+              requestAdminRestore(rowIndex);
+              return;
+            }
+            requestAdminDelete(rowIndex);
+          }
+
+          function startAdminRowHoldAction(rowIndex, action, event) {
+            if (event && event.button !== undefined && event.button !== 0) return;
+
+            const entry = adminEntriesByRow[rowIndex];
+            const draft = adminDraftByRow[rowIndex];
+            if (!entry || !draft || entry._pendingActionLabel) return;
+            if (!isAdminRowEditable(rowIndex) || adminPermissions.canEdit !== true) return;
+            if (action === 'restore' && !entry.deleted) return;
+            if (action === 'delete' && entry.deleted) return;
+
+            const key = getAdminHoldActionKey(rowIndex, action);
+            if (adminHoldActionStateByKey[key]) return;
+
+            if (event && typeof event.preventDefault === 'function') {
+              event.preventDefault();
+            }
+
+            adminHoldActionStateByKey[key] = {
+              timerId: setTimeout(() => {
+                completeAdminRowHoldAction(rowIndex, action);
+              }, ADMIN_HOLD_ACTION_MS)
+            };
+
+            applyAdminHoldVisualState(rowIndex, action, true);
+          }
+
+          function startAdminDeleteHold(rowIndex, event) {
+            startAdminRowHoldAction(rowIndex, 'delete', event);
+          }
+
+          function cancelAdminDeleteHold(rowIndex) {
+            cancelAdminRowHoldAction(rowIndex, 'delete');
+          }
+
+          function startAdminRestoreHold(rowIndex, event) {
+            startAdminRowHoldAction(rowIndex, 'restore', event);
+          }
+
+          function cancelAdminRestoreHold(rowIndex) {
+            cancelAdminRowHoldAction(rowIndex, 'restore');
+          }
+
           function renderAdminEntries() {
             const body = document.getElementById('adminEntriesBody');
             if (!body) return;
+            cancelAllAdminRowHoldActions();
             const records = buildAdminVisibleRecords();
 
             if (adminAutoCollapseVerifiedDays) {
@@ -5034,7 +5287,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
 
             if (records.length === 0) {
-              body.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#999;">No rows found for this filter.</td></tr>';
+              body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No rows found for this filter.</td></tr>';
               return;
             }
 
@@ -5082,10 +5335,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               const isEditable = !isDeleted && isAdminRowEditable(rowIndex);
               const hasEditPermission = adminPermissions.canEdit === true;
               const hasVerifyPermission = adminPermissions.canVerify === true;
-              const canEditActions = isEditable && hasEditPermission;
+              const rowPendingAction = String(entry._pendingActionLabel || '').trim();
+              const isRowPending = !!rowPendingAction;
+              const canEditActions = isEditable && hasEditPermission && !isRowPending;
               const verifyIsSaving = adminVerifySaveInFlightByRow[rowIndex] === true;
-              const canVerifyAction = isEditable && hasVerifyPermission && !verifyIsSaving;
-              const canRestore = isDeleted && isAdminRowEditable(rowIndex) && hasEditPermission;
+              const canVerifyAction = isEditable && hasVerifyPermission && !verifyIsSaving && !isRowPending;
+              const canRestore = isDeleted && isAdminRowEditable(rowIndex) && hasEditPermission && !isRowPending;
               const editLockTitle = hasEditPermission
                 ? (isEditable ? 'Edit row ' + rowIndex + ' times' : 'Locked outside active pay period')
                 : 'Edit permission required.';
@@ -5095,7 +5350,22 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               const actionDisabledAttr = canEditActions ? '' : ' disabled';
               const restoreDisabledAttr = canRestore ? '' : ' disabled';
               const verifyDisabledAttr = canVerifyAction ? '' : ' disabled';
+              const deleteHoldTitle = hasEditPermission
+                ? (isEditable ? ('Hold 3 seconds to delete row ' + rowIndex) : 'Locked outside active pay period')
+                : 'Edit permission required.';
+              const restoreHoldTitle = canRestore
+                ? ('Hold 3 seconds to restore row ' + rowIndex)
+                : (hasEditPermission ? 'Locked outside active pay period' : 'Edit permission required.');
+              const holdDeleteAttrs = canEditActions
+                ? ' onpointerdown="startAdminDeleteHold(' + rowIndex + ', event)" onpointerup="cancelAdminDeleteHold(' + rowIndex + ')" onpointercancel="cancelAdminDeleteHold(' + rowIndex + ')" onpointerleave="cancelAdminDeleteHold(' + rowIndex + ')" oncontextmenu="return false;"'
+                : '';
+              const holdRestoreAttrs = canRestore
+                ? ' onpointerdown="startAdminRestoreHold(' + rowIndex + ', event)" onpointerup="cancelAdminRestoreHold(' + rowIndex + ')" onpointercancel="cancelAdminRestoreHold(' + rowIndex + ')" onpointerleave="cancelAdminRestoreHold(' + rowIndex + ')" oncontextmenu="return false;"'
+                : '';
               const deletedMeta = isDeleted ? parseDeletedMeta(entry.notes) : null;
+              const pendingRowBadge = isRowPending
+                ? '<span class="admin-pending-chip" title="Pending server response">' + escapeHtml(rowPendingAction) + '</span>'
+                : (isDeleted ? '<span class="admin-pending-chip admin-deleted-chip" title="Entry deleted">Deleted</span>' : '');
               const noteLines = splitAdminNotes(entry.notes || '');
               const noteLinesHtml = noteLines.length > 0
                 ? noteLines.map((line) => '<div class="admin-note-line">' + escapeHtml(line) + '</div>').join('')
@@ -5122,7 +5392,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 const addMissedBtn = currentEmailKey
                   ? '<button type="button" class="admin-group-add-missed-btn" data-email="' + escapeHtml(currentEmailKey) + '"' + (hasEditPermission ? ' onclick="openAdminManualEntryForEmployee(this.dataset.email, event)"' : '') + (hasEditPermission ? '' : ' disabled') + ' title="' + escapeHtml(hasEditPermission ? 'Add missed time for this employee' : 'Edit permission required.') + '">+ Add missed time</button>'
                   : '';
-                rowsHtml.push('<tr class="admin-group-row"><td colspan="6"><div class="admin-group-meta"><div class="admin-group-left">' + collapseBtn + '<span>&#128100; ' + escapeHtml(currentEmail || 'Unknown') + '</span></div>' + addMissedBtn + '</div></td></tr>');
+                rowsHtml.push('<tr class="admin-group-row"><td colspan="5"><div class="admin-group-meta"><div class="admin-group-left">' + collapseBtn + '<span>&#128100; ' + escapeHtml(currentEmail || 'Unknown') + '</span></div>' + addMissedBtn + '</div></td></tr>');
               }
 
               if (currentUserCollapsed) {
@@ -5143,7 +5413,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 const dayCollapseSymbol = currentDayCollapsed ? '+' : '-';
                 const dayCollapseBtn = '<button type="button" class="admin-collapse-btn" data-email="' + escapeHtml(currentEmailKey) + '" data-day="' + escapeHtml(record.dayKey || '') + '" onclick="toggleAdminDayCollapsed(this.dataset.email, this.dataset.day)" title="Expand/collapse day">' + dayCollapseSymbol + '</button>';
                 rowsHtml.push('<tr class="admin-day-row ' + dayToneClass + '">' +
-                  '<td colspan="6"><div class="admin-day-meta admin-day-indent"><div class="admin-day-left">' + dayCollapseBtn + '<div class="admin-day-label">' + escapeHtml(dayLabel) + '</div></div></div></td>' +
+                    '<td colspan="5"><div class="admin-day-meta admin-day-indent"><div class="admin-day-left">' + dayCollapseBtn + '<div class="admin-day-label">' + escapeHtml(dayLabel) + '</div></div></div></td>' +
                   '</tr>');
               }
 
@@ -5157,6 +5427,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
               const rowClasses = [];
               if (isDeleted) rowClasses.push('admin-deleted-row');
+              if (isRowPending) rowClasses.push('admin-pending-row');
               if (!isDeleted && typeMeta.rowClass) rowClasses.push(typeMeta.rowClass);
               const rowClass = rowClasses.length ? 'class="' + rowClasses.join(' ') + '"' : '';
               const verifiedOn = isVerifiedValue(entry.verified);
@@ -5174,11 +5445,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 '<td><div class="admin-in-cell">' + getEntryTypeChipOrSpacerHtml(entry.entryType) + verifiedToggleHtml + inButtonHtml + '</div>' + rawInSub + '</td>' +
                 '<td>' + outButtonHtml + rawOutSub + '</td>' +
                 '<td class="admin-hours-cell"><span class="admin-hours-pill"><span class="admin-hours-pill-value">' + getHoursString(record.hoursForDisplay) + '</span><span class="admin-hours-pill-unit">Hrs</span></span></td>' +
-                '<td><div class="admin-note-list">' + noteLinesHtml + deletedBadge + pendingNoteComposer + '</div></td>' +
-                '<td>' + (isDeleted ? '' : '<div class="admin-row-actions">' + pendingNoteButton + '</div>') + '</td>' +
-                (isDeleted
-                  ? '<td><button class="admin-restore-btn"' + (canRestore ? ' onclick="requestAdminRestore(' + rowIndex + ')"' : '') + restoreDisabledAttr + ' title="' + escapeHtml(canRestore ? ('Restore row ' + rowIndex) : (hasEditPermission ? 'Locked outside active pay period' : 'Edit permission required.')) + '">&#9851;</button></td>'
-                  : '<td><button class="admin-delete-btn"' + (canEditActions ? ' onclick="requestAdminDelete(' + rowIndex + ')"' : '') + actionDisabledAttr + ' title="' + escapeHtml(hasEditPermission ? (isEditable ? ('Delete row ' + rowIndex) : 'Locked outside active pay period') : 'Edit permission required.') + '">&#128465;&#65039;</button></td>') +
+                '<td><div class="admin-note-list">' + noteLinesHtml + deletedBadge + pendingRowBadge + pendingNoteComposer + '</div></td>' +
+                '<td><div class="admin-row-actions">' +
+                  (isDeleted ? '' : pendingNoteButton) +
+                  (isDeleted
+                    ? '<button type="button" id="' + getAdminHoldButtonId(rowIndex, 'restore') + '" class="admin-restore-btn admin-hold-action-btn"' + holdRestoreAttrs + restoreDisabledAttr + ' title="' + escapeHtml(restoreHoldTitle) + '"><span class="admin-hold-asset"><svg class="admin-hold-ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle class="track" cx="50" cy="50" r="43"></circle><circle class="progress" cx="50" cy="50" r="43"></circle></svg><span class="admin-action-icon" aria-hidden="true">&#9851;</span></span></button>'
+                    : '<button type="button" id="' + getAdminHoldButtonId(rowIndex, 'delete') + '" class="admin-delete-btn admin-hold-action-btn"' + holdDeleteAttrs + actionDisabledAttr + ' title="' + escapeHtml(deleteHoldTitle) + '"><span class="admin-hold-asset"><svg class="admin-hold-ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle class="track" cx="50" cy="50" r="43"></circle><circle class="progress" cx="50" cy="50" r="43"></circle></svg><span class="admin-action-icon" aria-hidden="true">&#128465;&#65039;</span></span></button>') +
+                '</div></td>' +
                 '</tr>');
             });
 
@@ -5207,6 +5480,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   clearTimeout(adminVerifyQueueTimer);
                   adminVerifyQueueTimer = null;
                 }
+                cancelAllAdminRowHoldActions();
                 (entries || []).forEach((entry) => {
                   adminEntriesByRow[entry.rowIndex] = entry;
                   adminBaselineByRow[entry.rowIndex] = {
@@ -5250,6 +5524,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const checkbox = document.getElementById('adminShowOnlyActivePayPeriod');
             adminShowOnlyActivePayPeriod = !(checkbox && checkbox.checked === false);
             renderAdminEntries();
+          }
+
+          function toggleAdminShowDeletedRows() {
+            const checkbox = document.getElementById('adminShowDeleted');
+            const showDeleted = !!(checkbox && checkbox.checked);
+            if (showDeleted) {
+              loadAdminEntries();
+            } else {
+              renderAdminEntries();
+            }
           }
 
           function toggleAdminUserCollapsed(email) {
@@ -5362,7 +5646,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const entry = adminEntriesByRow[rowIndex];
             const draft = adminDraftByRow[rowIndex];
             if (!entry || !draft || !isAdminRowEditable(rowIndex) || adminPermissions.canEdit !== true) return;
-            if (!confirm('Restore row ' + rowIndex + '? This will mark it as active again.')) return;
+            if (entry._pendingActionLabel) return;
 
             const payload = {
               entryId: entry.entryId || '',
@@ -5372,19 +5656,29 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               deleted: false
             };
 
+            entry._pendingActionLabel = 'Restoring...';
+            renderAdminEntries();
+            const msg = document.getElementById('adminLoadMsg');
+            if (msg) {
+              msg.innerText = 'Restoring row ' + rowIndex + '...';
+            }
+
             google.script.run
               .withSuccessHandler((result) => {
                 if (!result || !result.success) {
+                  delete entry._pendingActionLabel;
+                  renderAdminEntries();
                   alert((result && result.message) ? result.message : 'Restore failed.');
                   return;
                 }
-                const msg = document.getElementById('adminLoadMsg');
                 if (msg) {
                   msg.innerText = 'Restored row ' + rowIndex + '.';
                 }
                 loadAdminEntries();
               })
               .withFailureHandler((error) => {
+                delete entry._pendingActionLabel;
+                renderAdminEntries();
                 alert(error.message || 'Restore failed.');
               })
               .adminSaveEntryUpdate(rowIndex, payload);
@@ -5394,8 +5688,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const entry = adminEntriesByRow[rowIndex];
             const draft = adminDraftByRow[rowIndex];
             if (!entry || !draft || !isAdminRowEditable(rowIndex) || adminPermissions.canEdit !== true) return;
-            const secondConfirm = confirm('Are you sure you want to delete row ' + rowIndex + '? This marks the row deleted and logs who deleted it.');
-            if (!secondConfirm) return;
+            if (entry._pendingActionLabel) return;
 
             const payload = {
               entryId: entry.entryId || '',
@@ -5405,19 +5698,60 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               deleted: true
             };
 
+            const showDeleted = getAdminShowDeletedState();
+            const msg = document.getElementById('adminLoadMsg');
+
+            if (!showDeleted) {
+              delete adminEntriesByRow[rowIndex];
+              delete adminBaselineByRow[rowIndex];
+              delete adminDraftByRow[rowIndex];
+              renderAdminEntries();
+              if (msg) {
+                msg.innerText = 'Deleted row ' + rowIndex + '.';
+              }
+            } else {
+              entry._pendingActionLabel = 'Deleting...';
+              renderAdminEntries();
+              if (msg) {
+                msg.innerText = 'Deleting row ' + rowIndex + '...';
+              }
+            }
+
             google.script.run
               .withSuccessHandler((result) => {
                 if (!result || !result.success) {
+                  if (showDeleted && entry) {
+                    delete entry._pendingActionLabel;
+                    renderAdminEntries();
+                  } else if (!showDeleted) {
+                    adminEntriesByRow[rowIndex] = entry;
+                    adminBaselineByRow[rowIndex] = draft;
+                    adminDraftByRow[rowIndex] = draft;
+                    renderAdminEntries();
+                  }
                   alert((result && result.message) ? result.message : 'Delete failed.');
                   return;
                 }
-                const msg = document.getElementById('adminLoadMsg');
-                if (msg) {
-                  msg.innerText = 'Deleted row ' + rowIndex + '.';
+                if (showDeleted && entry) {
+                  entry.deleted = true;
+                  delete entry._pendingActionLabel;
+                  renderAdminEntries();
+                } else if (!showDeleted) {
+                  if (msg) {
+                    msg.innerText = 'Deleted row ' + rowIndex + '.';
+                  }
                 }
-                loadAdminEntries();
               })
               .withFailureHandler((error) => {
+                if (showDeleted && entry) {
+                  delete entry._pendingActionLabel;
+                  renderAdminEntries();
+                } else if (!showDeleted) {
+                  adminEntriesByRow[rowIndex] = entry;
+                  adminBaselineByRow[rowIndex] = draft;
+                  adminDraftByRow[rowIndex] = draft;
+                  renderAdminEntries();
+                }
                 alert(error.message || 'Delete failed.');
               })
               .adminSaveEntryUpdate(rowIndex, payload);
@@ -6951,6 +7285,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               const optimisticClockOut = clockOutDate.toISOString();
               const optimisticNotes = String(notesVal || '').trim();
               const optimisticHours = getAdminHoursForDisplay(optimisticClockIn, optimisticClockOut, 0);
+              const optimisticDayKey = getAdminDayKey(optimisticClockIn);
+              const optimisticUserKey = String(targetEmail || '').trim().toLowerCase();
 
               adminEntriesByRow[optimisticTempRowIndex] = {
                 rowIndex: optimisticTempRowIndex,
@@ -6963,7 +7299,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 verified: false,
                 notes: optimisticNotes,
                 entryType: selectedEntryType,
-                deleted: false
+                deleted: false,
+                _pendingActionLabel: 'Saving...'
               };
               adminBaselineByRow[optimisticTempRowIndex] = {
                 modifiedClockInISO: '',
@@ -6981,6 +7318,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 deleted: false,
                 pendingNewNoteText: ''
               };
+
+              if (optimisticUserKey) {
+                adminCollapsedUsers[optimisticUserKey] = false;
+              }
+              if (optimisticUserKey && optimisticDayKey) {
+                adminCollapsedDays[optimisticUserKey + '|' + optimisticDayKey] = false;
+              }
 
               hideManualEntryForm();
               renderAdminEntries();

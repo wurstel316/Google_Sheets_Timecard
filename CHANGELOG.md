@@ -6,6 +6,18 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Changed
+- Summary: Updated the recent-entry and admin add-note controls so a second click while the composer is open behaves like pressing Enter and saves the draft immediately.
+- Why: Users can now save a note either by hitting Enter or by clicking the add-note button again after typing, which reduces friction without changing the normal open-and-type flow.
+- Files: src/UserInterface.js
+- Validation: Confirmed both note composer handlers now check for an open composer with text and fall back to the existing save path; JavaScript diagnostics remain clean.
+
+### Changed
+- Summary: Added explicit optimistic UI guidance to the project agent rules so future UI work follows a consistent fast-feedback, pending-state, and rollback pattern.
+- Why: The codebase increasingly relies on immediate row-level feedback and in-flight state handling; documenting those expectations avoids regressions and keeps actions consistent across admin and clock workflows.
+- Files: AGENTS.md
+- Validation: Updated the agent guidance with optimistic UI rules, pending-state expectations, rollback requirements, and destructive-action hold patterns.
+
 ### Added
 - Summary: Added a manual "Check for new employees" action to the Schedule Tool that discovers missing employee emails and reports exactly who was added.
 - Why: Keeps new employee discovery explicit instead of mutating schedule membership during normal load/save flows.
@@ -13,10 +25,32 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - Validation: Wired the new server action and client button/status path, then verified the touched files parse cleanly.
 
 ### Changed
+- Summary: Compressed the admin entry action area into a single column so the add-note and delete/restore controls share the same cell and the row no longer carries an empty spacer cell.
+- Why: Removes wasted horizontal space around the delete/restore icon column while keeping the same action behavior and row permissions.
+- Files: src/UserInterface.js
+- Validation: Updated the admin table row builder and header/empty-state colspans to 5 columns, then prepared for a test deployment check.
+
+### Changed
+- Summary: Replaced admin row delete/restore confirm dialogs with a 3-second press-and-hold interaction that shows a rotating countdown ring around the action icon while keeping optimistic pending states.
+- Why: Prevents accidental destructive taps/clicks, removes blocking browser confirm prompts, and preserves the fast optimistic UI feel for admin actions.
+- Files: src/UserInterface.js
+- Validation: Verified delete/restore now trigger only after hold duration, release/cancel before 3 seconds does not submit, both actions remain in the same final column with icon swap by deleted state, and existing pending chip/status flow remains intact.
+- Summary: Refined admin hold affordance into a full 3-second progress spinner that visibly fills to complete before delete/restore executes, while preserving the same hold timing and optimistic state flow.
+- Why: The prior ring read as a thin rotating accent at different UI scales; a fill-to-complete spinner makes progress duration obvious and reduces ambiguity for destructive actions.
+- Files: src/UserInterface.js
+- Validation: Replaced the hold ring with a schedule-style SVG track/progress asset tied to the hold button size, wired 3-second stroke-dash fill animation on hold class, and confirmed src/UserInterface.js diagnostics report no errors.
+- Summary: Simplified the admin hold spinner sizing model so icon and ring remain paired as one visual asset by using fixed SVG ring geometry inside the shared hold container.
+- Why: Rem-based SVG radius/stroke overrides introduced drift between icon and ring proportions; fixed viewBox geometry scales consistently with the container and keeps the implementation minimal.
+- Files: src/UserInterface.js
+- Validation: Removed CSS geometry overrides (`r`/`stroke-width`) from the ring class, retained 3-second fill behavior, tied icon size to hold-size variable, and confirmed src/UserInterface.js diagnostics report no errors.
 - Summary: Updated the Schedule Tool to use the normalized email address as the employee identifier throughout the UI while showing a short local-part label for readability.
 - Why: Keeps the schedule roster keyed by the canonical email value and avoids relying on a separate display name field for lookups or mutations.
 - Files: src/ScheduleHTML.html
 - Validation: Confirmed the schedule table, sidebar summary, and add-employee modal now render readable labels while still using email-based identity for edits and hover behavior.
+- Summary: Standardized fast-feel client feedback for high-frequency actions by introducing shared pending-action helpers, instant clock-toggle feedback messaging, and visible row-level pending states for admin missed-time/create/delete/restore flows.
+- Why: Reduces perceived latency by acknowledging clicks immediately, prevents duplicate in-flight actions, and makes optimistic/admin server-roundtrip states explicit in the rendered UI.
+- Files: src/UserInterface.js
+- Validation: Verified src/UserInterface.js diagnostics report no syntax errors and confirmed pending row/render paths are wired for optimistic missed-time creation plus delete/restore in-flight states.
 - Summary: Consolidated schedule persistence into a single `schedule_state_json` blob with active `Employee_data` and `deleted_employee_data` arrays, plus AWS fields stored on each employee record.
 - Why: Removes split schedule keys, makes email the stable employee identifier, and keeps deleted employees recoverable without hard deletion.
 - Files: src/Code.js, src/ScheduleHTML.html, src/TestEnviromentReset.js
@@ -55,6 +89,10 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - Why: The schedule array stored the same decision in two places, which caused the sidebar to show the wrong label when the payload carried conflicting values.
 - Files: src/Code.js, src/ScheduleHTML.html
 - Validation: Updated the normalization and AWS config application paths to write only `workweek`, then verified the project still deploys via `npm run push:test`.
+- Summary: Fixed test environment reset to restore active pay period script properties from generated CSV suggested dates after clearing transient state.
+- Why: Reset flow cleared `activePayPeriodStartDate`/`activePayPeriodEndDate` but never reapplied parsed fixture dates, causing fallback drift to a current-date 14-day range.
+- Files: src/TestEnviromentReset.js
+- Validation: Verified reset flow now calls `setActivePayPeriod(parsed.startDate, parsed.endDate)` after row load/flush and keeps MM/dd/yyyy property formatting via existing setter.
 - Summary: Updated the test environment reset flow to clear Schedule-backed state and stale pay-period preview properties, then repopulate only DataEntry test rows.
 - Why: The reset helper was still leaving Schedule worksheet data and script-property pay-period state behind, which made the new schedule storage model incompatible with a clean test reset.
 - Files: src/TestEnviromentReset.js
