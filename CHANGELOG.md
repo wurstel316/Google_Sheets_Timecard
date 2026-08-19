@@ -7,6 +7,24 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Set the payroll PDF export to render in landscape A4 orientation and widened the HTML table layout so the 14-day summary remains readable in exported PDFs.
+- Why: The payroll export was previously using a portrait default that compressed the 15-column summary, making the generated report harder to read and print.
+- Files: src/Code.js
+- Validation: Updated the PDF HTML `@page` rule and table sizing in `buildPayrollPdfHtml()`, and verified the export path still passes through the same preview cache and Drive-save flow without altering the actual payroll logic.
+
+### Changed
+- Summary: Limited all add-note inputs in the HTML interface to 150 characters using native maxlength attributes across employee and admin views.
+- Why: Enforces a consistent lightweight client-side note length cap without adding server validation or extra client logic.
+- Files: src/UserInterface.js
+- Validation: Confirmed maxlength="150" is applied to clock note, manual entry note, recent add-note composers (table/card), and admin preview add-note textarea templates.
+
+### Changed
+- Summary: Started entryId-only mutation hardening by removing row-fallback targeting in server edit paths, threading entryId through recent/admin/clock-out UI calls, and switching interactive add-entry writes to append behavior instead of chronological row insertion.
+- Why: Prevents mis-targeted edits when rows shift, enforces entryId as the canonical mutation key, and reduces mid-operation row movement caused by insert-time reordering.
+- Files: src/Code.js, src/UserInterface.js
+- Validation: Verified diagnostics show no errors in both touched files and ran targeted searches confirming no remaining interactive insert-sort call sites and no UI empty-string entryId payload fallbacks.
+
+### Changed
 - Summary: Updated the recent-entry and admin add-note controls so a second click while the composer is open behaves like pressing Enter and saves the draft immediately.
 - Why: Users can now save a note either by hitting Enter or by clicking the add-note button again after typing, which reduces friction without changing the normal open-and-type flow.
 - Files: src/UserInterface.js

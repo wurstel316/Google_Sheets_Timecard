@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.37 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.42 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -141,7 +141,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const verifiedIconHtml = '<span class="admin-verify-toggle static ' + (verifiedOn ? 'is-on' : '') + '" title="' + verifiedTitle + '" aria-label="' + verifiedTitle + '">' + (verifiedOn ? '&#10003;' : '&#9675;') + '</span>';
             const noteLinesHtml = buildTemplateNoteLines(entry.notes || '');
             const pendingComposerHtml = rowIndex > 0
-              ? `<div class="admin-note-composer" id="pendingNoteComposer_${rowIndex}" style="display:none;" oninput="handlePendingNewNoteInput(${rowIndex})" onkeydown="handlePendingNewNoteKeyDown(${rowIndex}, event)"><textarea placeholder="Write a quick note..." spellcheck="false"></textarea></div>`
+              ? `<div class="admin-note-composer" id="pendingNoteComposer_${rowIndex}" style="display:none;" oninput="handlePendingNewNoteInput(${rowIndex})" onkeydown="handlePendingNewNoteKeyDown(${rowIndex}, event)"><textarea placeholder="Write a quick note..." spellcheck="false" maxlength="150"></textarea></div>`
               : '';
             const actionHtml = rowIndex > 0
               ? `<div class="admin-row-actions"><button type="button" class="admin-note-add-btn" onclick="togglePendingComposer(${rowIndex})" title="Add note">+ Add Note</button></div>`
@@ -2260,7 +2260,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           <p id="error" class="error" style="display: none;"></p>
           <p id="loading" class="loading">Processing...</p>
           
-          <input type="text" id="notes" placeholder="Clock in note">
+          <input type="text" id="notes" placeholder="Clock in note" maxlength="150">
           
            <button id="clockToggle" onclick="submitClockToggle()">
              ${statusObj.isClockedIn ? '🔴 Clock Out' : '🟢 Clock In'}
@@ -2301,7 +2301,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 <label class="manual-entry-type-option"><input type="checkbox" id="manualEntryTypeSick" onchange="handleManualEntryTypeChange('sick')"> Sick</label>
               </div>
 
-              <textarea id="manualNotes" placeholder="Required: explain why this entry is needed"></textarea>
+              <textarea id="manualNotes" placeholder="Required: explain why this entry is needed" maxlength="150"></textarea>
 
               <p id="manualError" class="error" style="display: none;"></p>
 
@@ -3196,7 +3196,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   '<div class="admin-note-composer" id="pendingNoteComposer_' + entry.rowIndex + '" style="display:none;"' +
                   ' oninput="handlePendingNewNoteInput(' + entry.rowIndex + ')"' +
                   ' onkeydown="handlePendingNewNoteKeyDown(' + entry.rowIndex + ', event)">' +
-                  '<textarea placeholder="Write a quick note..." spellcheck="false"></textarea>' +
+                  '<textarea placeholder="Write a quick note..." spellcheck="false" maxlength="150"></textarea>' +
                 '</div>';
               const pendingButton = isDeleted ? '' :
                 '<button type="button" class="admin-note-add-btn admin-pending-composer-static"' +
@@ -3254,7 +3254,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 '<div class="admin-note-composer" id="pendingNoteComposer_' + entry.rowIndex + '_card" style="display:none;"' +
                 ' oninput="handlePendingNewNoteInput(' + entry.rowIndex + ', &quot;card&quot;)"' +
                 ' onkeydown="handlePendingNewNoteKeyDown(' + entry.rowIndex + ', event, &quot;card&quot;)">' +
-                '<textarea placeholder="Write a quick note..." spellcheck="false"></textarea></div>';
+                '<textarea placeholder="Write a quick note..." spellcheck="false" maxlength="150"></textarea></div>';
               const pendingButton = isDeleted ? '' :
                 '<button type="button" class="admin-note-add-btn admin-pending-composer-static recent-card-add-note-btn" onclick="togglePendingComposer(' + entry.rowIndex + ', &quot;card&quot;)" title="Add note">+ Add Note</button>';
               const notesCardHtml = noteLines.length > 0
@@ -3350,6 +3350,22 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return Date.now() - recentEntriesLastUpdated > recentEntriesTtlMs;
           }
 
+          function getLatestOpenRecentEntry() {
+            const openEntries = (recentEntries || []).filter((entry) => entry && entry.clockIn && !entry.clockOut && !entry.deleted);
+            if (!openEntries.length) return null;
+            openEntries.sort((a, b) => {
+              const aTs = a && a.clockIn ? new Date(a.clockIn).getTime() : 0;
+              const bTs = b && b.clockIn ? new Date(b.clockIn).getTime() : 0;
+              return bTs - aTs;
+            });
+            return openEntries[0] || null;
+          }
+
+          function getRecentEntryByRowIndex(rowIndex) {
+            const rowNum = Number(rowIndex);
+            return (recentEntries || []).find((entry) => Number(entry && entry.rowIndex) === rowNum) || null;
+          }
+
            function submitClockToggle() {
              if (pendingClockAction || !beginUiAction('clock-toggle')) return;
              const clockToggleBtn = document.getElementById('clockToggle');
@@ -3363,6 +3379,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
              clockToggleBtn.innerText = isClockedIn ? '⏳ Clock Out' : '⏳ Clock In';
              setUiResultMessage('Processing ' + action + '...', false);
              const notes = document.getElementById('notes').value || '';
+             const openEntry = isClockedIn ? getLatestOpenRecentEntry() : null;
+             const actionEntryId = openEntry && openEntry.entryId ? String(openEntry.entryId).trim() : '';
+             if (isClockedIn && !actionEntryId) {
+               pendingClockAction = false;
+               endUiAction('clock-toggle');
+               clockToggleBtn.disabled = false;
+               clockToggleBtn.innerText = isClockedIn ? '🔴 Clock Out' : '🟢 Clock In';
+               setUiResultMessage('Unable to clock out because the active entry ID is missing. Refresh and try again.', true, 4500);
+               return;
+             }
              const startedAt = Date.now();
              document.getElementById('loading').style.display = 'block';
              document.getElementById('error').style.display = 'none';
@@ -3396,7 +3422,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                  }
                  setUiResultMessage((error && error.message) || 'Unable to process request.', true, 4000);
                })
-               .submitClockAction(action, notes);
+                 .submitClockAction(action, notes, actionEntryId);
            }
 
           function getPendingComposerId(rowIndex, view) {
@@ -3452,6 +3478,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const textarea = document.getElementById(getPendingComposerId(rowIndex, view))?.querySelector('textarea');
             if (!textarea || textarea.value === '') return;
             const nextNote = textarea.value.trim();
+            const entry = getRecentEntryByRowIndex(rowIndex);
+            const entryId = entry && entry.entryId ? String(entry.entryId).trim() : '';
+            if (!entryId) {
+              setUiResultMessage('Unable to save note because entry ID is missing. Refresh and try again.', true, 4500);
+              return;
+            }
             const noteEls = getRecentNotesIds(rowIndex).map((id) => document.getElementById(id)).filter(Boolean);
               const composerEl = document.getElementById(getPendingComposerId(rowIndex, view));
             const statusEl = document.getElementById('status');
@@ -3500,7 +3532,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 }
                 debugClientError('savePendingNote.network_failure', error);
               })
-                .updateEntryNote(rowIndex, nextNote, true);
+                .updateEntryNote(entryId, nextNote, true);
             // Composer stays visible when user types new notes so they can continue typing or close it
           }
 
@@ -3536,6 +3568,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
            function inlineEditEntryNote(rowIndex) {
             const nextNote = prompt('Enter note for this entry:');
             if (nextNote === null || nextNote.trim() === '') return;
+              const entry = getRecentEntryByRowIndex(rowIndex);
+              const entryId = entry && entry.entryId ? String(entry.entryId).trim() : '';
+              if (!entryId) {
+                setUiResultMessage('Unable to save note because entry ID is missing. Refresh and try again.', true, 4500);
+                return;
+              }
             google.script.run
               .withSuccessHandler((result) => {
                 if (result && result.success) {
@@ -3548,7 +3586,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               .withFailureHandler((error) => {
                 debugClientError('inlineEditEntryNote.network_failure', error);
               })
-              .updateEntryNote(rowIndex, nextNote.trim());
+                .updateEntryNote(entryId, nextNote.trim());
           }
 
           function showAdminView() {
@@ -5373,7 +5411,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               const pendingNote = String(draft.pendingNewNoteText || '');
               const pendingNoteComposer = isDeleted ? '' :
                 '<div class="admin-note-composer" id="adminNoteComposer_' + rowIndex + '"' + (pendingNote ? '' : ' style="display:none;"') + '>' +
-                  '<textarea id="adminNewNote_' + rowIndex + '" placeholder="Add a new note..." oninput="handleAdminNewNoteInput(' + rowIndex + ')" onkeydown="handleAdminNewNoteKeyDown(' + rowIndex + ', event)"' + (pendingNote ? ' style="height:auto;"' : '') + '>' + escapeHtml(pendingNote) + '</textarea>' +
+                  '<textarea id="adminNewNote_' + rowIndex + '" placeholder="Add a new note..." oninput="handleAdminNewNoteInput(' + rowIndex + ')" onkeydown="handleAdminNewNoteKeyDown(' + rowIndex + ', event)" maxlength="150"' + (pendingNote ? ' style="height:auto;"' : '') + '>' + escapeHtml(pendingNote) + '</textarea>' +
                 '</div>';
               const pendingNoteButton = isDeleted ? '' :
                 '<button type="button" class="admin-note-add-btn"' + (canEditActions ? ' onclick="toggleAdminNewNoteComposer(' + rowIndex + ')"' : '') + actionDisabledAttr + ' title="' + escapeHtml(hasEditPermission ? (isEditable ? 'Add note' : 'Locked outside active pay period') : 'Edit permission required.') + '">+</button>';
@@ -5642,14 +5680,25 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             });
           }
 
+          function getRequiredAdminEntryId(entry, actionLabel) {
+            const entryId = entry && entry.entryId ? String(entry.entryId).trim() : '';
+            if (!entryId) {
+              alert((actionLabel || 'Action') + ' requires a valid entry ID. Refresh and try again.');
+              return '';
+            }
+            return entryId;
+          }
+
           function requestAdminRestore(rowIndex) {
             const entry = adminEntriesByRow[rowIndex];
             const draft = adminDraftByRow[rowIndex];
             if (!entry || !draft || !isAdminRowEditable(rowIndex) || adminPermissions.canEdit !== true) return;
             if (entry._pendingActionLabel) return;
+            const entryId = getRequiredAdminEntryId(entry, 'Restore');
+            if (!entryId) return;
 
             const payload = {
-              entryId: entry.entryId || '',
+              entryId: entryId,
               modifiedClockInISO: draft.modifiedClockInISO || '',
               modifiedClockOutISO: draft.modifiedClockOutISO || '',
               notes: draft.notes || '',
@@ -5689,9 +5738,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const draft = adminDraftByRow[rowIndex];
             if (!entry || !draft || !isAdminRowEditable(rowIndex) || adminPermissions.canEdit !== true) return;
             if (entry._pendingActionLabel) return;
+            const entryId = getRequiredAdminEntryId(entry, 'Delete');
+            if (!entryId) return;
 
             const payload = {
-              entryId: entry.entryId || '',
+              entryId: entryId,
               modifiedClockInISO: draft.modifiedClockInISO || '',
               modifiedClockOutISO: draft.modifiedClockOutISO || '',
               notes: draft.notes || '',
@@ -5761,6 +5812,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const entry = adminEntriesByRow[rowIndex];
             if (!entry || entry.deleted || !isAdminRowEditable(rowIndex) || adminPermissions.canVerify !== true) return;
             if (adminVerifySaveInFlightByRow[rowIndex] === true) return;
+            const entryId = getRequiredAdminEntryId(entry, 'Verify');
+            if (!entryId) return;
 
             const previousVerified = isVerifiedValue(entry.verified);
             const nextVerified = !previousVerified;
@@ -5768,7 +5821,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             adminVerifySaveInFlightByRow[rowIndex] = true;
             adminVerifyQueueByRow[rowIndex] = {
               rowIndex: rowIndex,
-              entryId: entry.entryId || '',
+              entryId: entryId,
               previousVerified: previousVerified,
               nextVerified: nextVerified,
               previousNotes: String(entry.notes || '')
@@ -5822,14 +5875,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                     resultByRow[result.rowIndex] = result;
                   }
                 });
-                const fallbackByPositionAllowed = resultList.length === pendingActions.length;
                 let successCount = 0;
                 const failedRows = [];
 
-                pendingActions.forEach((action, actionIdx) => {
+                pendingActions.forEach((action) => {
                   const rowIndex = action.rowIndex;
                   const entry = adminEntriesByRow[rowIndex];
-                  const result = resultByRow[rowIndex] || (fallbackByPositionAllowed ? resultList[actionIdx] : null);
+                  const result = resultByRow[rowIndex] || null;
                   delete adminVerifyQueueByRow[rowIndex];
                   delete adminVerifySaveInFlightByRow[rowIndex];
 
@@ -5940,7 +5992,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   scheduleAdminVerifyQueueFlush();
                 }
               })
-                .adminSetEntryVerifiedBatch(pendingActions.map((action) => ({ rowIndex: action.rowIndex, entryId: action.entryId || '', verified: action.nextVerified })));
+                    .adminSetEntryVerifiedBatch(pendingActions.map((action) => ({ rowIndex: action.rowIndex, entryId: action.entryId, verified: action.nextVerified })));
           }
 
           function saveAdminRow(rowIndex, options) {
@@ -5952,13 +6004,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (!computeAdminRowDirty(rowIndex)) return;
 
             const payload = {
-              entryId: entry && entry.entryId ? entry.entryId : '',
+              entryId: getRequiredAdminEntryId(entry, 'Save'),
               modifiedClockInISO: draft.modifiedClockInISO || '',
               modifiedClockOutISO: draft.modifiedClockOutISO || '',
               notes: composeAdminNotesForSave(rowIndex),
               deleted: draft.deleted === true,
               clientAppendedTimeEditNote: false
             };
+            if (!payload.entryId) return;
 
             if (saveOptions.appendTimeEditNote === true && !payload.deleted) {
               const timeEditNote = buildAdminTimeEditedNote();
