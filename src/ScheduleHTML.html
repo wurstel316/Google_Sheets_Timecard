@@ -16,6 +16,8 @@
       --o-bg: rgba(34, 197, 94, 0.18);
       --b: #a78bfa;
       --b-bg: rgba(167, 139, 250, 0.18);
+      --l: #f2d27a;
+      --l-bg: rgba(242, 210, 122, 0.24);
       --uncovered: #fb7185;
       --uncovered-bg: rgba(251, 113, 133, 0.20);
     }
@@ -243,6 +245,41 @@
       cursor: pointer;
     }
 
+    .type-filter {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      margin-top: -0.1rem;
+      padding: 0.05rem 0 0.1rem;
+    }
+    .type-filter-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .type-filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .type-filter-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.74rem;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .type-filter-option input {
+      width: 0.9rem;
+      height: 0.9rem;
+      accent-color: var(--b);
+      cursor: pointer;
+    }
+
     .emp-count-block.is-deleted .emp-count-name {
       color: var(--muted);
       opacity: 0.75;
@@ -282,6 +319,7 @@
     }
     .swatch.o { background: var(--o-bg); color: var(--o); border: 1px solid color-mix(in srgb, var(--o) 45%, transparent); }
     .swatch.b { background: var(--b-bg); color: var(--b); border: 1px solid color-mix(in srgb, var(--b) 45%, transparent); }
+    .swatch.l { background: var(--l-bg); color: #8a5b00; border: 1px solid color-mix(in srgb, var(--l) 50%, transparent); }
     .swatch.uncovered { background: var(--uncovered-bg); color: var(--uncovered); border: 1px solid color-mix(in srgb, var(--uncovered) 45%, transparent); }
 
     /* Employee status counts (below legend) */
@@ -726,6 +764,12 @@
       font-weight: 700;
       font-size: 0.88rem;
     }
+    td.l {
+      background: var(--l-bg);
+      color: #8a5b00;
+      font-weight: 700;
+      font-size: 0.88rem;
+    }
     td.empty {
       background: transparent;
       color: transparent;
@@ -743,6 +787,7 @@
     }
     tbody tr:hover td.o { background: rgba(34, 197, 94, 0.30); }
     tbody tr:hover td.b { background: rgba(167, 139, 250, 0.30); }
+    tbody tr:hover td.l { background: rgba(242, 210, 122, 0.38); }
     tbody tr:hover td.uncovered { background: rgba(251, 113, 133, 0.32); }
 
     /* Employee column highlight (header name + body cells for that employee only) */
@@ -755,12 +800,14 @@
     }
     tbody td.col-hover.o { background: rgba(34, 197, 94, 0.28); }
     tbody td.col-hover.b { background: rgba(167, 139, 250, 0.28); }
+    tbody td.col-hover.l { background: rgba(242, 210, 122, 0.34); }
     tbody td.col-hover.uncovered { background: rgba(251, 113, 133, 0.28); }
     /* Row + column intersection: slightly stronger */
     tbody tr:hover td.col-hover.o { background: rgba(34, 197, 94, 0.38); }
     tbody tr:hover td.col-hover.b { background: rgba(167, 139, 250, 0.38); }
+    tbody tr:hover td.col-hover.l { background: rgba(242, 210, 122, 0.44); }
     tbody tr:hover td.col-hover.uncovered { background: rgba(251, 113, 133, 0.40); }
-    tbody tr:hover td.col-hover:not(.o):not(.b):not(.uncovered) {
+    tbody tr:hover td.col-hover:not(.o):not(.b):not(.l):not(.uncovered) {
       background: rgba(148, 163, 184, 0.16);
     }
 
@@ -805,7 +852,7 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 1.25rem 1.5rem;
-      width: min(320px, 92vw);
+      width: min(430px, 94vw);
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
     }
     .modal h3 {
@@ -865,6 +912,87 @@
       color: var(--muted);
       font-size: 0.82rem;
       margin-bottom: 1rem;
+    }
+    .modal-config {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 0.85rem;
+      padding: 0.7rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .modal-config-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .modal-config-row select {
+      flex: 1;
+      max-width: 11.5rem;
+      padding: 0.36rem 0.46rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #10161c;
+      color: var(--text);
+      font-size: 0.8rem;
+    }
+    .modal-fill-hint {
+      margin: 0;
+      font-size: 0.77rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .modal-day-picker {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.48rem 0.5rem 0.42rem;
+      margin: 0;
+    }
+    .modal-day-picker legend {
+      padding: 0 0.2rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .modal-day-checkboxes {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.35rem 0.45rem;
+    }
+    .modal-day-option {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.76rem;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .modal-emp-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+    }
+    .modal-emp-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: inherit;
+    }
+    .modal-emp-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.1rem 0.42rem;
+      flex-shrink: 0;
+    }
+    .modal-emp-btn:hover .modal-emp-meta {
+      border-color: var(--o);
+      color: var(--o);
     }
 
     @media (max-width: 800px) {
@@ -937,6 +1065,7 @@
         <input type="checkbox" id="show-deleted" onchange="onShowDeletedChange()">
         Show deleted
       </label>
+      <div class="type-filter" id="employee-type-filter"></div>
       <div class="legend">
         <div class="legend-item">
           <div class="swatch o">O</div>
@@ -945,6 +1074,10 @@
         <div class="legend-item">
           <div class="swatch b">B</div>
           <span>Backup</span>
+        </div>
+        <div class="legend-item">
+          <div class="swatch l">L</div>
+          <span>Lunch</span>
         </div>
         <div class="legend-item">
           <div class="swatch uncovered">–</div>
@@ -976,6 +1109,17 @@
   <div id="add-employee-modal" class="modal-overlay hidden" aria-hidden="true">
     <div class="modal" role="dialog" aria-labelledby="modal-title">
       <h3 id="modal-title">Add employee to <span id="modal-day-label"></span></h3>
+      <div class="modal-config">
+        <label class="modal-config-row" for="modal-start-time">
+          <span>Start time</span>
+          <select id="modal-start-time"></select>
+        </label>
+        <p id="modal-fill-hint" class="modal-fill-hint">Pick a start time, then choose an employee to auto-fill CA (8h) or AWS (10h). Lunch is placed in hour 6.</p>
+        <fieldset class="modal-day-picker">
+          <legend>Attempt auto-fill for other days too</legend>
+          <div id="modal-day-checkboxes" class="modal-day-checkboxes"></div>
+        </fieldset>
+      </div>
       <div id="modal-employee-list" class="modal-employee-list" role="list"></div>
       <p id="modal-empty-msg" class="modal-empty-msg" style="display:none;">No eligible employees for this day.</p>
       <div class="modal-actions">
@@ -1004,6 +1148,7 @@
     //            // OAK  = Oakhurst
     //            // ""   = Unassigned (shown as "Unassigned" in the UI)
     //        workweek: "CA" | "AWS",
+    //        employeeType: "Office" | "Driver",
     //            // Work-week rule set for this employee (stored per employee).
     //            // "CA"  = California standard (DEFAULT for every new employee)
     //            // "AWS" = Alternative Work Schedule
@@ -1011,10 +1156,10 @@
     //          {
     //            dayName: "Monday" | "Tuesday" | … | "Sunday",
     //            shifts: [
-    //              { timeBlock: "05:00", status: "" | "O" | "B" },
+    //              { timeBlock: "05:00", status: "" | "O" | "B" | "L" },
     //              …
     //              // timeBlock is always "HH:00" (00:00–23:00)
-    //              // status: "" = empty, "O" = On Duty, "B" = Backup
+    //              // status: "" = empty, "O" = On Duty, "B" = Backup, "L" = Lunch
     //            ]
     //          },
     //          …
@@ -1062,6 +1207,138 @@
      * or when schedule data introduces additional codes).
      */
     let knownLocations = ["STK", "OAK"];
+    let knownEmployeeTypes = [];
+    let selectedEmployeeTypes = new Set();
+    let hasInitializedEmployeeTypeFilter = false;
+    const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    function getWorkweekForEmployee(email) {
+      const normalized = normalizeEmployeeEmail(email);
+      const employee = (EmployeeSchedule || []).find(e => getEmployeeEmail(e) === normalized);
+      const ww = String(employee && employee.workweek ? employee.workweek : "CA").trim().toUpperCase();
+      return ww === "AWS" ? "AWS" : "CA";
+    }
+
+    function getAutoFillDurationByWorkweek(workweek) {
+      return workweek === "AWS" ? 10 : 8;
+    }
+
+    function formatTimeBlockLabel(timeBlock) {
+      const raw = String(timeBlock || "");
+      const m = raw.match(/^(\d{2}):00$/);
+      if (!m) return raw;
+      const hour24 = parseInt(m[1], 10);
+      const suffix = hour24 >= 12 ? "PM" : "AM";
+      const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+      return `${hour12}:00 ${suffix}`;
+    }
+
+    function formatHourAsTimeBlock(hour) {
+      const normalized = Number(hour);
+      if (!Number.isFinite(normalized)) return "08:00";
+      const h = ((Math.floor(normalized) % 24) + 24) % 24;
+      return `${String(h).padStart(2, "0")}:00`;
+    }
+
+    function updateModalFillHint(workweek) {
+      const hint = document.getElementById("modal-fill-hint");
+      const startSelect = document.getElementById("modal-start-time");
+      if (!hint || !startSelect) return;
+      const startBlock = formatHourAsTimeBlock(startSelect.value);
+      if (workweek === "CA" || workweek === "AWS") {
+        const hours = getAutoFillDurationByWorkweek(workweek);
+        hint.textContent = `Start ${formatTimeBlockLabel(startBlock)}. ${workweek} auto-fills ${hours} hours, sets lunch in hour 6, and rolls into next day if needed.`;
+      } else {
+        hint.textContent = `Start ${formatTimeBlockLabel(startBlock)}. CA auto-fills 8 hours, AWS auto-fills 10 hours, with lunch in hour 6.`;
+      }
+    }
+
+    function ensureScheduleDay(employee, dayName) {
+      let day = (employee.days || []).find(d => d.dayName === dayName);
+      if (!day) {
+        day = { dayName: dayName, shifts: [] };
+        if (!Array.isArray(employee.days)) employee.days = [];
+        employee.days.push(day);
+      }
+      if (!Array.isArray(day.shifts)) day.shifts = [];
+      return day;
+    }
+
+    function setScheduleStatusWithoutRender(employeeEmail, dayName, timeBlock, status) {
+      let employee = EmployeeSchedule.find(e => getEmployeeEmail(e) === normalizeEmployeeEmail(employeeEmail));
+      if (!employee) {
+        employee = {
+          EmployeeName: normalizeEmployeeEmail(employeeEmail),
+          EmployeeEmail: normalizeEmployeeEmail(employeeEmail),
+          location: "",
+          workweek: "CA",
+          employeeType: "Office",
+          days: []
+        };
+        EmployeeSchedule.push(employee);
+      }
+
+      const day = ensureScheduleDay(employee, dayName);
+      const shift = day.shifts.find(s => s.timeBlock === timeBlock);
+      if (!shift) {
+        day.shifts.push({ timeBlock: timeBlock, status: status });
+      } else {
+        shift.status = status;
+      }
+    }
+
+    function applyAutoFillForStartDay(employeeEmail, startDayName, startHour, durationHours) {
+      const startIndex = WEEK_DAYS.indexOf(startDayName);
+      if (startIndex < 0) return;
+
+      for (let i = 0; i < durationHours; i++) {
+        const absoluteHour = Number(startHour) + i;
+        const dayOffset = Math.floor(absoluteHour / 24);
+        const hour = ((absoluteHour % 24) + 24) % 24;
+        const targetDay = WEEK_DAYS[(startIndex + dayOffset) % WEEK_DAYS.length];
+        const status = i === 5 ? "L" : "O";
+        const timeBlock = formatHourAsTimeBlock(hour);
+        setScheduleStatusWithoutRender(employeeEmail, targetDay, timeBlock, status);
+      }
+    }
+
+    function applyAutoFillFromModal(employeeEmail) {
+      const startSelect = document.getElementById("modal-start-time");
+      if (!startSelect) return;
+
+      const checkedDays = Array.from(document.querySelectorAll(".modal-day-checkbox:checked"))
+        .map(input => input.value)
+        .filter(day => WEEK_DAYS.includes(day));
+      if (checkedDays.length === 0) {
+        alert("Select at least one day to apply auto-fill.");
+        return;
+      }
+
+      const startHour = parseInt(startSelect.value, 10);
+      if (!Number.isFinite(startHour)) {
+        alert("Select a valid start time.");
+        return;
+      }
+
+      const workweek = getWorkweekForEmployee(employeeEmail);
+      const duration = getAutoFillDurationByWorkweek(workweek);
+      checkedDays.forEach(dayName => {
+        applyAutoFillForStartDay(employeeEmail, dayName, startHour, duration);
+      });
+
+      markScheduleDirty();
+      renderSchedule();
+      closeAddEmployeeModal();
+    }
+
+    function normalizeEmployeeType(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "Office";
+      const lower = raw.toLowerCase();
+      if (lower === "driver") return "Driver";
+      if (lower === "office") return "Office";
+      return raw;
+    }
 
     function normalizeEmployeeEmail(value) {
       return String(value || "").trim().toLowerCase();
@@ -1115,6 +1392,7 @@
         EmployeeName: email,
         location: (source.location == null) ? "" : String(source.location).trim(),
         workweek: String(source.workweek || "CA").trim().toUpperCase() === "AWS" ? "AWS" : "CA",
+        employeeType: normalizeEmployeeType(source.employeeType || source.EmployeeType || "Office"),
         days: normalizeEmployeeDays(source.days),
         awsEffectiveDate: String(source.awsEffectiveDate || source.AWSEffectiveDate || "").trim(),
         deletedAt: String(source.deletedAt || "").trim(),
@@ -1170,6 +1448,97 @@
       if (extras.length) knownLocations = knownLocations.concat(extras);
     }
 
+    function sortEmployeeTypes(types) {
+      const priority = { Office: 0, Driver: 1 };
+      return types.slice().sort((a, b) => {
+        const pa = Object.prototype.hasOwnProperty.call(priority, a) ? priority[a] : 99;
+        const pb = Object.prototype.hasOwnProperty.call(priority, b) ? priority[b] : 99;
+        if (pa !== pb) return pa - pb;
+        return a.localeCompare(b);
+      });
+    }
+
+    function syncKnownEmployeeTypesFromData() {
+      const fromData = new Set();
+      (EmployeeSchedule || []).concat(DeletedEmployeeSchedule || []).forEach(emp => {
+        fromData.add(normalizeEmployeeType(emp && (emp.employeeType || emp.EmployeeType || "Office")));
+      });
+      if (!fromData.size) {
+        fromData.add("Office");
+      }
+
+      const previousKnown = new Set(knownEmployeeTypes);
+      knownEmployeeTypes = sortEmployeeTypes(Array.from(fromData));
+
+      if (!hasInitializedEmployeeTypeFilter) {
+        selectedEmployeeTypes = new Set(knownEmployeeTypes);
+        hasInitializedEmployeeTypeFilter = true;
+        return;
+      }
+
+      const nextSelected = new Set();
+      knownEmployeeTypes.forEach(type => {
+        if (selectedEmployeeTypes.has(type) || !previousKnown.has(type)) {
+          nextSelected.add(type);
+        }
+      });
+      selectedEmployeeTypes = nextSelected;
+    }
+
+    function rebuildEmployeeTypeFilter() {
+      const container = document.getElementById("employee-type-filter");
+      if (!container) return;
+      container.innerHTML = "";
+
+      const title = document.createElement("div");
+      title.className = "type-filter-title";
+      title.textContent = "Employee Type";
+      container.appendChild(title);
+
+      const list = document.createElement("div");
+      list.className = "type-filter-list";
+
+      knownEmployeeTypes.forEach(type => {
+        const label = document.createElement("label");
+        label.className = "type-filter-option";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = selectedEmployeeTypes.has(type);
+        checkbox.addEventListener("change", function () {
+          onEmployeeTypeFilterChange(type, checkbox.checked);
+        });
+
+        const text = document.createElement("span");
+        text.textContent = type;
+
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        list.appendChild(label);
+      });
+
+      container.appendChild(list);
+    }
+
+    function onEmployeeTypeFilterChange(type, isChecked) {
+      if (isChecked) {
+        selectedEmployeeTypes.add(type);
+      } else {
+        selectedEmployeeTypes.delete(type);
+      }
+      renderSchedule();
+    }
+
+    function matchesSelectedEmployeeTypes(employee) {
+      if (!employee || selectedEmployeeTypes.size === 0) return false;
+      const employeeType = normalizeEmployeeType(employee.employeeType || employee.EmployeeType || "Office");
+      return selectedEmployeeTypes.has(employeeType);
+    }
+
+    function isDriverEmployee(employee) {
+      return normalizeEmployeeType(employee && (employee.employeeType || employee.EmployeeType || "Office")) === "Driver";
+    }
+
     /**
      * Rebuild the sidebar #location-select options from knownLocations
      * while preserving the currently selected value when possible.
@@ -1213,6 +1582,7 @@
     function getFilteredEmployees() {
       if (!EmployeeSchedule || !EmployeeSchedule.length) return [];
       return EmployeeSchedule.filter(emp => {
+        if (!matchesSelectedEmployeeTypes(emp)) return false;
         if (selectedLocation === "ALL") return true;
         const loc = (emp.location == null) ? "" : String(emp.location);
         return loc === selectedLocation;
@@ -1228,6 +1598,7 @@
       const active = (EmployeeSchedule || []).map(emp => Object.assign({ __deleted: false }, emp));
       if (!showDeleted) {
         return active.filter(emp => {
+          if (!matchesSelectedEmployeeTypes(emp)) return false;
           if (selectedLocation === "ALL") return true;
           const loc = (emp.location == null) ? "" : String(emp.location);
           return loc === selectedLocation;
@@ -1235,6 +1606,7 @@
       }
       const deleted = (DeletedEmployeeSchedule || []).map(emp => Object.assign({ __deleted: true }, emp));
       return active.concat(deleted).filter(emp => {
+        if (!matchesSelectedEmployeeTypes(emp)) return false;
         if (selectedLocation === "ALL") return true;
         const loc = (emp.location == null) ? "" : String(emp.location);
         return loc === selectedLocation;
@@ -1275,6 +1647,19 @@
       if (!emp) return;
       const ww = String(newWorkweek || "").trim().toUpperCase();
       emp.workweek = (ww === "AWS") ? "AWS" : "CA";
+      markScheduleDirty();
+      renderSchedule();
+    }
+
+    /**
+     * Set an employee type.
+     * Allowed values: "Office" | "Driver".
+     */
+    function setEmployeeType(employeeName, newType) {
+      const emp = EmployeeSchedule.find(e => getEmployeeEmail(e) === normalizeEmployeeEmail(employeeName));
+      if (!emp) return;
+      const nextType = String(newType || "").trim().toLowerCase() === "driver" ? "Driver" : "Office";
+      emp.employeeType = nextType;
       markScheduleDirty();
       renderSchedule();
     }
@@ -1362,7 +1747,7 @@
       }
 
       // Normalize status to allowed values only
-      const allowed = ["", "O", "B"];
+      const allowed = ["", "O", "B", "L"];
       if (!allowed.includes(status)) {
         status = "";
       }
@@ -1382,6 +1767,7 @@
           EmployeeEmail: normalizeEmployeeEmail(employeeName),
           location: "",
           workweek: "CA",
+          employeeType: "Office",
           days: []
         };
         EmployeeSchedule.push(employee);
@@ -1460,12 +1846,53 @@
         .sort();
     }
 
+    function buildModalStartTimeOptions() {
+      const select = document.getElementById("modal-start-time");
+      if (!select || select.options.length > 0) return;
+      for (let hour = 0; hour < 24; hour++) {
+        const option = document.createElement("option");
+        option.value = String(hour);
+        option.textContent = formatTimeBlockLabel(formatHourAsTimeBlock(hour));
+        select.appendChild(option);
+      }
+      select.value = "8";
+      select.addEventListener("change", function () {
+        updateModalFillHint();
+      });
+    }
+
+    function buildModalDayCheckboxes(selectedDayName) {
+      const container = document.getElementById("modal-day-checkboxes");
+      if (!container) return;
+      container.innerHTML = "";
+
+      WEEK_DAYS.forEach(dayName => {
+        const label = document.createElement("label");
+        label.className = "modal-day-option";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.className = "modal-day-checkbox";
+        input.value = dayName;
+        input.checked = dayName === selectedDayName;
+        const text = document.createElement("span");
+        text.textContent = dayName.slice(0, 3);
+        label.appendChild(input);
+        label.appendChild(text);
+        container.appendChild(label);
+      });
+    }
+
     function openAddEmployeeModal(dayName) {
       const modal = document.getElementById("add-employee-modal");
       const list = document.getElementById("modal-employee-list");
       const emptyMsg = document.getElementById("modal-empty-msg");
       const dayLabel = document.getElementById("modal-day-label");
+      const startSelect = document.getElementById("modal-start-time");
 
+      buildModalStartTimeOptions();
+      buildModalDayCheckboxes(dayName);
+      if (startSelect && !startSelect.value) startSelect.value = "8";
+      updateModalFillHint();
       dayLabel.textContent = dayName;
       list.innerHTML = "";
 
@@ -1478,15 +1905,27 @@
         list.style.display = "flex";
         emptyMsg.style.display = "none";
         eligible.forEach(email => {
+          const workweek = getWorkweekForEmployee(email);
+          const duration = getAutoFillDurationByWorkweek(workweek);
           const btn = document.createElement("button");
           btn.type = "button";
           btn.className = "modal-emp-btn";
-          btn.textContent = getEmployeeDisplayLabel(email);
+          btn.innerHTML =
+            `<span class="modal-emp-name"></span>` +
+            `<span class="modal-emp-meta">${workweek} ${duration}h</span>`;
+          btn.querySelector(".modal-emp-name").textContent = getEmployeeDisplayLabel(email);
           btn.title = email;
+          btn.addEventListener("mouseenter", function () {
+            updateModalFillHint(workweek);
+          });
+          btn.addEventListener("focus", function () {
+            updateModalFillHint(workweek);
+          });
+          btn.addEventListener("mouseleave", function () {
+            updateModalFillHint();
+          });
           btn.addEventListener("click", function () {
-            // One click: set O at 08:00 and close
-            editScheduleBlock(email, dayName, "08:00", "O");
-            closeAddEmployeeModal();
+            applyAutoFillFromModal(email);
           });
           list.appendChild(btn);
         });
@@ -1498,8 +1937,15 @@
 
     function closeAddEmployeeModal() {
       const modal = document.getElementById("add-employee-modal");
+      const list = document.getElementById("modal-employee-list");
+      const emptyMsg = document.getElementById("modal-empty-msg");
       modal.classList.add("hidden");
       modal.setAttribute("aria-hidden", "true");
+      if (list) {
+        list.innerHTML = "";
+        list.style.display = "none";
+      }
+      if (emptyMsg) emptyMsg.style.display = "none";
     }
 
     // ============================================================
@@ -1515,6 +1961,8 @@
       // Keep known location list + filter <select> in sync with data
       syncKnownLocationsFromData();
       rebuildLocationSelect();
+      syncKnownEmployeeTypesFromData();
+      rebuildEmployeeTypeFilter();
 
       const dayHeaderRow = document.getElementById("day-headers");
       const driverHeaderRow = document.getElementById("driver-headers");
@@ -1526,6 +1974,7 @@
 
       const dataMap = new Map();
       const employeesByDay = new Map();
+      const driverEmployeesByDay = new Map();
       const filtered = getFilteredEmployees();
 
       if (filtered.length) {
@@ -1541,6 +1990,10 @@
                 if (status) {
                   if (!employeesByDay.has(day.dayName)) employeesByDay.set(day.dayName, new Set());
                   employeesByDay.get(day.dayName).add(email);
+                  if (isDriverEmployee(emp)) {
+                    if (!driverEmployeesByDay.has(day.dayName)) driverEmployeesByDay.set(day.dayName, new Set());
+                    driverEmployeesByDay.get(day.dayName).add(email);
+                  }
                 }
               }
             });
@@ -1641,11 +2094,11 @@
         }
       });
 
-      // ----- Uncovered slots: (day, hour) with no O/B across any employee column -----
-      // Days with zero active employees count every hour as uncovered.
+      // ----- Uncovered slots: (day, hour) with no O/B across Driver columns -----
+      // Office employees do not satisfy uncovered coverage.
       const uncoveredSet = new Set();
       dayGroups.forEach(dayName => {
-        const emps = employeesByDay.get(dayName);
+        const emps = driverEmployeesByDay.get(dayName);
         uniqueHours.forEach(hour => {
           let covered = false;
           if (emps && emps.size > 0) {
@@ -1657,7 +2110,7 @@
               }
             }
           }
-          // No employees → not covered; or all empty → not covered
+          // No drivers → not covered; or all driver slots empty → not covered
           if (!covered) {
             uncoveredSet.add(`${dayName}|${hour}`);
           }
@@ -1683,7 +2136,7 @@
               if (empIdx === 0) td.classList.add("day-start");
               td.dataset.empName = empEmail;
               td.style.cursor = "pointer";
-              td.title = `Click to cycle: empty → O → B → empty (${getEmployeeDisplayLabel(empEmail)})`;
+              td.title = `Click to cycle: empty → O → B → L → empty (${getEmployeeDisplayLabel(empEmail)})`;
 
               if (status === "O") {
                 td.textContent = "O";
@@ -1691,6 +2144,9 @@
               } else if (status === "B") {
                 td.textContent = "B";
                 td.classList.add("b");
+              } else if (status === "L") {
+                td.textContent = "L";
+                td.classList.add("l");
               } else if (isUncovered) {
                 td.textContent = "–";
                 td.classList.add("uncovered");
@@ -1699,11 +2155,12 @@
                 td.classList.add("empty");
               }
 
-              // Cycle status on click: "" → "O" → "B" → ""
+              // Cycle status on click: "" → "O" → "B" → "L" → ""
               td.addEventListener("click", function () {
                 const next =
                   status === ""  ? "O" :
-                  status === "O" ? "B" : "";
+                  status === "O" ? "B" :
+                  status === "B" ? "L" : "";
                 editScheduleBlock(empEmail, dayName, hour, next);
               });
 
@@ -1862,7 +2319,7 @@
       }
 
       // Aggregate counts (location-filtered) + keep location + workweek for menu/tags
-      const counts = new Map(); // EmployeeEmail -> { O, B, location, workweek, deleted }
+      const counts = new Map(); // EmployeeEmail -> { O, B, L, location, workweek, employeeType, deleted }
 
       filtered.forEach(emp => {
         const email = getEmployeeEmail(emp);
@@ -1871,8 +2328,10 @@
           counts.set(email, {
             O: 0,
             B: 0,
+            L: 0,
             location: (emp.location == null) ? "" : String(emp.location),
             workweek: (ww === "AWS") ? "AWS" : "CA",
+            employeeType: String(emp.employeeType || "Office").trim().toLowerCase() === "driver" ? "Driver" : "Office",
             deleted: emp.__deleted === true
           });
         }
@@ -1882,6 +2341,7 @@
             const st = (shift.status || "").trim().toUpperCase();
             if (st === "O") c.O += 1;
             else if (st === "B") c.B += 1;
+            else if (st === "L") c.L += 1;
           });
         });
       });
@@ -1962,6 +2422,8 @@
           if (!open) {
             wwToggle.setAttribute("aria-expanded", "false");
             wwSubmenu.classList.remove("open");
+            typeToggle.setAttribute("aria-expanded", "false");
+            typeSubmenu.classList.remove("open");
           }
           locToggle.setAttribute("aria-expanded", open ? "false" : "true");
           submenu.classList.toggle("open", !open);
@@ -2070,6 +2532,8 @@
             locToggle.setAttribute("aria-expanded", "false");
             submenu.classList.remove("open");
             newLocPanel.classList.remove("open");
+            typeToggle.setAttribute("aria-expanded", "false");
+            typeSubmenu.classList.remove("open");
           }
           wwToggle.setAttribute("aria-expanded", open ? "false" : "true");
           wwSubmenu.classList.toggle("open", !open);
@@ -2111,6 +2575,58 @@
         wwSubmenu.appendChild(wwSubInner);
         menuList.appendChild(wwSubmenu);
 
+        // --- Change Type (expands submenu: Office | Driver) ---
+        const typeToggle = document.createElement("button");
+        typeToggle.type = "button";
+        typeToggle.className = "emp-menu-item has-sub";
+        typeToggle.setAttribute("aria-expanded", "false");
+        typeToggle.innerHTML = `Change Type<span class="sub-chevron" aria-hidden="true">▸</span>`;
+        typeToggle.addEventListener("click", function (e) {
+          e.stopPropagation();
+          const open = typeToggle.getAttribute("aria-expanded") === "true";
+          if (!open) {
+            locToggle.setAttribute("aria-expanded", "false");
+            submenu.classList.remove("open");
+            newLocPanel.classList.remove("open");
+            wwToggle.setAttribute("aria-expanded", "false");
+            wwSubmenu.classList.remove("open");
+          }
+          typeToggle.setAttribute("aria-expanded", open ? "false" : "true");
+          typeSubmenu.classList.toggle("open", !open);
+        });
+        menuList.appendChild(typeToggle);
+
+        const typeSubmenu = document.createElement("div");
+        typeSubmenu.className = "emp-submenu";
+        const typeSubInner = document.createElement("div");
+        typeSubInner.className = "emp-submenu-inner";
+        const typeSubList = document.createElement("div");
+        typeSubList.className = "emp-submenu-list";
+
+        const officeBtn = document.createElement("button");
+        officeBtn.type = "button";
+        officeBtn.className = "emp-loc-btn" + (c.employeeType === "Office" ? " current" : "");
+        officeBtn.textContent = "Office";
+        officeBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          setEmployeeType(email, "Office");
+        });
+        typeSubList.appendChild(officeBtn);
+
+        const driverBtn = document.createElement("button");
+        driverBtn.type = "button";
+        driverBtn.className = "emp-loc-btn" + (c.employeeType === "Driver" ? " current" : "");
+        driverBtn.textContent = "Driver";
+        driverBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          setEmployeeType(email, "Driver");
+        });
+        typeSubList.appendChild(driverBtn);
+
+        typeSubInner.appendChild(typeSubList);
+        typeSubmenu.appendChild(typeSubInner);
+        menuList.appendChild(typeSubmenu);
+
         // --- Delete ---
         const delBtn = document.createElement("button");
         delBtn.type = "button";
@@ -2137,6 +2653,10 @@
         bItem.className = "emp-count-item";
         bItem.innerHTML = `<span class="swatch b">B</span> = ${c.B}`;
         row.appendChild(bItem);
+        const lItem = document.createElement("span");
+        lItem.className = "emp-count-item";
+        lItem.innerHTML = `<span class="swatch l">L</span> = ${c.L}`;
+        row.appendChild(lItem);
         block.appendChild(row);
 
         container.appendChild(block);

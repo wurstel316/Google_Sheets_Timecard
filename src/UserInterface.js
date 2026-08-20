@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.61 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.74 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -52,6 +52,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             .map((line) => `<div class="admin-note-line">${escapeHtmlForTemplate(line)}</div>`)
             .join('');
     };
+      // Server-side helper for first-load HTML rendering.
+      // Keep this logic in sync with the client-side isVerifiedValue helper below.
       const isVerifiedValueForTemplate = (value) => {
         if (value === true)
           return true;
@@ -1092,6 +1094,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             background: #f1edff;
             color: #5b46a8;
             border-color: #d7ccff;
+          }
+          .schedule-segment.lunch {
+            background: #fff7df;
+            color: #8a5b00;
+            border-color: #f2d27a;
           }
           .schedule-segment-range {
             font-family: 'Roboto Mono', monospace;
@@ -2793,7 +2800,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const source = segment && typeof segment === 'object' ? segment : {};
             const status = String(source.status || '').trim().toUpperCase();
             return {
-              status: status === 'O' || status === 'B' ? status : '',
+              status: status === 'O' || status === 'B' || status === 'L' ? status : '',
               label: String(source.label || ''),
               rangeText: String(source.rangeText || '').trim(),
               startHour: Number(source.startHour),
@@ -2808,7 +2815,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               : [];
             const hasSchedule = source.hasSchedule === true || segments.length > 0;
             const summaryText = String(source.summaryText || '').trim() || (hasSchedule
-              ? segments.map((segment) => segment.rangeText + ' ' + (segment.status === 'O' ? 'On Duty' : 'Backup')).join(' | ')
+              ? segments.map((segment) => {
+                  const label = segment.status === 'O'
+                    ? 'On Duty'
+                    : (segment.status === 'B' ? 'Backup' : 'Lunch');
+                  return segment.rangeText + ' ' + label;
+                }).join(' | ')
               : String(fallbackSummaryText || 'Not scheduled'));
             return {
               dayName: String(source.dayName || fallbackDayName || ''),
@@ -2850,8 +2862,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             for (let i = 0; i < source.length; i++) {
               const segment = source[i] || {};
               const status = String(segment.status || '').toUpperCase();
-              const className = status === 'O' ? 'on-duty' : 'backup';
-              const label = status === 'O' ? 'On Duty' : 'Backup';
+              const className = status === 'O'
+                ? 'on-duty'
+                : (status === 'B' ? 'backup' : 'lunch');
+              const label = status === 'O'
+                ? 'On Duty'
+                : (status === 'B' ? 'Backup' : 'Lunch');
               chips.push(
                 '<span class="schedule-segment ' + className + '">' +
                   '<span class="schedule-segment-range">' + escapeHtml(segment.rangeText || '') + '</span>' +
@@ -3162,6 +3178,31 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return isNaN(ms) ? NaN : ms;
           }
 
+          function buildRequiredNoteMessage(reasonPhrase) {
+            const reason = String(reasonPhrase || '').trim();
+            if (!reason) return 'A note is required before submitting this clock action.';
+            return 'Note required: ' + reason + '. Please add a note to continue.';
+          }
+
+          function formatClockHelperTimeFromMs(ms) {
+            if (!isFinite(ms)) return '';
+            return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          }
+
+          function getTodayPunchCount() {
+            const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth();
+            const todayDate = today.getDate();
+            return (recentEntries || []).filter((entry) => {
+              if (!entry || !entry.clockIn || entry.deleted) return false;
+              const clockInDate = new Date(entry.clockIn);
+              return clockInDate.getFullYear() === todayYear
+                && clockInDate.getMonth() === todayMonth
+                && clockInDate.getDate() === todayDate;
+            }).length;
+          }
+
           function getClockNoteRequirement() {
             if (isClockedIn) {
               const openEntry = getLatestOpenRecentEntry();
@@ -3169,12 +3210,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               if (!isFinite(clockInMs)) {
                 clockInMs = parseClockInMsFromStatusText(latestStatusTextRaw);
               }
-              if (isFinite(clockInMs) && (Date.now() - clockInMs) > CLOCK_OUT_NOTE_THRESHOLD_MS) {
+              const todayPunchCount = getTodayPunchCount();
+              const isFirstPunchOfDay = todayPunchCount <= 1;
+              if (isFinite(clockInMs)
+                && (Date.now() - clockInMs) > CLOCK_OUT_NOTE_THRESHOLD_MS
+                && isFirstPunchOfDay) {
                 return {
                   required: true,
-                  reason: 'clock-out-duration',
+                  reason: 'clock-out-late-lunch',
                   placeholder: 'Clock out note',
-                  message: 'Clock out note required: this shift has been open for more than 5 hours. Please note reason for missed 5 hr break.'
+                  message: buildRequiredNoteMessage('explain late lunch')
                 };
               }
               return { required: false, reason: '', placeholder: 'Clock out note', message: '' };
@@ -3185,27 +3230,55 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const now = new Date();
             const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
             const nowMs = now.getTime();
-            const hasOnDutyNearNow = segments.some((segment) => {
-              if (!segment || String(segment.status || '').toUpperCase() !== 'O') return false;
+
+            const activeBackupSegment = segments.find((segment) => {
+              if (!segment || String(segment.status || '').toUpperCase() !== 'B') return false;
               const startHour = Number(segment.startHour);
               const endHour = Number(segment.endHourExclusive);
               if (!isFinite(startHour) || !isFinite(endHour)) return false;
               const startMs = dayStart + (startHour * 60 * 60 * 1000);
               const endMs = dayStart + (endHour * 60 * 60 * 1000);
-              return nowMs >= (startMs - CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS)
-                && nowMs <= (endMs + CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS);
+              return nowMs >= startMs && nowMs < endMs;
             });
 
-            if (!hasOnDutyNearNow) {
+            if (activeBackupSegment) {
               return {
                 required: true,
-                reason: 'clock-in-off-schedule',
+                reason: 'clock-in-backup',
                 placeholder: 'Clock in note',
-                message: 'Clock in note required: no On Duty schedule found within 15 minutes of now.'
+                message: buildRequiredNoteMessage('you are currently on Backup')
               };
             }
 
-            return { required: false, reason: '', placeholder: 'Clock in note', message: '' };
+            let nearestOnDutyStartMs = NaN;
+            segments.forEach((segment) => {
+              if (!segment || String(segment.status || '').toUpperCase() !== 'O') return;
+              const startHour = Number(segment.startHour);
+              if (!isFinite(startHour)) return;
+              const startMs = dayStart + (startHour * 60 * 60 * 1000);
+              const deltaMs = Math.abs(nowMs - startMs);
+              if (deltaMs > CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS) return;
+              if (!isFinite(nearestOnDutyStartMs) || deltaMs < Math.abs(nowMs - nearestOnDutyStartMs)) {
+                nearestOnDutyStartMs = startMs;
+              }
+            });
+
+            if (isFinite(nearestOnDutyStartMs)) {
+              const scheduledTime = formatClockHelperTimeFromMs(nearestOnDutyStartMs);
+              return {
+                required: false,
+                reason: 'clock-in-on-duty-window',
+                placeholder: 'Clock in note',
+                message: 'You are scheduled to clock in at ' + scheduledTime + '. Please clock in.'
+              };
+            }
+
+            return {
+              required: true,
+              reason: 'clock-in-off-schedule',
+              placeholder: 'Clock in note',
+              message: buildRequiredNoteMessage('No schedule detected or late Clock in.')
+            };
           }
 
           function updateClockNoteRequirementUi(requirement) {
@@ -3215,10 +3288,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const noteText = notesInput ? String(notesInput.value || '').trim() : '';
             const mustHaveNote = requirement && requirement.required === true;
             const missingRequiredNote = mustHaveNote && !noteText;
+            const helperMessage = requirement ? String(requirement.message || '').trim() : '';
 
             if (hintEl) {
-              if (mustHaveNote) {
-                hintEl.innerText = requirement.message || 'A note is required before submitting this clock action.';
+              if (helperMessage) {
+                hintEl.innerText = helperMessage;
                 hintEl.style.display = 'block';
               } else {
                 hintEl.innerText = '';
@@ -3249,7 +3323,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             refreshBtn.classList.toggle('is-spinning', isBusy);
           }
 
-           function parseAdminDateFromLabel(dateLabel) {
+          function parseAdminDateFromLabel(dateLabel) {
             const match = String(dateLabel || '').match(/(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);
             if (!match) return null;
             const month = Number(match[1]);
@@ -3258,50 +3332,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (!month || !day || !year) return null;
             const parsed = new Date(year, month - 1, day);
             return isNaN(parsed.getTime()) ? null : parsed;
-          }
-
-          function parseAdminIsoDate(isoDate) {
-            const parts = String(isoDate || '').split('-');
-            if (parts.length !== 3) return null;
-            const year = Number(parts[0]);
-            const month = Number(parts[1]);
-            const day = Number(parts[2]);
-            if (!year || !month || !day) return null;
-            const parsed = new Date(year, month - 1, day);
-            return isNaN(parsed.getTime()) ? null : parsed;
-          }
-
-          function isVerifiedValue(value) {
-            if (value === true) return true;
-            if (typeof value === 'string') {
-              const normalized = value.trim().toLowerCase();
-              return normalized === 'true' || normalized === 'yes' || normalized === 'y' || normalized === '1';
-            }
-            return value === 1;
-          }
-
-          function getActivePayPeriodBounds() {
-            const start = parseAdminDateFromLabel(activePayPeriodStartLabel);
-            const now = new Date();
-            if (start) {
-              start.setHours(0, 0, 0, 0);
-              now.setHours(23, 59, 59, 999);
-              return { startMs: start.getTime(), endMs: now.getTime() };
-            }
-
-            // Fallback only when pay-period label parsing fails.
-            // preloadedAllowedRange is intended for manual entry limits (start -> today).
-            if (preloadedAllowedRange && preloadedAllowedRange.minDateISO && preloadedAllowedRange.maxDateISO) {
-              const allowedMin = parseAdminIsoDate(preloadedAllowedRange.minDateISO);
-              const allowedMax = parseAdminIsoDate(preloadedAllowedRange.maxDateISO);
-              if (allowedMin && allowedMax) {
-                allowedMin.setHours(0, 0, 0, 0);
-                allowedMax.setHours(23, 59, 59, 999);
-                return { startMs: allowedMin.getTime(), endMs: allowedMax.getTime() };
-              }
-            }
-
-            return null;
           }
 
           function buildDateOnlyDisablePredicate(minDateObj, maxDateObj) {
@@ -3315,6 +3345,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               const dayMs = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
               return dayMs < min || dayMs > max;
             };
+          }
+
+          function getActivePayPeriodBounds() {
+            const startDate = parseAdminDateFromLabel(activePayPeriodStartLabel);
+            const endDate = parseAdminDateFromLabel(activePayPeriodEndLabel);
+            if (!startDate || !endDate) return null;
+            const startMs = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0).getTime();
+            const endMs = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999).getTime();
+            return { startMs: startMs, endMs: endMs };
           }
 
           function isInActivePayPeriod(isoValue) {
@@ -3466,6 +3505,17 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (!emailText) return '';
             const atIndex = emailText.indexOf('@');
             return atIndex > 0 ? emailText.slice(0, atIndex) : emailText;
+          }
+
+          // Client-side mirror used during refresh/re-render paths.
+          // Do not remove even if first page load works, because refresh relies on this helper.
+          function isVerifiedValue(value) {
+            if (value === true) return true;
+            if (typeof value === 'string') {
+              const normalized = value.trim().toLowerCase();
+              return normalized === 'true' || normalized === 'yes' || normalized === 'y' || normalized === '1';
+            }
+            return value === 1;
           }
 
           function normalizeEntryTypeClient(entryType) {
@@ -6814,6 +6864,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return 'Clock In is before the allowed date range.';
             }
             if (ms > manualPickerRuleState.latestAllowedMs) {
+              if (ms > manualPickerRuleState.maxMs) {
+                return 'Clock In cannot be in the future.';
+              }
               if (manualPickerRuleState.latestAllowedMs < manualPickerRuleState.maxMs) {
                 return 'Clock In must be before the current open clock-in entry.';
               }
@@ -6869,6 +6922,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return 'Clock Out is before the allowed date range.';
             }
             if (ms > manualPickerRuleState.outMaxMs) {
+              if (ms > manualPickerRuleState.maxMs) {
+                return 'Clock Out cannot be in the future.';
+              }
               if (manualPickerRuleState.outMaxMs < maxSpanOut) {
                 return 'Clock Out must be before the current open clock-in entry.';
               }
@@ -7192,10 +7248,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             let inInvalid = false;
             let outInvalid = false;
             let hint = '';
+            const nowMs = Date.now();
 
             if (!inDate || isNaN(inDate.getTime())) {
               inInvalid = true;
               hint = 'Clock In is required.';
+            } else if (inDate.getTime() > nowMs) {
+              inInvalid = true;
+              hint = 'Clock In cannot be in the future.';
             } else if (!isInActivePayPeriod(inDate.toISOString())) {
               inInvalid = true;
               hint = 'Clock In is outside the active pay period.';
@@ -7213,6 +7273,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               } else if ((outDate.getTime() - inDate.getTime()) > MANUAL_ENTRY_MAX_SPAN_MS) {
                 outInvalid = true;
                 hint = 'Clock Out exceeds the 14-hour maximum shift length.';
+              } else if (outDate.getTime() > nowMs) {
+                outInvalid = true;
+                hint = 'Clock Out cannot be in the future.';
               } else if (!isInActivePayPeriod(outDate.toISOString())) {
                 outInvalid = true;
                 hint = 'Clock Out is outside the active pay period.';

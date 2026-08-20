@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.61 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.74 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -761,7 +761,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.61';
+const SCRIPT_VERSION = '2.2.2-push.74';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -1457,7 +1457,7 @@ function buildScheduleSegmentsFromDay_(dayRecord) {
     for (let i = 0; i < shifts.length; i++) {
         const shift = shifts[i] || {};
         const status = String(shift.status || '').trim().toUpperCase();
-        if (status !== 'O' && status !== 'B') {
+        if (status !== 'O' && status !== 'B' && status !== 'L') {
             continue;
         }
         const hour = parseScheduleTimeBlockHour_(shift.timeBlock);
@@ -1468,7 +1468,7 @@ function buildScheduleSegmentsFromDay_(dayRecord) {
         hourStatus.set(hour, status);
     }
     const sortedHours = Array.from(hourStatus.keys()).sort((a, b) => a - b);
-    const statusLabelMap = { O: 'On Duty', B: 'Backup' };
+    const statusLabelMap = { O: 'On Duty', B: 'Backup', L: 'Lunch' };
     const segments = [];
 
     let runStartHour = null;
@@ -3291,6 +3291,7 @@ function createBlankScheduleEmployeeRecord_(email) {
         EmployeeName: normalizedEmail,
         location: '',
         workweek: 'CA',
+        employeeType: 'Office',
         days: buildBlankScheduleDays_(),
         awsEffectiveDate: '',
         deletedAt: '',
@@ -3306,6 +3307,8 @@ function normalizeScheduleEmployeeRecord_(employee, keepDeletedMeta = false) {
     normalized.location = source.location == null ? '' : String(source.location).trim();
     const workweek = String(source.workweek || 'CA').trim().toUpperCase();
     normalized.workweek = workweek === 'AWS' ? 'AWS' : 'CA';
+    const employeeType = String(source.employeeType || source.EmployeeType || 'Office').trim().toLowerCase();
+    normalized.employeeType = employeeType === 'driver' ? 'Driver' : 'Office';
     normalized.days = normalizeScheduleDays_(source.days);
     normalized.awsEffectiveDate = String(source.awsEffectiveDate || source.AWSEffectiveDate || '').trim();
     delete normalized.awsEnabled;

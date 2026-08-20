@@ -7,6 +7,48 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Restored the shared client `isVerifiedValue` helper used by recent/admin entry rendering so Open Unpaid Time Entries loads without protected-function runtime failures.
+- Why: A missing helper caused `ReferenceError: isVerifiedValue is not defined`, which blocked entry list rendering in the web UI.
+- Files: src/UserInterface.js
+- Validation: Reintroduced the helper near other shared client formatting/normalization utilities and verified no diagnostics errors on touched files.
+
+### Changed
+- Summary: Prioritized future-time messaging in all add-missed-time and admin edit-time modal validators so future selections now show explicit "cannot be in the future" errors instead of open-entry/order side messages.
+- Why: Prevents misleading guidance when users choose timestamps later than the current time, while preserving the existing validation rules and submit/apply disable behavior.
+- Files: src/UserInterface.js
+- Validation: Updated manual Clock In/Clock Out invalid-reason branches and admin edit validation state ordering to keep all prior checks intact, then verified touched file diagnostics report no errors.
+
+### Changed
+- Summary: Reworked clock note guidance into a prioritized schedule-aware ruleset with a shared required-note template, adding Backup-required clock-in notes, On-Duty start-window helper text, first-punch late-lunch note gating, and the updated off-schedule phrase.
+- Why: Keeps note guidance clear and lightweight for employees while reducing copy maintenance to one required-note template with per-rule reason phrases.
+- Files: src/UserInterface.js
+- Validation: Refactored `getClockNoteRequirement()` and `updateClockNoteRequirementUi()` to preserve existing submit flow, confirmed helper text now renders for informational and required states, and verified touched file diagnostics report no errors.
+
+### Changed
+- Summary: Expanded the Schedule Tool Add Employee modal so admins pick a start time and can optionally check extra days, then click an employee to auto-fill a full shift based on workweek rules (CA=8 hours, AWS=10 hours).
+- Why: Replaces the old single 08:00 write with a faster onboarding flow that applies complete shifts consistently while preserving manual control over start hour and extra target days.
+- Files: src/ScheduleHTML.html
+- Validation: Added modal start-time/day controls, per-employee CA/AWS duration indicators, deterministic auto-fill assignment with 6th-hour lunch insertion (`L`), midnight rollover into following day, overwrite behavior for existing statuses, and a single post-apply render/dirty-state update.
+
+### Changed
+- Summary: Updated Schedule Tool uncovered-shift logic so only Driver employees count toward O/B coverage; Office employees remain visible/editable but no longer reduce uncovered totals.
+- Why: Aligns uncovered calculations with dispatch coverage rules where only Driver staffing should satisfy slot coverage.
+- Files: src/ScheduleHTML.html
+- Validation: Added a dedicated driver-only day coverage set in render flow and switched uncovered evaluation to that set while preserving existing table rendering and status cycle behavior.
+
+### Changed
+- Summary: Added dynamic employee-type checkboxes under Show deleted in the Schedule Tool sidebar, auto-populated from schedule employee records and applied as an active visibility filter for both schedule columns and sidebar employee lists.
+- Why: Lets admins quickly focus views by employee type (currently Driver and Office) while keeping the filter resilient to additional type values present in saved employee data.
+- Files: src/ScheduleHTML.html
+- Validation: Added type-filter UI rendering and state management, wired type checks into both filtered schedule data and sidebar deleted/active lists, and confirmed src/ScheduleHTML.html diagnostics report no errors.
+
+### Changed
+- Summary: Added a third schedule status `L` (Lunch) to the Schedule Tool edit cycle, save payload path, and schedule preview rendering, and introduced employee type metadata (`Office` or `Driver`) with a new `Change Type` submenu in the employee action menu.
+- Why: Supports explicit lunch-state scheduling and allows admins to categorize employees directly from the existing sidebar dropdown workflow without schema-version changes.
+- Files: src/ScheduleHTML.html, src/Code.js, src/UserInterface.js
+- Validation: Updated status validation/cycling/rendering and warm-yellow Lunch styling in the Schedule Tool, extended server/client schedule segment normalization to preserve/render Lunch labels, added employeeType normalization/defaulting on client and server, placed `Change Type` beneath `Change Workweek` and above `Delete`, and verified no schema bump (remains `schemaVersion: 1`).
+
+### Changed
 - Summary: Performed a calendar-picker cleanup pass by removing unused legacy day-scan helper functions and simplifying the manual range helper text to remove the old "highlighted in red and rejected on submit" sentence.
 - Why: The removed helper functions were no longer referenced after moving to date-only disable predicates, and the previous helper sentence no longer matches the streamlined picker guidance.
 - Files: src/UserInterface.js
@@ -137,6 +179,10 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - Why: Rem-based SVG radius/stroke overrides introduced drift between icon and ring proportions; fixed viewBox geometry scales consistently with the container and keeps the implementation minimal.
 - Files: src/UserInterface.js
 - Validation: Removed CSS geometry overrides (`r`/`stroke-width`) from the ring class, retained 3-second fill behavior, tied icon size to hold-size variable, and confirmed src/UserInterface.js diagnostics report no errors.
+- Summary: Fixed the Admin View active-pay-period filter so it uses the configured pay-period end date instead of the current day.
+- Why: The admin row list was leaking entries after the configured end date because the client-side bounds helper had been widened to today during the manual edit-range refactor.
+- Files: src/UserInterface.js
+- Validation: Updated the filter helper to use the preloaded active pay-period end label and kept the existing manual-entry fallback path intact.
 - Summary: Updated the Schedule Tool to use the normalized email address as the employee identifier throughout the UI while showing a short local-part label for readability.
 - Why: Keeps the schedule roster keyed by the canonical email value and avoids relying on a separate display name field for lookups or mutations.
 - Files: src/ScheduleHTML.html
