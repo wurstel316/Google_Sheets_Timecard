@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.51 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.61 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -1726,6 +1726,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding: 1rem;
             z-index: 1000;
           }
+          body.timecard-modal-open {
+            overflow: hidden;
+            overscroll-behavior: none;
+          }
           #adminViewModal {
             z-index: 1000;
           }
@@ -2412,6 +2416,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           <div id="manualEntryModal" class="modal" style="display: none;">
             <div class="modal-content">
+              <button class="modal-close-x" onclick="hideManualEntryForm()" title="Close missed time" aria-label="Close missed time">x</button>
               <h3>Add Missed Time</h3>
               <p id="manualTargetInfo" class="modal-note" style="display:none;"></p>
               <p id="dateRangeInfo" class="modal-note">Loading allowed date range...</p>
@@ -2434,7 +2439,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
               <div class="modal-actions">
                 <button id="manualSubmit" type="button" onclick="submitManualEntry(event)">Submit</button>
-                <button class="secondary" type="button" onclick="hideManualEntryForm()">Cancel</button>
               </div>
             </div>
           </div>
@@ -2654,6 +2658,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           <div id="adminTimeEditModal" class="modal" style="display: none;">
             <div class="modal-content" style="width:min(34rem,96vw);">
+              <button class="modal-close-x" onclick="closeAdminTimeEditor()" title="Close time editor" aria-label="Close time editor">x</button>
               <h3>Edit Times</h3>
               <p class="modal-note" id="adminTimeEditRowLabel">Row</p>
               <p class="modal-note" id="adminTimeEditRawInfo">Raw times</p>
@@ -2667,8 +2672,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <p id="adminEditError" class="error" style="display:none;"></p>
 
               <div class="modal-actions">
-                <button onclick="applyAdminTimeEdit()">Apply</button>
-                <button class="secondary" onclick="closeAdminTimeEditor()">Cancel</button>
+                <button id="adminTimeEditApplyBtn" onclick="applyAdminTimeEdit()" disabled>Apply</button>
               </div>
             </div>
           </div>
@@ -3278,11 +3282,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           function getActivePayPeriodBounds() {
             const start = parseAdminDateFromLabel(activePayPeriodStartLabel);
-            const end = parseAdminDateFromLabel(activePayPeriodEndLabel);
-            if (start && end) {
+            const now = new Date();
+            if (start) {
               start.setHours(0, 0, 0, 0);
-              end.setHours(23, 59, 59, 999);
-              return { startMs: start.getTime(), endMs: end.getTime() };
+              now.setHours(23, 59, 59, 999);
+              return { startMs: start.getTime(), endMs: now.getTime() };
             }
 
             // Fallback only when pay-period label parsing fails.
@@ -3298,6 +3302,19 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
 
             return null;
+          }
+
+          function buildDateOnlyDisablePredicate(minDateObj, maxDateObj) {
+            if (!(minDateObj instanceof Date) || isNaN(minDateObj.getTime()) || !(maxDateObj instanceof Date) || isNaN(maxDateObj.getTime())) {
+              return function() { return false; };
+            }
+            const min = new Date(minDateObj.getFullYear(), minDateObj.getMonth(), minDateObj.getDate()).getTime();
+            const max = new Date(maxDateObj.getFullYear(), maxDateObj.getMonth(), maxDateObj.getDate()).getTime();
+            return function(dateObj) {
+              if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return true;
+              const dayMs = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
+              return dayMs < min || dayMs > max;
+            };
           }
 
           function isInActivePayPeriod(isoValue) {
@@ -6027,12 +6044,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             adminEditingRowIndex = rowIndex;
             initializeAdminTimeEditPickers();
             const effective = getAdminEffectiveFromDraft(rowIndex);
+            const applyBtn = document.getElementById('adminTimeEditApplyBtn');
             document.getElementById('adminTimeEditRowLabel').innerText = 'Row ' + rowIndex + ' - ' + (entry.email || '');
             document.getElementById('adminTimeEditRawInfo').innerText =
               'Raw In: ' + (entry.rawClockIn ? formatDisplayDate(entry.rawClockIn) : 'none') +
               ' | Raw Out: ' + (entry.rawClockOut ? formatDisplayDate(entry.rawClockOut) : 'none');
             document.getElementById('adminEditClockIn').value = formatAdminDateForInput(effective.clockIn);
             document.getElementById('adminEditClockOut').value = formatAdminDateForInput(effective.clockOut);
+            if (applyBtn) {
+              applyBtn.disabled = true;
+            }
             if (adminEditClockInPicker && adminEditClockOutPicker) {
               adminEditClockInPicker.setDate(document.getElementById('adminEditClockIn').value, false, 'Y-m-d\\TH:i');
               adminEditClockOutPicker.setDate(document.getElementById('adminEditClockOut').value, false, 'Y-m-d\\TH:i');
@@ -6040,11 +6061,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             document.getElementById('adminEditError').style.display = 'none';
             document.getElementById('adminTimeEditModal').style.display = 'flex';
+            updateDatePickerModalScrollLock();
           }
 
           function closeAdminTimeEditor() {
             adminEditingRowIndex = null;
             document.getElementById('adminTimeEditModal').style.display = 'none';
+            updateDatePickerModalScrollLock();
           }
 
           function applyAdminTimeEdit() {
@@ -6056,35 +6079,21 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const errorEl = document.getElementById('adminEditError');
             if (!entry || !draft || !errorEl || !isAdminRowEditable(rowIndex)) return;
 
-            const inInput = document.getElementById('adminEditClockIn').value;
-            const outInput = document.getElementById('adminEditClockOut').value;
-            const nextInIso = toAdminIso(inInput);
-            const nextOutIso = toAdminIso(outInput);
+            const inDate = parseDateTimeInputValue(document.getElementById('adminEditClockIn').value);
+            const outDate = parseDateTimeInputValue(document.getElementById('adminEditClockOut').value);
+            const validation = getAdminTimeEditValidationState(rowIndex, inDate, outDate);
 
-            if (!nextInIso) {
-              errorEl.innerText = 'Clock In is required.';
+            setPickerInputInvalid(adminEditClockInPicker, validation.inInvalid, 'admin-picker-invalid');
+            setPickerInputInvalid(adminEditClockOutPicker, validation.outInvalid, 'admin-picker-invalid');
+
+            if (!validation.valid) {
+              errorEl.innerText = validation.hint || 'Updated time range is invalid.';
               errorEl.style.display = 'block';
               return;
             }
-            if (!isInActivePayPeriod(nextInIso)) {
-              errorEl.innerText = 'Time edits are locked outside the active pay period.';
-              errorEl.style.display = 'block';
-              return;
-            }
-            if (nextOutIso) {
-              const inDate = new Date(nextInIso);
-              const outDate = new Date(nextOutIso);
-              if (isNaN(inDate.getTime()) || isNaN(outDate.getTime()) || outDate <= inDate) {
-                errorEl.innerText = 'Clock Out must be after Clock In.';
-                errorEl.style.display = 'block';
-                return;
-              }
-              if (!isInActivePayPeriod(nextOutIso)) {
-                errorEl.innerText = 'Time edits are locked outside the active pay period.';
-                errorEl.style.display = 'block';
-                return;
-              }
-            }
+
+            const nextInIso = inDate.toISOString();
+            const nextOutIso = outDate.toISOString();
 
             const rollbackDraft = Object.assign({}, draft);
             const nextModifiedInIso = normalizeModifiedAgainstRaw(nextInIso, entry.rawClockIn || '');
@@ -6093,13 +6102,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const proposedEffectiveOutIso = nextModifiedOutIso || entry.rawClockOut || '';
             const timeActuallyChanged = (rollbackDraft.modifiedClockInISO || '') !== (nextModifiedInIso || '') ||
               (rollbackDraft.modifiedClockOutISO || '') !== (nextModifiedOutIso || '');
-
-            const localConflictCheck = validateAdminLocalConflicts(rowIndex, proposedEffectiveInIso, proposedEffectiveOutIso, false);
-            if (!localConflictCheck.valid) {
-              errorEl.innerText = localConflictCheck.message || 'Updated range overlaps another entry.';
-              errorEl.style.display = 'block';
-              return;
-            }
 
             draft.modifiedClockInISO = nextModifiedInIso;
             draft.modifiedClockOutISO = nextModifiedOutIso;
@@ -6581,6 +6583,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
              if (ct) ct.disabled = !enabled;
            }
 
+          function updateDatePickerModalScrollLock() {
+            const manualModalEl = document.getElementById('manualEntryModal');
+            const adminTimeModalEl = document.getElementById('adminTimeEditModal');
+            const manualModalOpen = !!(manualModalEl && manualModalEl.style.display === 'flex');
+            const adminTimeModalOpen = !!(adminTimeModalEl && adminTimeModalEl.style.display === 'flex');
+            document.body.classList.toggle('timecard-modal-open', manualModalOpen || adminTimeModalOpen);
+          }
+
           function syncManualEntryTypeCheckboxes() {
             const worked = document.getElementById('manualEntryTypeWorked');
             const vacation = document.getElementById('manualEntryTypeVacation');
@@ -6793,6 +6803,39 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return false;
           }
 
+          function getManualClockInInvalidReason(dateObj) {
+            if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+              return 'Clock In must be a valid date and time.';
+            }
+            if (!manualPickerRuleState) return '';
+
+            const ms = floorToManualStep(dateObj.getTime());
+            if (ms < manualPickerRuleState.minMs) {
+              return 'Clock In is before the allowed date range.';
+            }
+            if (ms > manualPickerRuleState.latestAllowedMs) {
+              if (manualPickerRuleState.latestAllowedMs < manualPickerRuleState.maxMs) {
+                return 'Clock In must be before the current open clock-in entry.';
+              }
+              return 'Clock In is after the allowed date range.';
+            }
+            if (isMsWithinAnyInterval(ms, manualPickerRuleState.conflictIntervals)) {
+              return 'Clock In overlaps an existing time entry.';
+            }
+
+            const minOut = ms + MANUAL_PICKER_STEP_MS;
+            const maxOut = Math.min(manualPickerRuleState.latestAllowedMs, ms + MANUAL_ENTRY_MAX_SPAN_MS);
+            if (minOut > maxOut) {
+              return 'Clock In leaves no valid Clock Out window.';
+            }
+            for (let probe = minOut; probe <= maxOut; probe += MANUAL_PICKER_STEP_MS) {
+              if (!hasOverlapWithIntervals(ms, probe, manualPickerRuleState.conflictIntervals)) {
+                return '';
+              }
+            }
+            return 'Clock In leaves no valid Clock Out window because of overlapping entries.';
+          }
+
           function isSelectableManualClockOut(dateObj) {
             if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return false;
             if (!manualPickerRuleState) return true;
@@ -6803,65 +6846,38 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return true;
           }
 
-          function findClosestAllowedManualClockIn(preferredMs) {
-            if (!manualPickerRuleState) return null;
-            const min = ceilToManualStep(manualPickerRuleState.minMs);
-            const max = floorToManualStep(manualPickerRuleState.latestAllowedMs);
-            if (min > max) return null;
-
-            let probe = Math.min(max, Math.max(min, floorToManualStep(preferredMs)));
-            if (isSelectableManualClockIn(new Date(probe))) return new Date(probe);
-
-            for (let offset = MANUAL_PICKER_STEP_MS; offset <= (max - min); offset += MANUAL_PICKER_STEP_MS) {
-              const down = probe - offset;
-              if (down >= min && isSelectableManualClockIn(new Date(down))) return new Date(down);
-              const up = probe + offset;
-              if (up <= max && isSelectableManualClockIn(new Date(up))) return new Date(up);
+          function getManualClockOutInvalidReason(dateObj) {
+            if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+              return 'Clock Out must be a valid date and time.';
             }
-            return null;
-          }
+            if (!manualPickerRuleState) return '';
+            if (manualPickerRuleState.selectedClockInMs === null) {
+              return 'Select Clock In first.';
+            }
 
-          function findFirstAllowedManualClockOut(clockInMs) {
-            if (!manualPickerRuleState || clockInMs === null) return null;
-            const minOut = ceilToManualStep(Math.max(clockInMs + MANUAL_PICKER_STEP_MS, manualPickerRuleState.outMinMs));
-            const maxOut = floorToManualStep(manualPickerRuleState.outMaxMs);
-            for (let probe = minOut; probe <= maxOut; probe += MANUAL_PICKER_STEP_MS) {
-              if (isSelectableManualClockOut(new Date(probe))) {
-                return new Date(probe);
+            const ms = floorToManualStep(dateObj.getTime());
+            const minOut = manualPickerRuleState.selectedClockInMs + MANUAL_PICKER_STEP_MS;
+            const maxSpanOut = manualPickerRuleState.selectedClockInMs + MANUAL_ENTRY_MAX_SPAN_MS;
+
+            if (ms < minOut) {
+              return 'Clock Out must be after Clock In.';
+            }
+            if (ms > maxSpanOut) {
+              return 'Clock Out exceeds the 14-hour maximum shift length.';
+            }
+            if (ms < manualPickerRuleState.outMinMs) {
+              return 'Clock Out is before the allowed date range.';
+            }
+            if (ms > manualPickerRuleState.outMaxMs) {
+              if (manualPickerRuleState.outMaxMs < maxSpanOut) {
+                return 'Clock Out must be before the current open clock-in entry.';
               }
+              return 'Clock Out is after the allowed date range.';
             }
-            return null;
-          }
-
-          function isSelectableManualClockInDay(dayDate) {
-            if (!manualPickerRuleState || !(dayDate instanceof Date)) return true;
-            const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0, 0).getTime();
-            const dayEnd = dayStart + (24 * 60 * 60 * 1000) - 1;
-            const startMs = ceilToManualStep(Math.max(dayStart, manualPickerRuleState.minMs));
-            const endMs = floorToManualStep(Math.min(dayEnd, manualPickerRuleState.latestAllowedMs));
-            if (startMs > endMs) return false;
-            for (let probe = startMs; probe <= endMs; probe += MANUAL_PICKER_STEP_MS) {
-              if (isSelectableManualClockIn(new Date(probe))) {
-                return true;
-              }
+            if (hasOverlapWithIntervals(manualPickerRuleState.selectedClockInMs, ms, manualPickerRuleState.conflictIntervals)) {
+              return 'Clock Out creates an overlap with an existing time entry.';
             }
-            return false;
-          }
-
-          function isSelectableManualClockOutDay(dayDate) {
-            if (!manualPickerRuleState || !(dayDate instanceof Date)) return true;
-            if (manualPickerRuleState.selectedClockInMs === null) return false;
-            const dayStart = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate(), 0, 0, 0, 0).getTime();
-            const dayEnd = dayStart + (24 * 60 * 60 * 1000) - 1;
-            const startMs = ceilToManualStep(Math.max(dayStart, manualPickerRuleState.outMinMs));
-            const endMs = floorToManualStep(Math.min(dayEnd, manualPickerRuleState.outMaxMs));
-            if (startMs > endMs) return false;
-            for (let probe = startMs; probe <= endMs; probe += MANUAL_PICKER_STEP_MS) {
-              if (isSelectableManualClockOut(new Date(probe))) {
-                return true;
-              }
-            }
-            return false;
+            return '';
           }
 
           function setPickerInputInvalid(picker, invalid, className) {
@@ -6943,35 +6959,48 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           function updateManualPickerValidityHints() {
             const errorEl = document.getElementById('manualError');
+            const submitBtn = document.getElementById('manualSubmit');
             if (!manualClockInPicker || !manualClockOutPicker || !errorEl) return;
             const inDate = parseDateTimeInputValue(manualClockInPicker.input ? manualClockInPicker.input.value : '');
             const outDate = parseDateTimeInputValue(manualClockOutPicker.input ? manualClockOutPicker.input.value : '');
             const hasIn = !!(inDate && !isNaN(inDate.getTime()));
             const hasOut = !!(outDate && !isNaN(outDate.getTime()));
-            const inInvalid = hasIn ? !isSelectableManualClockIn(inDate) : false;
-            let outInvalid = false;
+            const inReason = hasIn ? getManualClockInInvalidReason(inDate) : '';
+            let outReason = '';
             let hint = '';
+            const inInvalid = inReason !== '';
+            let outInvalid = false;
 
             if (hasIn && hasOut) {
               if (outDate.getTime() <= inDate.getTime()) {
                 outInvalid = true;
                 hint = 'Clock Out must be after Clock In.';
-              } else if (!isSelectableManualClockOut(outDate)) {
-                outInvalid = true;
-                hint = 'Selected Clock Out would be invalid (overlap, range, or 14-hour cap).';
+              } else {
+                outReason = getManualClockOutInvalidReason(outDate);
+                outInvalid = outReason !== '';
+                hint = outReason;
               }
             }
             if (!hint && inInvalid) {
-              hint = 'Selected Clock In would be invalid (overlap or range limit).';
+              hint = inReason;
             }
 
             setPickerInputInvalid(manualClockInPicker, inInvalid, 'manual-picker-invalid');
             setPickerInputInvalid(manualClockOutPicker, outInvalid, 'manual-picker-invalid');
 
+            const shouldDisableSubmit = !hasIn || !hasOut || inInvalid || outInvalid;
+            if (submitBtn) {
+              submitBtn.disabled = shouldDisableSubmit;
+            }
+
             if (hint) {
               errorEl.innerText = hint;
               errorEl.style.display = 'block';
-            } else if (errorEl.innerText.indexOf('Selected Clock ') === 0 || errorEl.innerText.indexOf('Clock Out must be after Clock In.') === 0) {
+            } else if (
+              errorEl.innerText.indexOf('Clock In ') === 0 ||
+              errorEl.innerText.indexOf('Clock Out ') === 0 ||
+              errorEl.innerText.indexOf('Select Clock In first.') === 0
+            ) {
               errorEl.style.display = 'none';
               errorEl.innerText = '';
             }
@@ -7035,60 +7064,32 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           function refreshManualDateTimePickers(keepClockOutValue) {
             initializeManualDateTimePickers();
             manualPickerRuleState = buildManualPickerRuleState();
+            const manualWindow = getManualAllowedWindow();
 
             const clockInInput = document.getElementById('manualClockIn');
             const clockOutInput = document.getElementById('manualClockOut');
             const manualErrorEl = document.getElementById('manualError');
             if (!clockInInput || !clockOutInput) return;
-
             if (!manualClockInPicker || !manualClockOutPicker) return;
 
-            const inDayCache = {};
-            manualClockInPicker.set('disable', [function(dateObj) {
-              const key = String(dateObj.getFullYear()) + '-' + String(dateObj.getMonth()) + '-' + String(dateObj.getDate());
-              if (typeof inDayCache[key] !== 'boolean') {
-                inDayCache[key] = isSelectableManualClockInDay(dateObj);
-              }
-              return !inDayCache[key];
-            }]);
-            manualClockInPicker.set('minDate', new Date(manualPickerRuleState.minMs));
-            manualClockInPicker.set('maxDate', new Date(manualPickerRuleState.latestAllowedMs));
+            const disableOutsideManualRange = buildDateOnlyDisablePredicate(manualWindow.minDate, manualWindow.maxDate);
+            manualClockInPicker.set('disable', [disableOutsideManualRange]);
+            manualClockOutPicker.set('disable', [disableOutsideManualRange]);
 
-            let selectedClockIn = parseDateTimeInputValue(clockInInput.value);
-            if (!selectedClockIn) {
-              const fallbackClockIn = findClosestAllowedManualClockIn(Date.now());
-              if (fallbackClockIn) {
-                selectedClockIn = fallbackClockIn;
-                manualClockInPicker.setDate(selectedClockIn, false, 'Y-m-d\\TH:i');
-              }
+            if (!parseDateTimeInputValue(clockInInput.value)) {
+              const fallbackClockIn = new Date();
+              fallbackClockIn.setHours(8, 0, 0, 0);
+              manualClockInPicker.setDate(fallbackClockIn, false, 'Y-m-d\\TH:i');
             }
 
-            manualPickerRuleState = buildManualPickerRuleState();
-            const outDayCache = {};
-            manualClockOutPicker.set('disable', [function(dateObj) {
-              const key = String(dateObj.getFullYear()) + '-' + String(dateObj.getMonth()) + '-' + String(dateObj.getDate());
-              if (typeof outDayCache[key] !== 'boolean') {
-                outDayCache[key] = isSelectableManualClockOutDay(dateObj);
-              }
-              return !outDayCache[key];
-            }]);
-            if (manualPickerRuleState.outMinMs <= manualPickerRuleState.outMaxMs) {
-              manualClockOutPicker.set('minDate', new Date(manualPickerRuleState.outMinMs));
-              manualClockOutPicker.set('maxDate', new Date(manualPickerRuleState.outMaxMs));
-            }
-
-            let selectedClockOut = keepClockOutValue ? parseDateTimeInputValue(clockOutInput.value) : null;
-            if (!selectedClockOut) {
-              const safeClockIn = manualPickerRuleState.selectedClockInMs;
-              const fallbackClockOut = findFirstAllowedManualClockOut(safeClockIn);
-              if (fallbackClockOut) {
-                selectedClockOut = fallbackClockOut;
-                manualClockOutPicker.setDate(selectedClockOut, false, 'Y-m-d\\TH:i');
-              }
+            if (!keepClockOutValue || !parseDateTimeInputValue(clockOutInput.value)) {
+              const fallbackClockOut = new Date();
+              fallbackClockOut.setHours(13, 0, 0, 0);
+              manualClockOutPicker.setDate(fallbackClockOut, false, 'Y-m-d\\TH:i');
             }
 
             if (manualErrorEl && manualErrorEl.style.display === 'none') {
-              if (!selectedClockIn || !selectedClockOut) {
+              if (!parseDateTimeInputValue(clockInInput.value) || !parseDateTimeInputValue(clockOutInput.value)) {
                 manualErrorEl.innerText = 'No available manual entry slot in the selected range.';
                 manualErrorEl.style.display = 'block';
               }
@@ -7101,30 +7102,18 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const clockOutInput = document.getElementById('manualClockOut');
             const dateRangeInfo = document.getElementById('dateRangeInfo');
             const range = preloadedAllowedRange;
-            const bounds = getManualAllowedWindow();
+            const now = new Date();
+            const defaultStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0, 0);
+            const defaultEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0, 0, 0);
 
-            clockInInput.min = formatForInput(bounds.minDate);
-            clockInInput.max = formatForInput(bounds.maxDate);
-            clockOutInput.min = formatForInput(bounds.minDate);
-            clockOutInput.max = formatForInput(bounds.maxDate);
-
-            const preferredStartMs = floorToManualStep(Date.now() - (9 * 60 * 60 * 1000));
-            const latestStartMs = Math.max(bounds.minMs, bounds.maxMs - MANUAL_PICKER_STEP_MS);
-            const defaultStartMs = Math.min(latestStartMs, Math.max(bounds.minMs, preferredStartMs));
-            const defaultEndMs = Math.min(bounds.maxMs, defaultStartMs + (9 * 60 * 60 * 1000));
-            const safeDefaultEndMs = defaultEndMs > defaultStartMs
-              ? defaultEndMs
-              : Math.min(bounds.maxMs, defaultStartMs + MANUAL_PICKER_STEP_MS);
-            const defaultStart = new Date(defaultStartMs);
-            const defaultEnd = new Date(safeDefaultEndMs);
             clockInInput.value = formatForInput(defaultStart);
             clockOutInput.value = formatForInput(defaultEnd);
 
             if (dateRangeInfo) {
               if (range && range.minDateISO && range.maxDateISO) {
-                dateRangeInfo.innerText = 'Limited to current pay period: ' + range.minDateStr + ' through ' + range.maxDateStr + ' (today). Clock out is capped at 14 hours after clock in.';
+                dateRangeInfo.innerText = 'Current pay period: ' + range.minDateStr + ' through ' + range.maxDateStr + '.';
               } else {
-                dateRangeInfo.innerText = 'Limited to the last 14 days. Clock out is capped at 14 hours after clock in.';
+                dateRangeInfo.innerText = 'Use a date within the current pay period window.';
               }
             }
 
@@ -7160,6 +7149,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             adminEditClockInPicker = flatpickr(inEl, Object.assign({}, options, {
               onReady: function(_, __, instance) {
                 attachPickerTimeScrollInteractions(instance);
+                updateAdminTimeEditValidityHints();
               },
               onOpen: function() {
                 attachPickerTimeScrollInteractions(adminEditClockInPicker);
@@ -7176,6 +7166,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             adminEditClockOutPicker = flatpickr(outEl, Object.assign({}, options, {
               onReady: function(_, __, instance) {
                 attachPickerTimeScrollInteractions(instance);
+                updateAdminTimeEditValidityHints();
               },
               onOpen: function() {
                 attachPickerTimeScrollInteractions(adminEditClockOutPicker);
@@ -7188,74 +7179,108 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 updateAdminTimeEditValidityHints();
               }
             }));
+
+            [inEl, outEl].forEach((el) => {
+              if (!el || el.dataset.adminLiveValidationBound === '1') return;
+              el.dataset.adminLiveValidationBound = '1';
+              el.addEventListener('input', updateAdminTimeEditValidityHints);
+              el.addEventListener('change', updateAdminTimeEditValidityHints);
+            });
           }
 
-          function refreshAdminTimeEditPickerBounds() {
-            if (!adminEditClockInPicker || !adminEditClockOutPicker) return;
-
-            const bounds = getActivePayPeriodBounds();
-            const minMs = bounds ? bounds.startMs : null;
-            const maxMs = bounds ? bounds.endMs : Date.now();
-
-            if (minMs !== null) {
-              adminEditClockInPicker.set('minDate', new Date(minMs));
-              adminEditClockOutPicker.set('minDate', new Date(minMs));
-            }
-            if (maxMs !== null) {
-              adminEditClockInPicker.set('maxDate', new Date(maxMs));
-              adminEditClockOutPicker.set('maxDate', new Date(maxMs));
-            }
-
-            const inDate = parseDateTimeInputValue(document.getElementById('adminEditClockIn').value);
-            if (inDate && !isNaN(inDate.getTime())) {
-              const outMin = new Date(inDate.getTime() + MANUAL_PICKER_STEP_MS);
-              const outMax = new Date(Math.min((maxMs !== null ? maxMs : Date.now()), inDate.getTime() + MANUAL_ENTRY_MAX_SPAN_MS));
-              adminEditClockOutPicker.set('minDate', outMin);
-              adminEditClockOutPicker.set('maxDate', outMax);
-            }
-            updateAdminTimeEditValidityHints();
-          }
-
-          function updateAdminTimeEditValidityHints() {
-            const errorEl = document.getElementById('adminEditError');
-            if (!errorEl || !adminEditClockInPicker || !adminEditClockOutPicker) return;
-            const inDate = parseDateTimeInputValue(adminEditClockInPicker.input ? adminEditClockInPicker.input.value : '');
-            const outDate = parseDateTimeInputValue(adminEditClockOutPicker.input ? adminEditClockOutPicker.input.value : '');
+          function getAdminTimeEditValidationState(rowIndex, inDate, outDate) {
             let inInvalid = false;
             let outInvalid = false;
             let hint = '';
 
-            if (!inDate) {
+            if (!inDate || isNaN(inDate.getTime())) {
               inInvalid = true;
               hint = 'Clock In is required.';
-            } else {
-              const inIso = inDate.toISOString();
-              if (!isInActivePayPeriod(inIso)) {
-                inInvalid = true;
-                hint = 'Clock In is outside the active pay period.';
-              }
+            } else if (!isInActivePayPeriod(inDate.toISOString())) {
+              inInvalid = true;
+              hint = 'Clock In is outside the active pay period.';
             }
 
-            if (!outInvalid && outDate && inDate) {
+            if (!hint && (!outDate || isNaN(outDate.getTime()))) {
+              outInvalid = true;
+              hint = 'Clock Out is required.';
+            }
+
+            if (!hint && inDate && outDate) {
               if (outDate.getTime() <= inDate.getTime()) {
                 outInvalid = true;
                 hint = 'Clock Out must be after Clock In.';
               } else if ((outDate.getTime() - inDate.getTime()) > MANUAL_ENTRY_MAX_SPAN_MS) {
                 outInvalid = true;
-                hint = 'Clock Out is beyond the 14-hour cap.';
+                hint = 'Clock Out exceeds the 14-hour maximum shift length.';
               } else if (!isInActivePayPeriod(outDate.toISOString())) {
                 outInvalid = true;
                 hint = 'Clock Out is outside the active pay period.';
               }
             }
 
-            setPickerInputInvalid(adminEditClockInPicker, inInvalid, 'admin-picker-invalid');
-            setPickerInputInvalid(adminEditClockOutPicker, outInvalid, 'admin-picker-invalid');
+            if (!hint && inDate && outDate) {
+              const entry = adminEntriesByRow[rowIndex];
+              if (entry) {
+                const nextInIso = inDate.toISOString();
+                const nextOutIso = outDate.toISOString();
+                const nextModifiedInIso = normalizeModifiedAgainstRaw(nextInIso, entry.rawClockIn || '');
+                const nextModifiedOutIso = normalizeModifiedAgainstRaw(nextOutIso, entry.rawClockOut || '');
+                const proposedEffectiveInIso = nextModifiedInIso || entry.rawClockIn || '';
+                const proposedEffectiveOutIso = nextModifiedOutIso || entry.rawClockOut || '';
+                const localConflictCheck = validateAdminLocalConflicts(rowIndex, proposedEffectiveInIso, proposedEffectiveOutIso, false);
+                if (!localConflictCheck.valid) {
+                  outInvalid = true;
+                  hint = localConflictCheck.message || 'Updated range overlaps another entry for this employee.';
+                }
+              }
+            }
 
-            if (hint) {
-              errorEl.innerText = hint;
+            return {
+              valid: !(inInvalid || outInvalid),
+              inInvalid,
+              outInvalid,
+              hint
+            };
+          }
+
+          function refreshAdminTimeEditPickerBounds() {
+            if (!adminEditClockInPicker || !adminEditClockOutPicker) return;
+            const bounds = getActivePayPeriodBounds();
+            if (bounds) {
+              const minDate = new Date(bounds.startMs);
+              const maxDate = new Date(bounds.endMs);
+              const disableOutsideEditRange = buildDateOnlyDisablePredicate(minDate, maxDate);
+              adminEditClockInPicker.set('disable', [disableOutsideEditRange]);
+              adminEditClockOutPicker.set('disable', [disableOutsideEditRange]);
+            } else {
+              adminEditClockInPicker.set('disable', []);
+              adminEditClockOutPicker.set('disable', []);
+            }
+            updateAdminTimeEditValidityHints();
+          }
+
+          function updateAdminTimeEditValidityHints() {
+            const errorEl = document.getElementById('adminEditError');
+            const applyBtn = document.getElementById('adminTimeEditApplyBtn');
+            if (!errorEl || !adminEditClockInPicker || !adminEditClockOutPicker) return;
+            const inDate = parseDateTimeInputValue(adminEditClockInPicker.input ? adminEditClockInPicker.input.value : '');
+            const outDate = parseDateTimeInputValue(adminEditClockOutPicker.input ? adminEditClockOutPicker.input.value : '');
+            const rowIndex = adminEditingRowIndex;
+            const validation = getAdminTimeEditValidationState(rowIndex, inDate, outDate);
+
+            const shouldDisableApply = !validation.valid;
+            if (applyBtn) {
+              applyBtn.disabled = shouldDisableApply;
+            }
+
+            setPickerInputInvalid(adminEditClockInPicker, validation.inInvalid, 'admin-picker-invalid');
+            setPickerInputInvalid(adminEditClockOutPicker, validation.outInvalid, 'admin-picker-invalid');
+
+            if (validation.hint) {
+              errorEl.innerText = validation.hint;
               errorEl.style.display = 'block';
-            } else if (errorEl.innerText.indexOf('Clock In is ') === 0 || errorEl.innerText.indexOf('Clock Out ') === 0) {
+            } else if (errorEl.innerText.indexOf('Clock In ') === 0 || errorEl.innerText.indexOf('Clock Out ') === 0 || errorEl.innerText.indexOf('Updated ') === 0 || errorEl.innerText.indexOf('Another ') === 0) {
               errorEl.style.display = 'none';
               errorEl.innerText = '';
             }
@@ -7273,8 +7298,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             const targetInfo = document.getElementById('manualTargetInfo');
             const notesInput = document.getElementById('manualNotes');
+            const manualSubmit = document.getElementById('manualSubmit');
             document.getElementById('manualError').style.display = 'none';
-            document.getElementById('manualSubmit').disabled = false;
+            if (manualSubmit) {
+              manualSubmit.disabled = true;
+            }
             setManualEntryType('worked');
             if (notesInput) {
               // Avoid stale notes carrying into a new manual entry and accidental instant submit.
@@ -7296,6 +7324,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             });
             manualEntryModalOpenedAtMs = Date.now();
             document.getElementById('manualEntryModal').style.display = 'flex';
+            updateDatePickerModalScrollLock();
           }
 
           function hideManualEntryForm() {
@@ -7308,6 +7337,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               targetInfo.style.display = 'none';
             }
             document.getElementById('manualEntryModal').style.display = 'none';
+            updateDatePickerModalScrollLock();
           }
 
           function openAdminManualEntryForEmployee(email, event) {

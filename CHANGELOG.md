@@ -7,6 +7,42 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Performed a calendar-picker cleanup pass by removing unused legacy day-scan helper functions and simplifying the manual range helper text to remove the old "highlighted in red and rejected on submit" sentence.
+- Why: The removed helper functions were no longer referenced after moving to date-only disable predicates, and the previous helper sentence no longer matches the streamlined picker guidance.
+- Files: src/UserInterface.js
+- Validation: Confirmed no remaining call sites for removed picker helpers and retained active date-disable logic on current flatpickr instances.
+
+### Changed
+- Summary: Standardized picker calendar date disabling so add/edit time pickers now disable only out-of-range dates (not times), and aligned edit-date bounds to payroll start through today.
+- Why: Restores simple calendar day blocking with clearer behavior while keeping time validation in red-message/apply-submit checks instead of hard-locking time selectors.
+- Files: src/UserInterface.js
+- Validation: Reviewed existing range logic (`getManualAllowedWindow`, `getActivePayPeriodBounds`) and legacy day-disable helpers, then added a shared date-only disable predicate used by manual and admin flatpickr instances.
+
+### Changed
+- Summary: Upgraded the Admin Edit Times modal to run live rule-specific validation before Apply (including overlap checks) and to keep Apply disabled until all rules pass, matching missed-time picker behavior.
+- Why: Ensures admins see the exact failed rule while adjusting times instead of learning about overlap/range failures only after clicking Apply.
+- Files: src/UserInterface.js
+- Validation: Added shared admin time-edit validation state helper, wired it into live picker/input events and Apply-click guard, and kept red field highlighting + message updates synchronized with button disable state.
+
+### Changed
+- Summary: Replaced generic red manual picker validation text with rule-specific messages so users now see the exact failing condition (before/after allowed range, overlap, open-entry boundary, missing Clock In, or 14-hour cap overflow).
+- Why: The prior message bundled multiple rules into one sentence, which made it unclear what needed to be fixed.
+- Files: src/UserInterface.js
+- Validation: Added explicit invalid-reason helpers for manual Clock In/Clock Out checks and wired them into the existing red hint flow while preserving submit-disable behavior for invalid selections.
+
+### Changed
+- Summary: Locked background scrolling whenever the manual date/time entry modal or admin time-edit modal is open, and standardized both picker modals to use the top-right `x` close control while removing their inline Cancel buttons.
+- Why: Prevents page movement behind active picker dialogs and aligns date/time modal close behavior with the rest of the app's modal UX.
+- Files: src/UserInterface.js
+- Validation: Added modal-open body scroll-lock toggling in open/close handlers, updated modal markup to use `modal-close-x`, removed Cancel actions from both picker modals, and confirmed diagnostics report no file errors.
+
+### Changed
+- Summary: Reworked the manual/admin time pickers to behave like Google Calendar by allowing out-of-range values to be selected without forcing them back to valid min/max boundaries, while keeping red invalid highlighting and submit/apply disabling until the fields are valid.
+- Why: The old flatpickr flow was forcing date/time choices and making the UI feel restrictive and messy; the new flow keeps the existing rejection message as the fallback explanation but lets users pick a value first and then reject it on submit when it is actually invalid.
+- Files: src/UserInterface.js
+- Validation: Updated the picker initialization to stop locking min/max dates, default new entries to today 8:00 AM to 1:00 PM, preserve selected admin-edit values, and keep Submit/Apply disabled until the selected values pass validation. Verified the file still parses cleanly and the project deploy check runs successfully.
+
+### Changed
 - Summary: Removed first-load clock-in note-requirement lag by preloading the signed-in employee schedule preview into initial HTML and using it for immediate client-side gating before async schedule refresh completes.
 - Why: Prevents delayed transitions in required vs not-required note state that previously depended on a post-load RPC round trip.
 - Files: src/Code.js, src/UserInterface.js
