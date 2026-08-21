@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.74 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.76 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -665,6 +665,7 @@ function buildDataEntryRow(email, rawClockIn, rawClockOut, notes, verified, entr
     row[DATA_COLUMNS.ENTRY_ID] = generateEntryId();
     return row;
 }
+// POSSIBLE DELETE LATER: legacy admin-email helper; no current call sites found. Retained for release safety.
 function getAdminEmailSet() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const adminSheet = ss.getSheetByName('AdminUsers');
@@ -749,6 +750,7 @@ function getCurrentUserPermissionFlags() {
         canExport: canExport
     };
 }
+// POSSIBLE DELETE LATER: legacy admin-check helper; current permission checks use hasPermission()/hasAnyPermission().
 function isCurrentUserAdmin() {
     const email = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
     if (!email)
@@ -761,7 +763,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.74';
+const SCRIPT_VERSION = '2.2.2-push.76';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -1605,25 +1607,6 @@ function getCurrentUserSchedulePreview() {
         return { success: false, message: e.toString(), preview: fallbackPreview };
     }
 }
-// DEPRECATED (commented out intentionally for rollback safety):
-// Manual Add Time UIs now receive preloaded allowed-range data from initial HTML render,
-// so this RPC endpoint is no longer used in active flows.
-//
-// /**
-//  * Get allowed date range for manual entries (client-side use)
-//  * Returns ISO date strings and formatted strings for display
-//  */
-// function getAllowedDateRangeForClient() {
-//   const range = getAllowedDateRange();
-//   Logger.log('getAllowedDateRangeForClient: range served');
-//   debugLog('getAllowedDateRangeForClient complete', { minDateISO: range.minDateISO, maxDateISO: range.maxDateISO });
-//   return {
-//     minDateISO: range.minDateISO,
-//     maxDateISO: range.maxDateISO,
-//     minDateStr: range.minDateStr,
-//     maxDateStr: range.maxDateStr
-//   };
-// }
 /**
  * Get archive review date bounds for the current user.
  * Dates are limited to entries before the current pay period start date.
@@ -2383,6 +2366,7 @@ function adminSaveEntryUpdate(rowIndex, update) {
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet
  * @param {number[]} rowIndices
  */
+// POSSIBLE DELETE LATER: legacy row-format batch helper; no active call sites found in current flows.
 function batchFormatRows(sheet, rowIndices) {
     if (!rowIndices || rowIndices.length === 0)
         return 0;
@@ -2441,114 +2425,6 @@ function buildManualEntryNotes(rawNotes, actorEmail) {
  * @param rowIndex The row number (1-based) to calculate color for
  * @returns Color hex code for the email group
  */
-// ==================== EMAIL-FIRST CHRONOLOGICAL INSERTION ====================
-/**
- * Find the correct row index to insert a new entry based on Email first, then Clock In timestamp
- * Uses email-first grouping to keep all employee entries together
- * @param sheet DataEntry sheet
- * @param email Employee email
- * @param clockInDateTime Clock in timestamp (Date object)
- * @returns Row index (1-based) where entry should be inserted
- */
-function findChronologicalInsertPosition(sheet, email, clockInDateTime) {
-    const data = sheet.getDataRange().getValues();
-    debugLog(`[POSITION-START] email: ${email}, clockIn: ${clockInDateTime}, sheet rows: ${data.length}`);
-    // Find the last row with this email, then search backward within that email group
-    let lastEmailRow = -1;
-    let firstEmailRow = -1;
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][DATA_COLUMNS.EMAIL] === email) {
-            if (firstEmailRow === -1) {
-                firstEmailRow = i;
-            }
-            lastEmailRow = i;
-        }
-    }
-    debugLog(`[POSITION-EMAIL-SCAN] firstEmailRow: ${firstEmailRow}, lastEmailRow: ${lastEmailRow}`);
-    // If no entries for this email exist, find alphabetical position
-    if (lastEmailRow === -1) {
-        debugLog(`[POSITION-NEW-EMAIL] Email not found, finding alphabetical position`);
-        // Scan ALL rows to build a map of email groups
-        const emailGroups = new Map(); // email -> { first: index, last: index }
-        for (let i = 1; i < data.length; i++) {
-            const rowEmail = data[i][DATA_COLUMNS.EMAIL];
-            if (rowEmail) {
-                if (!emailGroups.has(rowEmail)) {
-                    emailGroups.set(rowEmail, { first: i, last: i });
-                }
-                else {
-                    emailGroups.get(rowEmail).last = i;
-                }
-            }
-        }
-        // Get sorted list of unique emails (case-insensitive)
-        const sortedEmails = Array.from(emailGroups.keys()).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
-        debugLog(`[POSITION-SORTED-EMAILS] Existing emails in order: [${sortedEmails.join(', ')}]`);
-        // Find where this email should be inserted alphabetically
-        let insertAfterRow = 1; // Default: insert at top (row 2) if no emails or comes first
-        for (const existingEmail of sortedEmails) {
-            if (existingEmail.toLowerCase() < email.toLowerCase()) {
-                // This email comes before us, update insertAfterRow to end of its group
-                // Convert 0-based index to 1-based row number
-                insertAfterRow = emailGroups.get(existingEmail).last + 1;
-            }
-            else {
-                // This email comes after us or is equal, stop here
-                break;
-            }
-        }
-        const finalPosition = insertAfterRow + 1;
-        debugLog(`[POSITION-NEW-EMAIL-RESULT] Insert position: ${finalPosition} (after row ${insertAfterRow})`);
-        // Insert after the found position
-        return finalPosition; // insertAfterRow is now 1-based row number, +1 to insert after
-    }
-    // Email group exists - find chronological position within the group
-    debugLog(`[POSITION-CHRONOLOGICAL] Searching within email group (rows ${firstEmailRow + 1} to ${lastEmailRow + 1})`);
-    for (let i = lastEmailRow; i >= firstEmailRow; i--) {
-        const rowClockIn = data[i][DATA_COLUMNS.CLOCK_IN];
-        // Valid Clock In found within this email's group
-        if (rowClockIn instanceof Date && !isNaN(rowClockIn.getTime())) {
-            if (clockInDateTime >= rowClockIn) {
-                const position = i + 2;
-                debugLog(`[POSITION-CHRONOLOGICAL-RESULT] Found position: ${position} (after row ${i + 1} with clockIn: ${rowClockIn})`);
-                // Insert after this row (i is 0-based data index, i+1 is 1-based row, +1 to insert after)
-                return position;
-            }
-        }
-    }
-    // New entry is oldest in this email group; insert at beginning of group
-    // firstEmailRow is 0-based data index, +1 converts to 1-based row number (insertRows inserts before this row)
-    const position = firstEmailRow + 1;
-    debugLog(`[POSITION-OLDEST] Entry is oldest in group, inserting at beginning: ${position}`);
-    return position;
-}
-/**
- * Check if downstream rows need recoloring after inserting into existing email group
- * Returns true if the next row has a different email (color boundary) that might be incorrectly colored
- * @param sheet DataEntry sheet
- * @param insertIndex The 1-based row number where the new row was inserted
- * @returns true if recoloring is needed, false otherwise
- */
-/**
- * Insert a new timecard row at the chronologically correct position within email group.
- * @param sheet DataEntry sheet
- * @param clockInDateTime Clock in timestamp (Date)
- * @param values Array of values matching DATA_COLUMNS layout
- * @returns Row index (1-based) of inserted row
- */
-function insertRowChronologically(sheet, clockInDateTime, values) {
-    ensureDataEntrySchema(sheet);
-    const email = values[0];
-    debugLog('insertRowChronologically start', { email: email, clockIn: clockInDateTime });
-    const insertIndex = findChronologicalInsertPosition(sheet, email, clockInDateTime);
-    sheet.insertRows(insertIndex, 1);
-    sheet.getRange(insertIndex, 1, 1, values.length).setValues([values]);
-    setRowFormatAndFormula(sheet, insertIndex);
-    SpreadsheetApp.flush();
-    Logger.log('insertRowChronologically: inserted row at %s', insertIndex);
-    debugLog('insertRowChronologically complete', { insertIndex: insertIndex, email: email });
-    return insertIndex;
-}
 function appendDataEntryRow(sheet, values) {
     ensureDataEntrySchema(sheet);
     const insertIndex = Math.max(sheet.getLastRow() + 1, 2);
@@ -3204,33 +3080,6 @@ function autoCloseStaleEntries(dataEntry) {
 }
 // ==================== DATA VALIDATION ====================
 /**
- * Validate all entries: fix edited rows, delete blanks, sort, auto-close stale, validate timestamps
- */
-/**
- * @deprecated Use Admin View workflows in the web app.
- */
-function validateDataEntry() {
-    Logger.log('validateDataEntry: deprecated. Use Admin View in web app.');
-    return { success: false, message: 'Deprecated. Use Admin View workflows in the web app.' };
-}
-// ==================== PAYROLL PROCESSING ====================
-/**
- * Open HTML dialog to get start date for preview
- */
-/**
- * @deprecated Use Admin View -> Generate Report in the web app.
- */
-function openGeneratePreviewDialog() {
-    Logger.log('openGeneratePreviewDialog: deprecated. Use Admin View -> Generate Report in the web app.');
-    try {
-        const ui = SpreadsheetApp.getUi();
-        ui.alert('Deprecated', 'Generate Preview dialog is deprecated. Use Admin View -> Generate Report in the web app.', ui.ButtonSet.OK);
-    }
-    catch (e) {
-        // web context: no UI
-    }
-}
-/**
  * Fetch current AWS config for display in preview dialog
  */
 function fetchAWSConfigForDialog() {
@@ -3644,16 +3493,7 @@ function saveAWSConfigFromWeb(awsEnrolled) {
     }
 }
 /**
- * Server callback to submit preview generation with selected date and AWS enrollments
- */
-function submitGeneratePreview(dateStr, awsEnrolled) {
-    return { success: false, message: 'submitGeneratePreview is deprecated. Use Admin View report generation in the web app.' };
-}
-/**
- * Execute payroll preview generation with given start date
- */
-/**
- * @deprecated Use Admin View report generation in the web app (buildAdminHtmlPreviewData + exportPayrollPreviewFromWeb).
+ * POSSIBLE DELETE LATER: legacy preview-generation implementation retained for compatibility; current UI uses Admin View preview/export flow.
  */
 function executeGeneratePreview(startDate) {
     const startMs = Date.now();
@@ -3877,17 +3717,6 @@ function executeGeneratePreview(startDate) {
         startDateStr: startDateStr,
         endDateStr: endDateStr
     };
-}
-/**
- * Generate payroll preview for 2-week period.
- * HTML dialog implemented for better UX.
- */
-/**
- * @deprecated Use Admin View -> Generate Report in the web app.
- */
-function generatePreview() {
-    Logger.log('generatePreview: deprecated. Use Admin View -> Generate Report in the web app.');
-    return { success: false, message: 'Deprecated. Use Admin View -> Generate Report in the web app.' };
 }
 /**
  * Open dialog to manually set current pay period start date.
@@ -4137,22 +3966,6 @@ function getWeekNum(date, startDate) {
     return diff < 7 ? 1 : 2;
 }
 /**
- * Open dialog to select archive date
- */
-/**
- * @deprecated Archiving is handled by web export flow (Admin View -> Export Report).
- */
-function openArchiveDialog() {
-    Logger.log('openArchiveDialog: deprecated. Archiving is handled by web export flow.');
-    try {
-        const ui = SpreadsheetApp.getUi();
-        ui.alert('Deprecated', 'Archive dialog is deprecated. Archiving is handled by web export flow.', ui.ButtonSet.OK);
-    }
-    catch (e) {
-        // web context
-    }
-}
-/**
  * Internal core for archiving. Web-safe: never calls getUi or ui.alert.
  * Returns { success: boolean, message: string, archivedCount?: number }
  */
@@ -4319,13 +4132,6 @@ function buildPayrollPdfHtml(startDateStr, endDateStr, rows) {
         '<th>Notes</th><th class="aws-col">Rule</th>' +
         '</tr></thead><tbody>' + rowsHtml + '</tbody></table>' +
         '</body></html>';
-}
-/**
- * @deprecated Use Admin View -> Export Report in the web app.
- */
-function exportPayrollHours() {
-    Logger.log('exportPayrollHours: deprecated. Use Admin View -> Export Report in the web app.');
-    return { success: false, message: 'Deprecated. Use Admin View -> Export Report in the web app.' };
 }
 /**
  * Web-safe export endpoint for admin HTML preview workflow.

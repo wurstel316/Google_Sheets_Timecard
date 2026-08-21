@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.74 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.71 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -52,8 +52,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             .map((line) => `<div class="admin-note-line">${escapeHtmlForTemplate(line)}</div>`)
             .join('');
     };
-      // Server-side helper for first-load HTML rendering.
-      // Keep this logic in sync with the client-side isVerifiedValue helper below.
       const isVerifiedValueForTemplate = (value) => {
         if (value === true)
           return true;
@@ -3507,17 +3505,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return atIndex > 0 ? emailText.slice(0, atIndex) : emailText;
           }
 
-          // Client-side mirror used during refresh/re-render paths.
-          // Do not remove even if first page load works, because refresh relies on this helper.
-          function isVerifiedValue(value) {
-            if (value === true) return true;
-            if (typeof value === 'string') {
-              const normalized = value.trim().toLowerCase();
-              return normalized === 'true' || normalized === 'yes' || normalized === 'y' || normalized === '1';
-            }
-            return value === 1;
-          }
-
           function normalizeEntryTypeClient(entryType) {
             const value = String(entryType || '').trim().toLowerCase();
             return value === 'vacation' || value === 'sick' ? value : 'worked';
@@ -6864,9 +6851,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return 'Clock In is before the allowed date range.';
             }
             if (ms > manualPickerRuleState.latestAllowedMs) {
-              if (ms > manualPickerRuleState.maxMs) {
-                return 'Clock In cannot be in the future.';
-              }
               if (manualPickerRuleState.latestAllowedMs < manualPickerRuleState.maxMs) {
                 return 'Clock In must be before the current open clock-in entry.';
               }
@@ -6922,9 +6906,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return 'Clock Out is before the allowed date range.';
             }
             if (ms > manualPickerRuleState.outMaxMs) {
-              if (ms > manualPickerRuleState.maxMs) {
-                return 'Clock Out cannot be in the future.';
-              }
               if (manualPickerRuleState.outMaxMs < maxSpanOut) {
                 return 'Clock Out must be before the current open clock-in entry.';
               }
@@ -7248,14 +7229,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             let inInvalid = false;
             let outInvalid = false;
             let hint = '';
-            const nowMs = Date.now();
 
             if (!inDate || isNaN(inDate.getTime())) {
               inInvalid = true;
               hint = 'Clock In is required.';
-            } else if (inDate.getTime() > nowMs) {
-              inInvalid = true;
-              hint = 'Clock In cannot be in the future.';
             } else if (!isInActivePayPeriod(inDate.toISOString())) {
               inInvalid = true;
               hint = 'Clock In is outside the active pay period.';
@@ -7273,9 +7250,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               } else if ((outDate.getTime() - inDate.getTime()) > MANUAL_ENTRY_MAX_SPAN_MS) {
                 outInvalid = true;
                 hint = 'Clock Out exceeds the 14-hour maximum shift length.';
-              } else if (outDate.getTime() > nowMs) {
-                outInvalid = true;
-                hint = 'Clock Out cannot be in the future.';
               } else if (!isInActivePayPeriod(outDate.toISOString())) {
                 outInvalid = true;
                 hint = 'Clock Out is outside the active pay period.';

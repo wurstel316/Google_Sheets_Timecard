@@ -7,18 +7,6 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
-- Summary: Restored the shared client `isVerifiedValue` helper used by recent/admin entry rendering so Open Unpaid Time Entries loads without protected-function runtime failures.
-- Why: A missing helper caused `ReferenceError: isVerifiedValue is not defined`, which blocked entry list rendering in the web UI.
-- Files: src/UserInterface.js
-- Validation: Reintroduced the helper near other shared client formatting/normalization utilities and verified no diagnostics errors on touched files.
-
-### Changed
-- Summary: Prioritized future-time messaging in all add-missed-time and admin edit-time modal validators so future selections now show explicit "cannot be in the future" errors instead of open-entry/order side messages.
-- Why: Prevents misleading guidance when users choose timestamps later than the current time, while preserving the existing validation rules and submit/apply disable behavior.
-- Files: src/UserInterface.js
-- Validation: Updated manual Clock In/Clock Out invalid-reason branches and admin edit validation state ordering to keep all prior checks intact, then verified touched file diagnostics report no errors.
-
-### Changed
 - Summary: Reworked clock note guidance into a prioritized schedule-aware ruleset with a shared required-note template, adding Backup-required clock-in notes, On-Duty start-window helper text, first-punch late-lunch note gating, and the updated off-schedule phrase.
 - Why: Keeps note guidance clear and lightweight for employees while reducing copy maintenance to one required-note template with per-rule reason phrases.
 - Files: src/UserInterface.js
