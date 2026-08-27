@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Option A1 - Paired Expected and Punches</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --ink: #e7ecf3;
+      --muted: #8b9bb4;
+      --line: #2d3a4f;
+      --hour-line: #243041;
+      --header-bg: #141c27;
+      --now: rgba(34, 197, 94, 0.14);
+      --now-border: #22c55e;
+      --on: #22c55e;
+      --on-bg: rgba(34, 197, 94, 0.18);
+      --backup: #a78bfa;
+      --backup-bg: rgba(167, 139, 250, 0.18);
+      --lunch: #f2d27a;
+      --lunch-bg: rgba(242, 210, 122, 0.22);
+      --actual-bg: #141c27;
+      --actual-border: #2d3a4f;
+      --p-in-bg: rgba(34, 197, 94, 0.16);
+      --p-in-ink: #79e0a6;
+      --p-out-bg: rgba(167, 139, 250, 0.16);
+      --p-out-ink: #c5b4ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.4;
+      padding: 12px;
+    }
+
+    .panel {
+      max-width: 1120px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(17, 32, 56, 0.08);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: var(--header-bg);
+    }
+
+    .title { font-weight: 700; font-size: 1.02rem; letter-spacing: -0.01em; }
+    .meta { font-size: 0.82rem; color: var(--muted); }
+
+    .board-wrap { overflow: auto; max-height: 74vh; }
+    .board {
+      min-width: 890px;
+      display: grid;
+      grid-template-columns: 74px 1fr;
+    }
+
+    .hour-col {
+      border-right: 1px solid var(--line);
+      background: #141c27;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+
+    .hour {
+      height: 42px;
+      border-bottom: 1px solid var(--hour-line);
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      background: #141c27;
+    }
+
+    .hour.current-hour {
+      background: var(--now);
+      color: #bff4cd;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px var(--now-border);
+    }
+
+    .lane {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      border-bottom: 1px solid var(--line);
+      min-height: 140px;
+    }
+
+    .lane-meta {
+      border-right: 1px solid var(--line);
+      padding: 10px;
+      background: #171f2b;
+    }
+
+    .emp {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--o); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12); }
+
+    .state {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      background: var(--on-bg);
+      color: var(--on);
+      border: 1px solid rgba(34, 197, 94, 0.28);
+    }
+
+    .state.off-duty {
+      background: var(--backup-bg);
+      color: var(--backup);
+      border-color: rgba(167, 139, 250, 0.28);
+    }
+
+    .state.unscheduled {
+      background: rgba(139, 155, 180, 0.14);
+      color: var(--muted);
+      border-color: rgba(139, 155, 180, 0.28);
+    }
+
+    .tracks {
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+      align-content: center;
+    }
+
+    .track {
+      border: 1px solid var(--actual-border);
+      border-radius: 10px;
+      padding: 8px;
+      background: #141c27;
+      display: grid;
+      gap: 7px;
+    }
+
+    .track-label {
+      font-size: 0.69rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      width: fit-content;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chip .time {
+      font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.72rem;
+    }
+
+    .chip.on { background: var(--on-bg); color: #bff4cd; border-color: rgba(34, 197, 94, 0.28); }
+    .chip.backup { background: var(--backup-bg); color: #ddd3ff; border-color: rgba(167, 139, 250, 0.28); }
+    .chip.lunch { background: var(--lunch-bg); color: #f6de97; border-color: rgba(242, 210, 122, 0.28); }
+
+    .punches {
+      background: var(--actual-bg);
+      border-color: var(--actual-border);
+    }
+
+    .punch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 8px;
+      border: 1px solid transparent;
+      font-size: 0.73rem;
+      font-weight: 700;
+    }
+
+    .punch .t {
+      font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.71rem;
+    }
+
+    .punch.in { background: var(--p-in-bg); color: var(--p-in-ink); border-color: rgba(34, 197, 94, 0.26); }
+    .punch.out { background: var(--p-out-bg); color: var(--p-out-ink); border-color: rgba(167, 139, 250, 0.26); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 11px 14px;
+      border-top: 1px solid var(--line);
+      background: #141c27;
+      color: var(--muted);
+      font-size: 0.81rem;
+    }
+
+    .item { display: inline-flex; align-items: center; gap: 6px; }
+
+    .mini {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
+
+    @media (max-width: 900px) {
+      body { padding: 10px; }
+      .board { min-width: 700px; }
+      .lane { grid-template-columns: 145px 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section class="panel">
+    <header class="head">
+      <div class="title">Option A1: Paired Expected + Actual Punch Chips</div>
+      <div class="meta">Current hour in left rail • Multiple punches shown beside expected pills</div>
+    </header>
+
+    <div class="board-wrap">
+      <div class="board">
+        <div class="hour-col">
+          <div class="hour">06:00</div><div class="hour">07:00</div><div class="hour">08:00</div><div class="hour">09:00</div>
+          <div class="hour">10:00</div><div class="hour">11:00</div><div class="hour">12:00</div><div class="hour">13:00</div>
+          <div class="hour current-hour">14:00</div><div class="hour">15:00</div><div class="hour">16:00</div><div class="hour">17:00</div><div class="hour">18:00</div>
+        </div>
+
+        <div>
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot"></span>alex</div>
+              <div class="state">In now · 08:02</div>
+            </div>
+            <div class="tracks">
+              <div class="track">
+                <div class="track-label">Expected Schedule</div>
+                <div class="chips">
+                  <span class="chip on"><span class="time">08:00-12:00</span> On Duty</span>
+                  <span class="chip lunch"><span class="time">12:00-13:00</span> Lunch</span>
+                  <span class="chip on"><span class="time">13:00-17:00</span> On Duty</span>
+                </div>
+              </div>
+              <div class="track punches">
+                <div class="track-label">Actual Punches (3 sessions)</div>
+                <div class="chips">
+                  <span class="punch in">In <span class="t">08:02</span></span>
+                  <span class="punch out">Out <span class="t">10:31</span></span>
+                  <span class="punch in">In <span class="t">10:44</span></span>
+                  <span class="punch out">Out <span class="t">12:01</span></span>
+                  <span class="punch in">In <span class="t">12:57</span></span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot"></span>maria</div>
+              <div class="state">In now · 09:11</div>
+            </div>
+            <div class="tracks">
+              <div class="track">
+                <div class="track-label">Expected Schedule</div>
+                <div class="chips">
+                  <span class="chip backup"><span class="time">09:00-12:00</span> Backup</span>
+                  <span class="chip lunch"><span class="time">12:00-13:00</span> Lunch</span>
+                  <span class="chip backup"><span class="time">13:00-18:00</span> Backup</span>
+                </div>
+              </div>
+              <div class="track punches">
+                <div class="track-label">Actual Punches (2 sessions)</div>
+                <div class="chips">
+                  <span class="punch in">In <span class="t">09:11</span></span>
+                  <span class="punch out">Out <span class="t">11:58</span></span>
+                  <span class="punch in">In <span class="t">13:03</span></span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot"></span>jordan</div>
+              <div class="state off-duty">Off duty · 14:00</div>
+            </div>
+            <div class="tracks">
+              <div class="track">
+                <div class="track-label">Expected Schedule</div>
+                <div class="chips">
+                  <span class="chip on"><span class="time">06:30-11:30</span> Opening</span>
+                  <span class="chip lunch"><span class="time">11:30-12:00</span> Break</span>
+                  <span class="chip on"><span class="time">12:00-15:00</span> Floor</span>
+                </div>
+              </div>
+              <div class="track punches">
+                <div class="track-label">Actual Punches (1 session)</div>
+                <div class="chips">
+                  <span class="punch in">In <span class="t">06:41</span></span>
+                  <span class="punch out">Out <span class="t">13:52</span></span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot"></span>sam</div>
+              <div class="state unscheduled">Not scheduled today · punches logged</div>
+            </div>
+            <div class="tracks">
+              <div class="track">
+                <div class="track-label">Expected Schedule</div>
+                <div class="chips">
+                  <span class="chip" style="background:#f5f8fc;color:#6b7f93;border-color:#d8e2ee;">No scheduled shift</span>
+                </div>
+              </div>
+              <div class="track punches">
+                <div class="track-label">Actual Punches (shown because punched)</div>
+                <div class="chips">
+                  <span class="punch in">In <span class="t">07:48</span></span>
+                  <span class="punch out">Out <span class="t">12:14</span></span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <footer class="legend">
+      <span class="item"><span class="mini" style="background:rgba(26,115,232,0.14);border-color:#1a73e8"></span>Current Hour (left rail)</span>
+      <span class="item"><span class="mini" style="background:#f4f7fb;border-color:#d4deea"></span>Actual punch row</span>
+      <span class="item"><span class="mini" style="background:#e6f7ef;border-color:#bfe6d0"></span>Punch-in chip</span>
+      <span class="item"><span class="mini" style="background:#edf3fb;border-color:#cad9ea"></span>Punch-out chip</span>
+    </footer>
+  </section>
+</body>
+</html>

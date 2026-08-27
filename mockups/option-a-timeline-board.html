@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Option A - Timeline Board</title>
+  <style>
+    :root {
+      --bg: #eef4fb;
+      --card: #ffffff;
+      --ink: #1d2b38;
+      --muted: #627486;
+      --line: #d6dfeb;
+      --hour-line: #e7edf6;
+      --now: rgba(26, 115, 232, 0.14);
+      --now-border: #1a73e8;
+      --on: #1f7a44;
+      --on-bg: #e6f6ed;
+      --backup: #5d46aa;
+      --backup-bg: #efe9ff;
+      --lunch: #8a5b00;
+      --lunch-bg: #fff6dc;
+      --in-now: #0a8f49;
+      --in-now-bg: #e0f6ea;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(180deg, #f9fcff 0%, var(--bg) 100%);
+      color: var(--ink);
+      padding: 18px;
+    }
+
+    .panel {
+      max-width: 1080px;
+      margin: 0 auto;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 28px rgba(23, 43, 67, 0.1);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      display: block;
+      background: linear-gradient(90deg, #eff6ff 0%, #f7fffb 100%);
+    }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .stamp {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .board-wrap {
+      overflow: auto;
+      max-height: 70vh;
+    }
+
+    .board {
+      min-width: 780px;
+      display: grid;
+      grid-template-columns: 74px 1fr;
+    }
+
+    .hour-col {
+      border-right: 1px solid var(--line);
+      background: #fbfdff;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+
+    .hour {
+      height: 42px;
+      border-bottom: 1px solid var(--hour-line);
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+    }
+
+    .hour.current-hour {
+      background: var(--now);
+      color: #184f92;
+      font-weight: 800;
+      box-shadow: inset 0 0 0 1px var(--now-border);
+    }
+
+    .lane {
+      position: relative;
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      border-bottom: 1px solid var(--hour-line);
+      min-height: 126px;
+    }
+
+    .lane-meta {
+      border-right: 1px solid var(--hour-line);
+      padding: 10px;
+      background: #fcfeff;
+    }
+
+    .emp {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 8px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #a7b4c4;
+    }
+
+    .dot.today { background: #1a73e8; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      border: 1px solid transparent;
+    }
+
+    .badge.in {
+      color: #155f36;
+      background: var(--in-now-bg);
+      border-color: #bce8ce;
+    }
+
+    .badge.out {
+      color: #4f5e70;
+      background: #f2f5f8;
+      border-color: #dde4ec;
+    }
+
+    .lane-chart {
+      position: relative;
+      padding: 8px 10px;
+      display: grid;
+      gap: 6px;
+      align-content: center;
+    }
+
+    .seg {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      width: fit-content;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .seg .time {
+      font-family: "Roboto Mono", ui-monospace, monospace;
+      font-size: 0.74rem;
+    }
+
+    .seg.on { background: var(--on-bg); color: var(--on); border-color: #bfe5ce; }
+    .seg.backup { background: var(--backup-bg); color: var(--backup); border-color: #d8ceff; }
+    .seg.lunch { background: var(--lunch-bg); color: var(--lunch); border-color: #f0d58c; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      background: #fbfdff;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .legend .item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid #d0d9e5;
+    }
+
+    @media (max-width: 860px) {
+      body { padding: 10px; }
+      .head { padding: 12px; }
+      .board { min-width: 640px; }
+      .lane { grid-template-columns: 145px 1fr; }
+      .hour { font-size: 0.73rem; }
+      .seg { font-size: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <section class="panel">
+    <header class="head">
+      <div class="title-row">
+        <div class="title">Option A: Timeline Board</div>
+        <div class="stamp">Thu Aug 27, 2026 · Current hour 2:00 PM</div>
+      </div>
+    </header>
+
+    <div class="board-wrap">
+      <div class="board">
+        <div class="hour-col">
+          <div class="hour">06:00</div><div class="hour">07:00</div><div class="hour">08:00</div><div class="hour">09:00</div>
+          <div class="hour">10:00</div><div class="hour">11:00</div><div class="hour">12:00</div><div class="hour">13:00</div>
+          <div class="hour current-hour">14:00</div><div class="hour">15:00</div><div class="hour">16:00</div><div class="hour">17:00</div>
+          <div class="hour">18:00</div>
+        </div>
+
+        <div class="lanes">
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot today"></span>alex</div>
+              <div class="badge in">In now · since 08:02</div>
+            </div>
+            <div class="lane-chart">
+              <span class="seg on"><span class="time">08:00-12:00</span> On Duty</span>
+              <span class="seg lunch"><span class="time">12:00-13:00</span> Lunch</span>
+              <span class="seg on"><span class="time">13:00-17:00</span> On Duty</span>
+            </div>
+          </article>
+
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot today"></span>maria</div>
+              <div class="badge in">In now · since 09:11</div>
+            </div>
+            <div class="lane-chart">
+              <span class="seg backup"><span class="time">09:00-12:00</span> Backup</span>
+              <span class="seg lunch"><span class="time">12:00-13:00</span> Lunch</span>
+              <span class="seg backup"><span class="time">13:00-18:00</span> Backup</span>
+            </div>
+          </article>
+
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot"></span>jamal</div>
+              <div class="badge out">Not clocked in</div>
+            </div>
+            <div class="lane-chart">
+              <span class="seg on"><span class="time">07:00-11:00</span> On Duty</span>
+              <span class="seg lunch"><span class="time">11:00-12:00</span> Lunch</span>
+              <span class="seg on"><span class="time">12:00-16:00</span> On Duty</span>
+            </div>
+          </article>
+
+          <article class="lane">
+            <div class="lane-meta">
+              <div class="emp"><span class="dot today"></span>lee</div>
+              <div class="badge in">In now · since 06:57</div>
+            </div>
+            <div class="lane-chart">
+              <span class="seg on"><span class="time">07:00-10:00</span> On Duty</span>
+              <span class="seg backup"><span class="time">10:00-14:00</span> Backup</span>
+              <span class="seg on"><span class="time">14:00-18:00</span> On Duty</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <footer class="legend">
+      <span class="item"><span class="swatch" style="background:#e6f6ed;border-color:#bfe5ce"></span>On Duty</span>
+      <span class="item"><span class="swatch" style="background:#efe9ff;border-color:#d8ceff"></span>Backup</span>
+      <span class="item"><span class="swatch" style="background:#fff6dc;border-color:#f0d58c"></span>Lunch</span>
+      <span class="item"><span class="swatch" style="background:rgba(26,115,232,0.14);border-color:#1a73e8"></span>Current Hour (left rail)</span>
+      <span class="item"><span class="dot today"></span>Clocked in today marker</span>
+    </footer>
+  </section>
+</body>
+</html>

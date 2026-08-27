@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Option C - Dense Mini-Grid</title>
+  <style>
+    :root {
+      --bg: #f5f4f9;
+      --card: #fff;
+      --ink: #232033;
+      --muted: #696680;
+      --line: #ddd9ea;
+      --on: #1f7a44;
+      --on-bg: #e6f6ed;
+      --backup: #5d46aa;
+      --backup-bg: #efe9ff;
+      --lunch: #8a5b00;
+      --lunch-bg: #fff6dc;
+      --now-col: rgba(26, 115, 232, 0.13);
+      --now-col-line: #1a73e8;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(900px 360px at 85% -10%, #ece6ff 0%, transparent 60%), var(--bg);
+      color: var(--ink);
+      padding: 16px;
+    }
+
+    .frame {
+      max-width: 1100px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: 0 12px 26px rgba(37, 30, 74, 0.1);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #f6f2ff 0%, #fbf9ff 100%);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .title { font-size: 1rem; font-weight: 800; }
+    .meta { font-size: 0.8rem; color: var(--muted); }
+
+    .legend {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .lg-item { display: inline-flex; align-items: center; gap: 6px; }
+    .sw {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid #d5d0e6;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 72vh;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 900px;
+      font-size: 0.8rem;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f8f6ff;
+      z-index: 2;
+      border-bottom: 1px solid #dcd7ee;
+      color: #4f4a6f;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 0.72rem;
+      padding: 9px 8px;
+      white-space: nowrap;
+    }
+
+    th, td {
+      border-right: 1px solid #ebe8f6;
+      border-bottom: 1px solid #ebe8f6;
+      padding: 7px 8px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    th:first-child, td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: #fff;
+      text-align: left;
+      min-width: 150px;
+      max-width: 150px;
+    }
+
+    thead th:first-child { z-index: 3; background: #f8f6ff; }
+
+    .name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      color: #352f55;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #1a73e8;
+      flex: 0 0 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 5px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      border: 1px solid #ded9ee;
+      color: #59517d;
+      background: #f6f3ff;
+    }
+
+    .in-badge {
+      color: #145f35;
+      border-color: #bce8ce;
+      background: #e5f6ed;
+    }
+
+    .cell { font-weight: 700; border-radius: 8px; padding: 5px 0; }
+    .on { background: var(--on-bg); color: var(--on); border: 1px solid #bfe5ce; }
+    .backup { background: var(--backup-bg); color: var(--backup); border: 1px solid #d8ceff; }
+    .lunch { background: var(--lunch-bg); color: var(--lunch); border: 1px solid #f0d58c; }
+    .empty { color: #b8b3cd; }
+
+    .now-col {
+      background: var(--now-col);
+      box-shadow: inset 2px 0 0 var(--now-col-line), inset -2px 0 0 var(--now-col-line);
+    }
+
+    .footer {
+      padding: 10px 14px;
+      border-top: 1px solid var(--line);
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: #fcfbff;
+    }
+
+    @media (max-width: 840px) {
+      body { padding: 10px; }
+      .frame { border-radius: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <section class="frame">
+    <header class="head">
+      <div class="title">Option C: Dense Mini-Grid</div>
+      <div class="meta">Current hour column highlighted at 2:00 PM</div>
+    </header>
+
+    <div class="legend">
+      <span class="lg-item"><span class="sw" style="background:#e6f6ed;border-color:#bfe5ce"></span>On Duty</span>
+      <span class="lg-item"><span class="sw" style="background:#efe9ff;border-color:#d8ceff"></span>Backup</span>
+      <span class="lg-item"><span class="sw" style="background:#fff6dc;border-color:#f0d58c"></span>Lunch</span>
+      <span class="lg-item"><span class="sw" style="background:rgba(26,115,232,0.13);border-color:#1a73e8"></span>Current Hour</span>
+      <span class="lg-item"><span class="dot"></span>Clocked in today marker</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>08:00</th>
+            <th>09:00</th>
+            <th>10:00</th>
+            <th>11:00</th>
+            <th>12:00</th>
+            <th>13:00</th>
+            <th class="now-col">14:00</th>
+            <th>15:00</th>
+            <th>16:00</th>
+            <th>17:00</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="name"><span class="dot"></span>alex</div>
+              <span class="badge in-badge">In now</span>
+            </td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell lunch">L</span></td>
+            <td><span class="cell on">O</span></td>
+            <td class="now-col"><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell empty">-</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="name"><span class="dot"></span>maria</div>
+              <span class="badge in-badge">In now</span>
+            </td>
+            <td><span class="cell empty">-</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell lunch">L</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td class="now-col"><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="name">jamal</div>
+              <span class="badge">Clocked in today</span>
+            </td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell lunch">L</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td class="now-col"><span class="cell empty">-</span></td>
+            <td><span class="cell empty">-</span></td>
+            <td><span class="cell empty">-</span></td>
+            <td><span class="cell empty">-</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="name"><span class="dot"></span>lee</div>
+              <span class="badge in-badge">In now</span>
+            </td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td><span class="cell backup">B</span></td>
+            <td class="now-col"><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="name">sam</div>
+              <span class="badge">Clocked in today</span>
+            </td>
+            <td><span class="cell empty">-</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell on">O</span></td>
+            <td><span class="cell lunch">L</span></td>
+            <td><span class="cell on">O</span></td>
+            <td class="now-col"><span class="cell empty">-</span></td>
+            <td><span class="cell empty">-</span></td>
+            <td><span class="cell empty">-</span></td>
+            <td><span class="cell empty">-</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="footer">
+      Dense view intended for desktop-first admin users. On mobile, horizontal scroll keeps hour context intact.
+    </footer>
+  </section>
+</body>
+</html>

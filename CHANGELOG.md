@@ -6,6 +6,18 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Changed
+- Summary: Restyled the A1 punch-paired mockup to better match the Schedule Tool's dark slate theme, compact cards, and status accent colors, and updated the unscheduled example so it only appears as a punch-driven case.
+- Why: The mockup now reads closer to the production schedule UI and better reflects the real rule that unscheduled employees surface only when they have punches.
+- Files: mockups/option-a1-punch-paired.html
+- Validation: Updated the mockup palette, card radii, typography, and state badges, then verified the edited HTML file reports no errors and passes `git diff --check`.
+
+### Changed
+- Summary: Expanded the A1 punch-paired mockup roster with additional employee examples, including one employee shown as not scheduled for the day.
+- Why: Gives the A1 design a broader set of sample states so the paired expected-vs-actual layout can be reviewed against scheduled, off-duty, and unscheduled cases.
+- Files: mockups/option-a1-punch-paired.html
+- Validation: Added two new example lanes in the mockup and verified the edited HTML file reports no errors.
+
 ### Fixed
 - Summary: Split the required clock-in note copy into separate messages for no on-duty shift today, early for a later shift, and late clock-in cases, and removed duplicated punctuation from the shared note helper.
 - Why: The previous fallback collapsed different schedule states into one message and rendered awkward punctuation when the reason already included a trailing period.
