@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.79 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.81 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -42,8 +42,8 @@ const ENTRY_TYPE_WORKED = 'worked';
 const ENTRY_TYPE_VACATION = 'vacation';
 const ENTRY_TYPE_SICK = 'sick';
 const ENTRY_TYPE_VALUES = new Set([ENTRY_TYPE_WORKED, ENTRY_TYPE_VACATION, ENTRY_TYPE_SICK]);
-const DATA_ENTRY_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Entry ID'];
-const ARCHIVE_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Entry ID', 'Archived Date'];
+const DATA_ENTRY_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Entry ID', 'Schedule Snapshot'];
+const ARCHIVE_HEADERS = ['Email', 'Raw Clock In', 'Raw Clock Out', 'Hours', 'Verified', 'Notes', 'Clock In Modified', 'Clock Out Modified', 'Deleted', 'Entry Type', 'Entry ID', 'Schedule Snapshot', 'Archived Date'];
 function toDateOrNull(value) {
     if (value instanceof Date && !isNaN(value.getTime())) {
         return value;
@@ -381,23 +381,15 @@ function initializeSheets() {
         let archive = ss.getSheetByName('Archive');
         if (!archive) {
             archive = ss.insertSheet('Archive');
-            archive.getRange(1, 1, 1, ARCHIVE_HEADERS.length).setValues([ARCHIVE_HEADERS]);
-            archive.getRange(1, 1, 1, ARCHIVE_HEADERS.length)
-                .setFontWeight('bold')
-                .setBackground('#f4b400')
-                .setFontColor('#ffffff');
-            archive.setFrozenRows(1);
-            archive.setColumnWidths(1, ARCHIVE_COL_COUNT, 150);
         }
-        else if (archive.getLastColumn() < ARCHIVE_HEADERS.length) {
-            enforceExactColumnCount(archive, ARCHIVE_HEADERS.length, 'Archive', []);
-            archive.getRange(1, 1, 1, ARCHIVE_HEADERS.length).setValues([ARCHIVE_HEADERS]);
-            archive.getRange(1, 1, 1, ARCHIVE_HEADERS.length)
-                .setFontWeight('bold')
-                .setBackground('#f4b400')
-                .setFontColor('#ffffff');
-            archive.setFrozenRows(1);
-        }
+        normalizeArchiveColumnsForMigration(archive, []);
+        archive.getRange(1, 1, 1, ARCHIVE_HEADERS.length).setValues([ARCHIVE_HEADERS]);
+        archive.getRange(1, 1, 1, ARCHIVE_HEADERS.length)
+            .setFontWeight('bold')
+            .setBackground('#f4b400')
+            .setFontColor('#ffffff');
+        archive.setFrozenRows(1);
+        archive.setColumnWidths(1, ARCHIVE_COL_COUNT, 150);
         ensureScheduleSheet_(ss);
         // Initialize AWS config with current employees (all disabled by default)
         if (dataEntry) {
@@ -502,7 +494,8 @@ const DATA_COLUMNS = {
     CLOCK_OUT_MODIFIED: 7,
     DELETED: 8,
     ENTRY_TYPE: 9,
-    ENTRY_ID: 10
+    ENTRY_ID: 10,
+    SCHEDULE_SNAPSHOT: 11
 };
 const DATA_COL_COUNT = Object.keys(DATA_COLUMNS).length;
 // Archive sheet column mapping (DataEntry parity + Archived Date)
@@ -518,7 +511,8 @@ const ARCHIVE_COLUMNS = {
     DELETED: 8,
     ENTRY_TYPE: 9,
     ENTRY_ID: 10,
-    ARCHIVED_DATE: 11
+    SCHEDULE_SNAPSHOT: 11,
+    ARCHIVED_DATE: 12
 };
 const ARCHIVE_COL_COUNT = Object.keys(ARCHIVE_COLUMNS).length;
 // Helper function to convert zero-based column index to letter (A, B, C, etc.)
@@ -566,11 +560,87 @@ function getRowEntryType(rowData) {
     }
     return normalizeEntryType(rowData[DATA_COLUMNS.ENTRY_TYPE]);
 }
+function getRowScheduleSnapshot(rowData) {
+    const value = rowData && rowData.length > DATA_COLUMNS.SCHEDULE_SNAPSHOT ? rowData[DATA_COLUMNS.SCHEDULE_SNAPSHOT] : '';
+    if (value === null || value === undefined || value === '') {
+        return {};
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return {};
+        }
+        try {
+            const parsed = JSON.parse(trimmed);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        }
+        catch (e) {
+            return {};
+        }
+    }
+    if (typeof value === 'object') {
+        return value;
+    }
+    return {};
+}
+function getArchiveRowScheduleSnapshot(rowData) {
+    const value = rowData && rowData.length > ARCHIVE_COLUMNS.SCHEDULE_SNAPSHOT ? rowData[ARCHIVE_COLUMNS.SCHEDULE_SNAPSHOT] : '';
+    if (value === null || value === undefined || value === '') {
+        return {};
+    }
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) {
+            return {};
+        }
+        try {
+            const parsed = JSON.parse(trimmed);
+            return parsed && typeof parsed === 'object' ? parsed : {};
+        }
+        catch (e) {
+            return {};
+        }
+    }
+    if (typeof value === 'object') {
+        return value;
+    }
+    return {};
+}
 function getArchiveRowEntryType(rowData) {
     if (!rowData || rowData.length <= ARCHIVE_COLUMNS.ENTRY_TYPE) {
         return ENTRY_TYPE_WORKED;
     }
     return normalizeEntryType(rowData[ARCHIVE_COLUMNS.ENTRY_TYPE]);
+}
+function buildScheduleSnapshotString_(snapshot) {
+    if (snapshot === null || snapshot === undefined || snapshot === '') {
+        return '';
+    }
+    if (typeof snapshot === 'string') {
+        const trimmed = snapshot.trim();
+        if (!trimmed) {
+            return '';
+        }
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (parsed && typeof parsed === 'object') {
+                return JSON.stringify(parsed);
+            }
+            return trimmed;
+        }
+        catch (e) {
+            return trimmed;
+        }
+    }
+    if (typeof snapshot === 'object') {
+        try {
+            return JSON.stringify(snapshot);
+        }
+        catch (e) {
+            return '';
+        }
+    }
+    return String(snapshot);
 }
 function dataBodyRange(sheet) {
     const rows = Math.max(sheet.getLastRow() - 1, 0);
@@ -650,7 +720,7 @@ function getEffectiveClockInFromArchiveRow(rowData) {
 function getEffectiveClockOutFromArchiveRow(rowData) {
     return getArchiveRowModifiedClockOut(rowData) || getArchiveRowRawClockOut(rowData);
 }
-function buildDataEntryRow(email, rawClockIn, rawClockOut, notes, verified, entryType = ENTRY_TYPE_WORKED) {
+function buildDataEntryRow(email, rawClockIn, rawClockOut, notes, verified, entryType = ENTRY_TYPE_WORKED, scheduleSnapshot = null) {
     const row = new Array(DATA_COL_COUNT).fill('');
     row[DATA_COLUMNS.EMAIL] = email || '';
     row[DATA_COLUMNS.CLOCK_IN] = rawClockIn || '';
@@ -663,6 +733,7 @@ function buildDataEntryRow(email, rawClockIn, rawClockOut, notes, verified, entr
     row[DATA_COLUMNS.DELETED] = false;
     row[DATA_COLUMNS.ENTRY_TYPE] = normalizeEntryType(entryType);
     row[DATA_COLUMNS.ENTRY_ID] = generateEntryId();
+    row[DATA_COLUMNS.SCHEDULE_SNAPSHOT] = buildScheduleSnapshotString_(scheduleSnapshot);
     return row;
 }
 // POSSIBLE DELETE LATER: legacy admin-email helper; no current call sites found. Retained for release safety.
@@ -763,7 +834,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.79';
+const SCRIPT_VERSION = '2.2.2-push.81';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -969,7 +1040,8 @@ function getEmployeeEntries(email, sheet, customMinDate = null, customMaxDate = 
                     hours: data[i][DATA_COLUMNS.HOURS],
                     verified: isSheetBooleanTrue(data[i][DATA_COLUMNS.VERIFIED]),
                     notes: data[i][DATA_COLUMNS.NOTES],
-                    entryType: getRowEntryType(data[i])
+                    entryType: getRowEntryType(data[i]),
+                    scheduleSnapshot: getRowScheduleSnapshot(data[i])
                 });
             }
         }
@@ -990,6 +1062,7 @@ function getEmployeeEntries(email, sheet, customMinDate = null, customMaxDate = 
         verified: entry.verified,
         notes: entry.notes,
         entryType: entry.entryType,
+        scheduleSnapshot: entry.scheduleSnapshot || {},
         deleted: false
     }));
     Logger.log('getEmployeeEntries: returned %s entries', mappedEntries.length);
@@ -1046,7 +1119,8 @@ function submitClockAction(action, notes, entryId) {
             }
         }
         // Insert clock-in without reordering existing rows.
-        const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(userEmail, now, '', notes || '', false, ENTRY_TYPE_WORKED));
+        const scheduleSnapshot = buildEntryScheduleSnapshot_(userEmail, now);
+        const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(userEmail, now, '', notes || '', false, ENTRY_TYPE_WORKED, scheduleSnapshot));
         const createdRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
         debugLog('entryId.create.success', {
             source: 'submitClockAction.ClockIn',
@@ -1212,9 +1286,10 @@ function submitManualTimeEntry(clockInISO, clockOutISO, notes, entryType = ENTRY
     }
     const finalNotes = buildManualEntryNotes(notes, userEmail);
     const normalizedEntryType = normalizeEntryType(entryType);
+    const scheduleSnapshot = buildEntryScheduleSnapshot_(userEmail, clockInDate);
     Logger.log('submitManualTimeEntry: manual entry requested');
     debugLog('submitManualTimeEntry payload', { clockInISO: clockInISO, clockOutISO: clockOutISO, hasNotes: !!notes, notesLength: notes ? String(notes).length : 0 });
-    const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(userEmail, clockInDate, '', finalNotes, false, normalizedEntryType));
+    const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(userEmail, clockInDate, '', finalNotes, false, normalizedEntryType, scheduleSnapshot));
     const createdManualRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
     const createdManualEntryId = getRowEntryId(createdManualRowData);
     debugLog('entryId.create.success', {
@@ -1320,7 +1395,8 @@ function processClockOut(email, dataEntry, clockOutDateTime, notes, entryId, clo
             const startOfNextDay = new Date(clockInDateTime);
             startOfNextDay.setDate(startOfNextDay.getDate() + 1);
             startOfNextDay.setHours(0, 0, 0, 0);
-            const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(email, startOfNextDay, clockOutDateTime, combinedNotes, false, existingEntryType));
+            const splitDayScheduleSnapshot = buildEntryScheduleSnapshot_(email, startOfNextDay);
+            const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(email, startOfNextDay, clockOutDateTime, combinedNotes, false, existingEntryType, splitDayScheduleSnapshot));
             const createdSplitRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
             debugLog('entryId.create.success', {
                 source: 'processClockOut.midnightSplitSecondDay',
@@ -1418,6 +1494,7 @@ function getRecentEntriesJson() {
             verified: isSheetBooleanTrue(entry.verified),
             notes: entry.notes || '',
             entryType: entry.entryType || ENTRY_TYPE_WORKED,
+            scheduleSnapshot: entry.scheduleSnapshot || {},
             deleted: !!entry.deleted
         };
     });
@@ -1573,6 +1650,42 @@ function buildEmployeeSchedulePreviewFromRecord_(employeeRecord, updatedAt) {
         tomorrow: tomorrow,
         updatedAt: String(updatedAt || '')
     };
+}
+
+function buildEntryScheduleSnapshot_(employeeEmail, targetDate) {
+    const normalizedEmail = normalizeScheduleEmail_(employeeEmail);
+    if (!normalizedEmail) {
+        return '';
+    }
+    try {
+        const state = ensureScheduleEmployeeRosterLoaded_(normalizedEmail);
+        const employee = (state.Employee_data || []).find(record => normalizeScheduleEmail_(record.EmployeeEmail || record.EmployeeName) === normalizedEmail) || null;
+        const dateValue = targetDate instanceof Date ? targetDate : new Date(targetDate);
+        if (!(dateValue instanceof Date) || isNaN(dateValue.getTime())) {
+            return '';
+        }
+        const dayNames = getScheduleDayNames_();
+        const dayIndex = (dateValue.getDay() + 6) % 7;
+        const dayName = dayNames[dayIndex] || dayNames[0];
+        const employeeDays = Array.isArray(employee && employee.days) ? employee.days : [];
+        const normalizedDays = normalizeScheduleDays_(employeeDays);
+        const dayRecord = normalizedDays.find(day => String(day.dayName || '').trim() === dayName) || { dayName: dayName, shifts: [] };
+        const summary = buildEmployeeScheduleDaySummary_(dayRecord);
+        const payload = {
+            dayName: summary.dayName || dayName,
+            hasSchedule: !!summary.hasSchedule,
+            summaryText: summary.summaryText || 'Not scheduled',
+            segments: Array.isArray(summary.segments) ? summary.segments : [],
+            workweek: employee && employee.workweek ? String(employee.workweek).trim().toUpperCase() : 'CA',
+            employeeType: employee && employee.employeeType ? String(employee.employeeType).trim() : 'Office',
+            updatedAt: String(state.updatedAt || '')
+        };
+        return JSON.stringify(payload);
+    }
+    catch (e) {
+        Logger.log('buildEntryScheduleSnapshot_: error=%s', e.toString());
+        return '';
+    }
 }
 
 function getCurrentUserSchedulePreview() {
@@ -2827,6 +2940,7 @@ function submitManualEntryFromMenu(email, clockInISO, clockOutISO, notes, entryT
         const managerEmail = Session.getActiveUser().getEmail();
         const finalNotes = buildManualEntryNotes(notes, managerEmail);
         const normalizedEntryType = normalizeEntryType(entryType);
+        const scheduleSnapshot = buildEntryScheduleSnapshot_(email, clockInDate);
         const scriptTz = Session.getScriptTimeZone();
         const splitOccurred = Utilities.formatDate(clockInDate, scriptTz, 'yyyy-MM-dd') !==
             Utilities.formatDate(clockOutDate, scriptTz, 'yyyy-MM-dd');
@@ -2839,7 +2953,7 @@ function submitManualEntryFromMenu(email, clockInISO, clockOutISO, notes, entryT
             hasNotes: !!notes,
             notesLength: notes ? String(notes).length : 0
         });
-        const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(email, clockInDate, '', finalNotes, false, normalizedEntryType));
+        const newRow = appendDataEntryRow(dataEntry, buildDataEntryRow(email, clockInDate, '', finalNotes, false, normalizedEntryType, scheduleSnapshot));
         const insertedRowData = dataEntry.getRange(newRow, 1, 1, DATA_COL_COUNT).getValues()[0];
         const entryId = getRowEntryId(insertedRowData);
         debugLog('entryId.create.success', {
@@ -4145,7 +4259,8 @@ function _archiveOldEntriesCore(archiveDate) {
                 data[i][DATA_COLUMNS.CLOCK_OUT_MODIFIED],
                 data[i][DATA_COLUMNS.DELETED],
                 data[i][DATA_COLUMNS.ENTRY_TYPE],
-                data[i][DATA_COLUMNS.ENTRY_ID]
+                data[i][DATA_COLUMNS.ENTRY_ID],
+                data[i][DATA_COLUMNS.SCHEDULE_SNAPSHOT]
             ];
             archiveRow.push(new Date());
             toArchive.push(archiveRow);

@@ -6,6 +6,12 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Changed
+- Summary: Added a persisted `Schedule Snapshot` JSON field to every new `DataEntry` row and the archive copy path, populated from the current schedule state at creation time for regular clock-ins, manual entries, and midnight split rows without adding extra server fetches.
+- Why: Captures the schedule active at punch time so payroll/audit workflows can trace which day schedule was in force when the entry was created, even for missed entries and cross-midnight time splits.
+- Files: src/Code.js
+- Validation: Added the new schema column, centralized snapshot generation with `buildEntryScheduleSnapshot_()`, and passed the snapshot through `buildDataEntryRow()` and the primary insertion paths; confirmed JavaScript syntax validates successfully with `node --check src/Code.js`.
+
 ### Fixed
 - Summary: Restored the missing client-side `isVerifiedValue(...)` helper in the Admin View script scope so verified-state rendering and actions no longer throw a runtime ReferenceError.
 - Why: Recent admin/client paths call `isVerifiedValue` in multiple render and action handlers; without the helper, the UI can fail with `isVerifiedValue is not defined`.
