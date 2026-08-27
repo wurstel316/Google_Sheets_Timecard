@@ -6,6 +6,12 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Fixed
+- Summary: Split the required clock-in note copy into separate messages for no on-duty shift today, early for a later shift, and late clock-in cases, and removed duplicated punctuation from the shared note helper.
+- Why: The previous fallback collapsed different schedule states into one message and rendered awkward punctuation when the reason already included a trailing period.
+- Files: src/UserInterface.js
+- Validation: Updated `getClockNoteRequirement()` and `buildRequiredNoteMessage()` to branch on on-duty schedule timing, then verified the edited file is syntactically consistent with the existing UI logic.
+
 ### Changed
 - Summary: Added a persisted `Schedule Snapshot` JSON field to every new `DataEntry` row and the archive copy path, populated from the current schedule state at creation time for regular clock-ins, manual entries, and midnight split rows without adding extra server fetches.
 - Why: Captures the schedule active at punch time so payroll/audit workflows can trace which day schedule was in force when the entry was created, even for missed entries and cross-midnight time splits.

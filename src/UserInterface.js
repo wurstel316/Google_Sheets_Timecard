@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.81 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.82 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -3179,7 +3179,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           function buildRequiredNoteMessage(reasonPhrase) {
             const reason = String(reasonPhrase || '').trim();
             if (!reason) return 'A note is required before submitting this clock action.';
-            return 'Note required: ' + reason + '. Please add a note to continue.';
+            const normalizedReason = reason.replace(/[\s.!?]+$/g, '');
+            return 'Note required: ' + normalizedReason + '. Please add a note to continue.';
+          }
+
+          function buildClockInStatusMessage(messageText) {
+            const message = String(messageText || '').trim();
+            return message || 'A note is required before submitting this clock action.';
           }
 
           function formatClockHelperTimeFromMs(ms) {
@@ -3201,6 +3207,33 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }).length;
           }
 
+          /*
+           * Clock-in note rules
+           *
+           * Keep this table aligned with the decision logic below. Update this
+           * comment whenever the rule order or message behavior changes.
+           *
+           * Decision order:
+           * 1. Active Backup segment now -> required note.
+           * 2. Any on-duty start within the tolerance window -> no required note.
+           * 3. No valid on-duty shift today -> required note.
+           * 4. Valid future on-duty start exists -> required note.
+           * 5. Valid on-duty starts exist, but all are in the past -> required note.
+           *
+           * Truth table:
+           * | Case | Backup now | On-duty within tolerance | Future on-duty start | Any valid on-duty start today | Required note | Message |
+           * |---|---:|---:|---:|---:|---:|---|
+           * | On backup right now | Yes | Any | Any | Any | Yes | Note required: you are currently on Backup. Please add a note to continue. |
+           * | On duty on time/near time | No | Yes | Any | Yes | No | You are scheduled to clock in at <time>. Please clock in. |
+           * | No on-duty shift today | No | No | No | No | Yes | No on-duty shift is scheduled today. |
+           * | Early for a later shift | No | No | Yes | Yes | Yes | You are early for a later shift at <time>. Please add a note to continue. |
+           * | Late for a missed shift | No | No | No | Yes | Yes | Note required: You are late to clock in. Please add a note to continue. |
+           *
+           * Notes:
+           * - Only valid on-duty segments count for timing decisions.
+           * - Backup remains a separate hard-required path and always wins first.
+           * - If these rules change, update this block in the same edit.
+           */
           function getClockNoteRequirement() {
             if (isClockedIn) {
               const openEntry = getLatestOpenRecentEntry();
@@ -3249,11 +3282,17 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
 
             let nearestOnDutyStartMs = NaN;
+            let hasOnDutySchedule = false;
+            let earliestFutureOnDutyStartMs = NaN;
             segments.forEach((segment) => {
               if (!segment || String(segment.status || '').toUpperCase() !== 'O') return;
               const startHour = Number(segment.startHour);
               if (!isFinite(startHour)) return;
+              hasOnDutySchedule = true;
               const startMs = dayStart + (startHour * 60 * 60 * 1000);
+              if (startMs > nowMs && (!isFinite(earliestFutureOnDutyStartMs) || startMs < earliestFutureOnDutyStartMs)) {
+                earliestFutureOnDutyStartMs = startMs;
+              }
               const deltaMs = Math.abs(nowMs - startMs);
               if (deltaMs > CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS) return;
               if (!isFinite(nearestOnDutyStartMs) || deltaMs < Math.abs(nowMs - nearestOnDutyStartMs)) {
@@ -3271,11 +3310,30 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               };
             }
 
+            if (!hasOnDutySchedule) {
+              return {
+                required: true,
+                reason: 'clock-in-no-schedule',
+                placeholder: 'Clock in note',
+                message: buildClockInStatusMessage('No on-duty shift is scheduled today.')
+              };
+            }
+
+            if (isFinite(earliestFutureOnDutyStartMs)) {
+              const scheduledTime = formatClockHelperTimeFromMs(earliestFutureOnDutyStartMs);
+              return {
+                required: true,
+                reason: 'clock-in-early',
+                placeholder: 'Clock in note',
+                message: buildClockInStatusMessage('You are early for a later shift at ' + scheduledTime + '. Please add a note to continue.')
+              };
+            }
+
             return {
               required: true,
-              reason: 'clock-in-off-schedule',
+              reason: 'clock-in-late',
               placeholder: 'Clock in note',
-              message: buildRequiredNoteMessage('No schedule detected or late Clock in.')
+              message: buildRequiredNoteMessage('You are late to clock in')
             };
           }
 
