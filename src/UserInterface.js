@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.71 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.79 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -3508,6 +3508,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           function normalizeEntryTypeClient(entryType) {
             const value = String(entryType || '').trim().toLowerCase();
             return value === 'vacation' || value === 'sick' ? value : 'worked';
+          }
+
+          function isVerifiedValue(value) {
+            if (value === true || value === 1) return true;
+            if (typeof value === 'string') {
+              const normalized = value.trim().toLowerCase();
+              return normalized === 'true' || normalized === 'yes' || normalized === 'y' || normalized === '1';
+            }
+            return false;
           }
 
           function mergeDayTone(currentTone, nextEntryType) {

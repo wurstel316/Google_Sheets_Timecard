@@ -1188,6 +1188,7 @@
 
     let EmployeeSchedule = [];
     let DeletedEmployeeSchedule = [];
+    let hasLoadedDeletedEmployees = false;
 
     /**
      * Active location filter driven by the sidebar <select id="location-select">.
@@ -1416,12 +1417,19 @@
       return list.splice(idx, 1)[0] || null;
     }
 
+    function setDeletedScheduleState(deletedEmployees) {
+      const deleted = Array.isArray(deletedEmployees) ? deletedEmployees : [];
+      DeletedEmployeeSchedule = deleted.map(normalizeEmployeeRecord).sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
+    }
+
     function hydrateScheduleState(state) {
       const payload = state && typeof state === "object" ? state : {};
       const active = Array.isArray(payload.Employee_data) ? payload.Employee_data : [];
-      const deleted = Array.isArray(payload.deleted_employee_data) ? payload.deleted_employee_data : [];
       EmployeeSchedule = active.map(normalizeEmployeeRecord).sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
-      DeletedEmployeeSchedule = deleted.map(normalizeEmployeeRecord).sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
+      if (Object.prototype.hasOwnProperty.call(payload, "deleted_employee_data")) {
+        setDeletedScheduleState(payload.deleted_employee_data);
+        hasLoadedDeletedEmployees = true;
+      }
     }
 
     function buildScheduleStatePayload() {
@@ -1429,7 +1437,8 @@
         schemaVersion: 1,
         updatedAt: new Date().toISOString(),
         Employee_data: (EmployeeSchedule || []).map(normalizeEmployeeRecord),
-        deleted_employee_data: (DeletedEmployeeSchedule || []).map(normalizeEmployeeRecord)
+        deleted_employee_data: (DeletedEmployeeSchedule || []).map(normalizeEmployeeRecord),
+        includeDeletedData: hasLoadedDeletedEmployees
       };
     }
 
@@ -1616,7 +1625,55 @@
     function onShowDeletedChange() {
       const cb = document.getElementById("show-deleted");
       showDeleted = !!(cb && cb.checked);
+      if (showDeleted && !hasLoadedDeletedEmployees) {
+        loadDeletedEmployeesForSidebar();
+        return;
+      }
       renderEmployeeCounts();
+    }
+
+    function loadDeletedEmployeesForSidebar() {
+      const cb = document.getElementById("show-deleted");
+      if (!(window.google && google.script && google.script.run)) {
+        setScheduleStatus("Unable to load deleted employees: Apps Script bridge is not available.", true);
+        if (cb) cb.checked = false;
+        showDeleted = false;
+        renderEmployeeCounts();
+        return;
+      }
+      if (cb) cb.disabled = true;
+      setScheduleStatus("Loading deleted employees…", false);
+      google.script.run
+        .withSuccessHandler(function (result) {
+          if (cb) cb.disabled = false;
+          if (!result || result.success !== true) {
+            const message = (result && result.message) ? result.message : "Failed to load deleted employees.";
+            setScheduleStatus(message, true);
+            if (cb) cb.checked = false;
+            showDeleted = false;
+            renderEmployeeCounts();
+            alert(message);
+            return;
+          }
+          setDeletedScheduleState(result.deleted_employee_data || []);
+          hasLoadedDeletedEmployees = true;
+          syncKnownLocationsFromData();
+          rebuildLocationSelect();
+          syncKnownEmployeeTypesFromData();
+          rebuildEmployeeTypeFilter();
+          renderEmployeeCounts();
+          setScheduleStatus("Deleted employees loaded.", false);
+        })
+        .withFailureHandler(function (err) {
+          if (cb) cb.disabled = false;
+          const message = (err && err.message) ? err.message : "Failed to load deleted employees.";
+          setScheduleStatus(message, true);
+          if (cb) cb.checked = false;
+          showDeleted = false;
+          renderEmployeeCounts();
+          alert(message);
+        })
+        .fetchDeletedScheduleEmployees();
     }
 
     /**
@@ -2872,6 +2929,9 @@
       if (result && result.state) {
         hydrateScheduleState(result.state);
       }
+      if (result && result.deletedDataIncluded === true) {
+        hasLoadedDeletedEmployees = true;
+      }
 
       if (btn) {
         btn.classList.remove("is-saving");
@@ -2935,6 +2995,9 @@
         if (result.state) {
           hydrateScheduleState(result.state);
         }
+        if (result && result.deletedDataIncluded === true) {
+          hasLoadedDeletedEmployees = true;
+        }
         syncKnownLocationsFromData();
         renderSchedule();
         const message = (result && result.message) ? result.message : "No new employees found.";
@@ -2993,17 +3056,21 @@
         const payload = result && result.state && typeof result.state === "object"
           ? result.state
           : (result && Array.isArray(result.schedule)
-            ? { Employee_data: result.schedule, deleted_employee_data: [] }
+            ? { Employee_data: result.schedule }
             : (Array.isArray(result)
-              ? { Employee_data: result, deleted_employee_data: [] }
-              : { Employee_data: [], deleted_employee_data: [] }));
+              ? { Employee_data: result }
+              : { Employee_data: [] }));
         hydrateScheduleState(payload);
+        if (result && result.deletedDataIncluded === true) {
+          hasLoadedDeletedEmployees = true;
+        }
         syncKnownLocationsFromData();
         renderSchedule();
       })
       .withFailureHandler(function () {
         EmployeeSchedule = [];
         DeletedEmployeeSchedule = [];
+        hasLoadedDeletedEmployees = false;
         renderSchedule();
       })
       .fetchScheduleToolData();

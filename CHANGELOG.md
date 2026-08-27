@@ -6,6 +6,22 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Fixed
+- Summary: Restored the missing client-side `isVerifiedValue(...)` helper in the Admin View script scope so verified-state rendering and actions no longer throw a runtime ReferenceError.
+- Why: Recent admin/client paths call `isVerifiedValue` in multiple render and action handlers; without the helper, the UI can fail with `isVerifiedValue is not defined`.
+- Files: src/UserInterface.js
+- Validation: Reintroduced the helper near other shared client utilities and confirmed diagnostics report no errors in the touched file.
+
+### Changed
+- Summary: Split Schedule Tool persistence into two Schedule-sheet keys by storing active roster data in `schedule_state_json` and deleted roster data in `schedule_deleted_employees_json`, and updated the Schedule Tool to lazy-load deleted employees only for explicit deleted-view and check-new-employee flows.
+- Why: Reduces default schedule payload size and avoids loading deleted-roster data during normal schedule editing while preserving restore behavior for new-employee checks and deleted-row visibility.
+- Files: src/Code.js, src/ScheduleHTML.html
+- Validation: Added separate read/write helpers for active/deleted schedule state, added a dedicated `fetchDeletedScheduleEmployees()` endpoint, kept active-only fetch/save responses for normal schedule flow, and confirmed diagnostics show no errors in touched files.
+- Summary: Refreshed Schedule Tool location and employee-type filter metadata immediately after lazy-loading deleted employees so deleted-only location/type values can be filtered without requiring another render cycle.
+- Why: Prevents deleted employees from being temporarily omitted under certain sidebar filter combinations right after first-time deleted-data load.
+- Files: src/ScheduleHTML.html
+- Validation: Added post-fetch filter sync calls (`syncKnownLocationsFromData`, `rebuildLocationSelect`, `syncKnownEmployeeTypesFromData`, `rebuildEmployeeTypeFilter`) before sidebar re-render.
+
 ### Changed
 - Summary: Reworked clock note guidance into a prioritized schedule-aware ruleset with a shared required-note template, adding Backup-required clock-in notes, On-Duty start-window helper text, first-punch late-lunch note gating, and the updated off-schedule phrase.
 - Why: Keeps note guidance clear and lightweight for employees while reducing copy maintenance to one required-note template with per-rule reason phrases.

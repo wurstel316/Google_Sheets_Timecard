@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.76 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.79 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -763,7 +763,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.76';
+const SCRIPT_VERSION = '2.2.2-push.79';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -774,6 +774,7 @@ const AWS_DAILY_THRESHOLD = 10; // 10 hours before daily OT kicks in for AWS
 const SCHEDULE_SHEET_NAME = 'Schedule';
 const SCHEDULE_SETTINGS_HEADERS = ['Key', 'Value', 'Updated At', 'Updated By'];
 const SCHEDULE_STATE_KEY = 'schedule_state_json';
+const SCHEDULE_DELETED_STATE_KEY = 'schedule_deleted_employees_json';
 const SCHEDULE_STATE_SCHEMA_VERSION = 1;
 /**
  * @typedef {Object} AWSConfigEntry
@@ -3214,31 +3215,119 @@ function normalizeScheduleState_(rawState) {
         deleted_employee_data: Array.from(deletedMap.values()).sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail))
     };
 }
-function getStoredScheduleState_() {
+function normalizeScheduleDeletedState_(rawState) {
+    const source = rawState && typeof rawState === 'object' ? rawState : {};
+    const deletedSource = Array.isArray(source.deleted_employee_data)
+        ? source.deleted_employee_data
+        : Array.isArray(source.deletedEmployees)
+            ? source.deletedEmployees
+            : Array.isArray(rawState)
+                ? rawState
+                : [];
+    const deletedMap = new Map();
+    for (let i = 0; i < deletedSource.length; i++) {
+        const record = normalizeScheduleEmployeeRecord_(deletedSource[i], true);
+        if (record.EmployeeEmail) {
+            deletedMap.set(record.EmployeeEmail, record);
+        }
+    }
+    const updatedAt = String(source.updatedAt || source.lastUpdatedAt || new Date().toISOString()).trim();
+    return {
+        schemaVersion: Number(source.schemaVersion) || SCHEDULE_STATE_SCHEMA_VERSION,
+        updatedAt: updatedAt,
+        deleted_employee_data: Array.from(deletedMap.values()).sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail))
+    };
+}
+function buildScheduleStateFromStoredParts_(activeState, deletedState) {
+    const activeNormalized = normalizeScheduleState_(activeState);
+    const deletedNormalized = normalizeScheduleDeletedState_(deletedState);
+    const activeEmails = new Set(activeNormalized.Employee_data.map(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName)));
+    const filteredDeleted = deletedNormalized.deleted_employee_data.filter(employee => {
+        const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+        return !!email && !activeEmails.has(email);
+    });
+    return {
+        schemaVersion: Number(activeNormalized.schemaVersion) || Number(deletedNormalized.schemaVersion) || SCHEDULE_STATE_SCHEMA_VERSION,
+        updatedAt: String(activeNormalized.updatedAt || deletedNormalized.updatedAt || new Date().toISOString()).trim(),
+        Employee_data: activeNormalized.Employee_data,
+        deleted_employee_data: filteredDeleted
+    };
+}
+function getStoredDeletedScheduleState_() {
+    const raw = readScheduleSetting_(SCHEDULE_DELETED_STATE_KEY, '');
+    if (!raw) {
+        return normalizeScheduleDeletedState_({});
+    }
+    return normalizeScheduleDeletedState_(parseScheduleJsonValue_(raw, {}));
+}
+function getStoredScheduleState_(options = {}) {
+    const includeDeleted = !(options && options.includeDeleted === false);
     const raw = readScheduleSetting_(SCHEDULE_STATE_KEY, '');
     if (!raw) {
-        return normalizeScheduleState_({});
+        if (!includeDeleted) {
+            return normalizeScheduleState_({});
+        }
+        return buildScheduleStateFromStoredParts_({}, getStoredDeletedScheduleState_());
     }
-    return normalizeScheduleState_(parseScheduleJsonValue_(raw, {}));
+    const activeOnly = normalizeScheduleState_(parseScheduleJsonValue_(raw, {}));
+    if (!includeDeleted) {
+        activeOnly.deleted_employee_data = [];
+        return activeOnly;
+    }
+    return buildScheduleStateFromStoredParts_(activeOnly, getStoredDeletedScheduleState_());
 }
-function writeStoredScheduleState_(state) {
+function writeStoredScheduleState_(state, options = {}) {
     const normalized = normalizeScheduleState_(state);
     normalized.updatedAt = new Date().toISOString();
-    writeScheduleSetting_(SCHEDULE_STATE_KEY, JSON.stringify(normalized));
-    return normalized;
+    const includeDeletedData = options && options.includeDeletedData === true;
+    const replaceDeleted = options && options.replaceDeleted === true;
+    const activePayload = {
+        schemaVersion: normalized.schemaVersion,
+        updatedAt: normalized.updatedAt,
+        Employee_data: normalized.Employee_data
+    };
+    let deletedPayload;
+    if (includeDeletedData || replaceDeleted) {
+        deletedPayload = normalizeScheduleDeletedState_({
+            schemaVersion: normalized.schemaVersion,
+            updatedAt: normalized.updatedAt,
+            deleted_employee_data: normalized.deleted_employee_data
+        });
+    }
+    else {
+        const existingDeleted = getStoredDeletedScheduleState_();
+        const activeEmails = new Set(activePayload.Employee_data.map(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName)));
+        const deletedMap = new Map();
+        existingDeleted.deleted_employee_data.forEach(employee => {
+            const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+            if (email) {
+                deletedMap.set(email, normalizeScheduleEmployeeRecord_(employee, true));
+            }
+        });
+        normalized.deleted_employee_data.forEach(employee => {
+            const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+            if (email) {
+                deletedMap.set(email, normalizeScheduleEmployeeRecord_(employee, true));
+            }
+        });
+        activeEmails.forEach(email => deletedMap.delete(email));
+        deletedPayload = normalizeScheduleDeletedState_({
+            schemaVersion: normalized.schemaVersion,
+            updatedAt: normalized.updatedAt,
+            deleted_employee_data: Array.from(deletedMap.values())
+        });
+    }
+    writeScheduleSetting_(SCHEDULE_STATE_KEY, JSON.stringify(activePayload));
+    writeScheduleSetting_(SCHEDULE_DELETED_STATE_KEY, JSON.stringify(deletedPayload));
+    return buildScheduleStateFromStoredParts_(activePayload, deletedPayload);
 }
 function ensureScheduleEmployeeRosterLoaded_(employeeEmail = null) {
-    const currentState = getStoredScheduleState_();
+    const currentState = getStoredScheduleState_({ includeDeleted: false });
     const normalizedEmail = employeeEmail ? normalizeScheduleEmail_(employeeEmail) : '';
-    const existingEmails = new Set(collectScheduleEmployeeEmailsFromState_(currentState, true));
+    const existingEmails = new Set(collectScheduleEmployeeEmailsFromState_(currentState, false));
     const persistedStateExists = !!readScheduleSetting_(SCHEDULE_STATE_KEY, '');
     const hasRosterEntries = Array.isArray(currentState.Employee_data) && currentState.Employee_data.length > 0;
     if (normalizedEmail) {
-        const deletedMatch = currentState.deleted_employee_data.some(employee => normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName) === normalizedEmail);
-        if (deletedMatch) {
-            const restored = restoreDeletedScheduleEmployee_(currentState, normalizedEmail);
-            return writeStoredScheduleState_(restored.state);
-        }
         if (!existingEmails.has(normalizedEmail)) {
             const nextState = appendMissingScheduleEmployees_(currentState, [normalizedEmail]);
             return writeStoredScheduleState_(nextState.state);
@@ -3428,31 +3517,70 @@ function extractScheduleAWSConfig_(schedulePayload) {
 }
 function fetchScheduleToolData() {
     if (!hasPermission('payroll') || !hasPermission('edit')) {
-        return { success: false, message: 'Payroll and edit permissions are required.', state: getStoredScheduleState_() };
+        return { success: false, message: 'Payroll and edit permissions are required.', state: getStoredScheduleState_({ includeDeleted: false }) };
     }
-    return { success: true, state: ensureScheduleEmployeeRosterLoaded_() };
+    const activeState = ensureScheduleEmployeeRosterLoaded_();
+    return {
+        success: true,
+        state: {
+            schemaVersion: activeState.schemaVersion,
+            updatedAt: activeState.updatedAt,
+            Employee_data: activeState.Employee_data
+        },
+        deletedDataIncluded: false
+    };
 }
 function saveScheduleToolData(schedulePayload) {
     try {
         if (!hasPermission('payroll') || !hasPermission('edit')) {
             return { success: false, message: 'Payroll and edit permissions are required.' };
         }
-        const savedState = writeStoredScheduleState_(schedulePayload);
-        return { success: true, message: 'Schedule saved.', state: savedState };
+        const includeDeletedData = !!(schedulePayload && schedulePayload.includeDeletedData === true);
+        const savedState = writeStoredScheduleState_(schedulePayload, { includeDeletedData: includeDeletedData });
+        if (!includeDeletedData) {
+            return {
+                success: true,
+                message: 'Schedule saved.',
+                state: {
+                    schemaVersion: savedState.schemaVersion,
+                    updatedAt: savedState.updatedAt,
+                    Employee_data: savedState.Employee_data
+                },
+                deletedDataIncluded: false
+            };
+        }
+        return { success: true, message: 'Schedule saved.', state: savedState, deletedDataIncluded: true };
     }
     catch (e) {
         Logger.log('saveScheduleToolData: error=%s', e.toString());
         return { success: false, message: e.toString() };
     }
 }
+function fetchDeletedScheduleEmployees() {
+    try {
+        if (!hasPermission('payroll') || !hasPermission('edit')) {
+            return { success: false, message: 'Payroll and edit permissions are required.', deleted_employee_data: [] };
+        }
+        const deletedState = getStoredDeletedScheduleState_();
+        return {
+            success: true,
+            deleted_employee_data: deletedState.deleted_employee_data,
+            deletedDataIncluded: true
+        };
+    }
+    catch (e) {
+        Logger.log('fetchDeletedScheduleEmployees: error=%s', e.toString());
+        return { success: false, message: e.toString(), deleted_employee_data: [] };
+    }
+}
 function checkForNewEmployees() {
     try {
         if (!hasPermission('payroll') || !hasPermission('edit')) {
-            return { success: false, message: 'Payroll and edit permissions are required.', addedCount: 0, addedEmails: [], state: getStoredScheduleState_() };
+            return { success: false, message: 'Payroll and edit permissions are required.', addedCount: 0, addedEmails: [], state: getStoredScheduleState_({ includeDeleted: false }) };
         }
-        const checked = checkForNewUsers_(getStoredScheduleState_());
+        const checked = checkForNewUsers_(getStoredScheduleState_({ includeDeleted: true }));
         if (checked.addedCount > 0) {
-            const savedState = writeStoredScheduleState_(checked.state);
+            const savedState = writeStoredScheduleState_(checked.state, { replaceDeleted: true });
             const addedList = checked.addedEmails.join(', ');
             return {
                 success: true,
@@ -3461,14 +3589,15 @@ function checkForNewEmployees() {
                     : ('Added ' + checked.addedCount + ' new employees: ' + addedList),
                 addedCount: checked.addedCount,
                 addedEmails: checked.addedEmails,
-                state: savedState
+                state: savedState,
+                deletedDataIncluded: true
             };
         }
-        return { success: true, message: 'No new employees found.', addedCount: 0, addedEmails: [], state: checked.state };
+        return { success: true, message: 'No new employees found.', addedCount: 0, addedEmails: [], state: checked.state, deletedDataIncluded: true };
     }
     catch (e) {
         Logger.log('checkForNewEmployees: error=%s', e.toString());
-        return { success: false, message: e.toString(), addedCount: 0, addedEmails: [], state: getStoredScheduleState_() };
+        return { success: false, message: e.toString(), addedCount: 0, addedEmails: [], state: getStoredScheduleState_({ includeDeleted: false }) };
     }
 }
 /**
