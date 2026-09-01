@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.106 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.109 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -229,17 +229,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-size: clamp(0.7rem, 2.2vw, 0.9rem);
             margin: 0;
             background: #0f9d58;
-          }
-          .menu-top-btn {
-            position: static;
-            width: 100%;
-            padding: 0.45rem 0.75rem;
-            font-size: clamp(0.7rem, 2.2vw, 0.9rem);
-            margin: 0;
-            background: #eef3fb;
-            color: #23466f;
-            border: 1px solid #bfd1e8;
-            box-shadow: none;
           }
           .admin-grid {
             width: max-content;
@@ -1349,15 +1338,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             gap: 0.32rem;
           }
           .ui-scale-controls {
-            width: 90%;
-            max-width: 25rem;
+            width: 100%;
+            max-width: none;
             display: flex;
             flex-direction: column;
             align-items: stretch;
             gap: 0.28rem;
-            margin: 0.15rem auto 0.8rem;
+            margin: 0;
             color: #556477;
-            font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+            font-size: clamp(0.68rem, 2vw, 0.86rem);
           }
           .is-hidden {
             display: none;
@@ -1367,30 +1356,31 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-weight: 600;
             color: #4f5f72;
             text-align: left;
+            padding-left: 0.2rem;
           }
           .ui-scale-stepper {
             display: flex;
             align-items: stretch;
-            gap: 0.45rem;
+            gap: 0.35rem;
             width: 100%;
           }
           .ui-scale-step-btn,
           .ui-scale-value {
-            min-height: 2.6rem;
+            min-height: 2.2rem;
             margin: 0 !important;
-            padding: 0.5rem 0.6rem;
+            padding: 0.4rem 0.5rem;
             border-radius: 0.45rem;
             border: 1px solid #c7d3e2;
             box-sizing: border-box;
             line-height: 1.2;
           }
           .ui-scale-step-btn {
-            width: 3.2rem !important;
-            min-width: 3.2rem;
-            max-width: 3.2rem !important;
+            width: 2.65rem !important;
+            min-width: 2.65rem;
+            max-width: 2.65rem !important;
             background: #f6f9fd;
             color: #335377;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
@@ -1403,7 +1393,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: auto;
             background: #fff;
             color: #2f3f53;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
@@ -2706,7 +2696,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
         <div class="container">
           <img src="data:image/png;base64,${LOGO_BASE64}" alt="Logo" style="height: 200px; width: auto; margin-bottom: 1rem;">
           <div class="top-left-controls">
-            <button id="uiScaleMenuBtn" class="menu-top-btn" type="button" onclick="toggleUiScaleControls()" aria-controls="uiScaleControls" aria-expanded="false">Display Menu</button>
+            <div id="uiScaleControls" class="ui-scale-controls">
+              <label for="uiScaleValue">UI Scale</label>
+              <div class="ui-scale-stepper">
+                <button type="button" class="ui-scale-step-btn" onclick="stepUiScale(-1)" aria-label="Decrease UI scale">-</button>
+                <div id="uiScaleValue" class="ui-scale-value" aria-live="polite">100%</div>
+                <button type="button" class="ui-scale-step-btn" onclick="stepUiScale(1)" aria-label="Increase UI scale">+</button>
+              </div>
+            </div>
             <div id="idleRefreshBar" aria-live="polite">
               <div class="idle-refresh-row">
                 <span id="idleRefreshAuto" class="idle-refresh-line">Auto Refresh -- min</span>
@@ -2771,15 +2768,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           <button id="archiveReviewBtn" class="secondary-action-btn is-hidden" onclick="showArchiveReview()">
             Review Archived Entries
           </button>
-          <div id="uiScaleControls" class="ui-scale-controls is-hidden">
-            <label for="uiScaleValue">UI Scale</label>
-            <div class="ui-scale-stepper">
-              <button type="button" class="ui-scale-step-btn" onclick="stepUiScale(-1)" aria-label="Decrease UI scale">-</button>
-              <div id="uiScaleValue" class="ui-scale-value" aria-live="polite">100%</div>
-              <button type="button" class="ui-scale-step-btn" onclick="stepUiScale(1)" aria-label="Increase UI scale">+</button>
-            </div>
-          </div>
-
           <div id="manualEntryModal" class="modal" style="display: none;">
             <div class="modal-content">
               <button class="modal-close-x" onclick="hideManualEntryForm()" title="Close missed time" aria-label="Close missed time">x</button>
@@ -3363,7 +3351,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return '<span class="admin-dayboard-session-chip">' +
               '<span class="admin-dayboard-session-pill in">In ' + escapeHtml(clockInText) + '</span>' +
               '<span class="admin-dayboard-session-arrow" aria-hidden="true">→</span>' +
-              '<span class="admin-dayboard-session-pill out' + (isOpen ? ' is-open' : '') + '">' + escapeHtml((isOpen ? 'Out Now' : 'Out ' + clockOutText)) + '</span>' +
+              '<span class="admin-dayboard-session-pill out' + (isOpen ? ' is-open' : '') + '">' + escapeHtml((isOpen ? 'Out --' : 'Out ' + clockOutText)) + '</span>' +
             '</span>';
           }
 
@@ -3688,31 +3676,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             });
           }
 
-          function initializeUiScaleMenu() {
-            const controls = document.getElementById('uiScaleControls');
-            const archiveReviewBtn = document.getElementById('archiveReviewBtn');
-            const menuBtn = document.getElementById('uiScaleMenuBtn');
-            if (!controls || !menuBtn) return;
-            controls.classList.add('is-hidden');
-            if (archiveReviewBtn) {
-              archiveReviewBtn.classList.add('is-hidden');
-            }
-            menuBtn.setAttribute('aria-expanded', 'false');
-          }
-
-          function toggleUiScaleControls() {
-            const controls = document.getElementById('uiScaleControls');
-            const archiveReviewBtn = document.getElementById('archiveReviewBtn');
-            const menuBtn = document.getElementById('uiScaleMenuBtn');
-            if (!controls || !menuBtn) return;
-            const shouldShow = controls.classList.contains('is-hidden');
-            controls.classList.toggle('is-hidden', !shouldShow);
-            if (archiveReviewBtn) {
-              archiveReviewBtn.classList.toggle('is-hidden', !shouldShow);
-            }
-            menuBtn.setAttribute('aria-expanded', shouldShow ? 'true' : 'false');
-          }
-
           function updateClockNotePlaceholder() {
             const notesInput = document.getElementById('notes');
             if (!notesInput) return;
@@ -3781,17 +3744,19 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
            * 1. Active Backup segment now -> required note.
            * 2. Any on-duty start within the tolerance window -> no required note.
            * 3. No valid on-duty shift today -> required note.
-           * 4. Valid future on-duty start exists -> required note.
-           * 5. Valid on-duty starts exist, but all are in the past -> required note.
+           * 4. Past and future on-duty starts both exist (between shifts) -> required note.
+           * 5. Valid future on-duty start exists -> required note.
+           * 6. Valid on-duty starts exist, but all are in the past -> required note.
            *
            * Truth table:
-           * | Case | Backup now | On-duty within tolerance | Future on-duty start | Any valid on-duty start today | Required note | Message |
-           * |---|---:|---:|---:|---:|---:|---|
-           * | On backup right now | Yes | Any | Any | Any | Yes | Note required: you are currently on Backup. Please add a note to continue. |
-           * | On duty on time/near time | No | Yes | Any | Yes | No | You are scheduled to clock in at <time>. Please clock in. |
-           * | No on-duty shift today | No | No | No | No | Yes | No on-duty shift is scheduled today. |
-           * | Early for a later shift | No | No | Yes | Yes | Yes | You are early for a later shift at <time>. Please add a note to continue. |
-           * | Late for a missed shift | No | No | No | Yes | Yes | Note required: You are late to clock in. Please add a note to continue. |
+           * | Case | Backup now | On-duty within tolerance | Future on-duty start | Past on-duty start | Any valid on-duty start today | Required note | Message |
+           * |---|---:|---:|---:|---:|---:|---:|---|
+           * | On backup right now | Yes | Any | Any | Any | Any | Yes | Note required: you are currently on Backup. Please add a note to continue. |
+           * | On duty on time/near time | No | Yes | Any | Any | Yes | No | You are scheduled to clock in at <time>. Please clock in. |
+           * | No on-duty shift today | No | No | No | No | No | Yes | No on-duty shift is scheduled today. |
+           * | Between two on-duty shifts | No | No | Yes | Yes | Yes | Yes | You are outside your scheduled clock-in windows. Your next shift starts at <time>. Please add a note to continue. |
+           * | Early for first shift of day | No | No | Yes | No | Yes | Yes | You are early for a later shift at <time>. Please add a note to continue. |
+           * | Late for a missed shift | No | No | No | Yes | Yes | Yes | Note required: You are late to clock in. Please add a note to continue. |
            *
            * Notes:
            * - Only valid on-duty segments count for timing decisions.
@@ -3848,12 +3813,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             let nearestOnDutyStartMs = NaN;
             let hasOnDutySchedule = false;
             let earliestFutureOnDutyStartMs = NaN;
+            let hasPastOnDutyStart = false;
             segments.forEach((segment) => {
               if (!segment || String(segment.status || '').toUpperCase() !== 'O') return;
               const startHour = Number(segment.startHour);
               if (!isFinite(startHour)) return;
               hasOnDutySchedule = true;
               const startMs = dayStart + (startHour * 60 * 60 * 1000);
+              if (startMs <= nowMs) {
+                hasPastOnDutyStart = true;
+              }
               if (startMs > nowMs && (!isFinite(earliestFutureOnDutyStartMs) || startMs < earliestFutureOnDutyStartMs)) {
                 earliestFutureOnDutyStartMs = startMs;
               }
@@ -3880,6 +3849,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 reason: 'clock-in-no-schedule',
                 placeholder: 'Clock in note',
                 message: buildClockInStatusMessage('No on-duty shift is scheduled today.')
+              };
+            }
+
+            if (hasPastOnDutyStart && isFinite(earliestFutureOnDutyStartMs)) {
+              const scheduledTime = formatClockHelperTimeFromMs(earliestFutureOnDutyStartMs);
+              return {
+                required: true,
+                reason: 'clock-in-between-shifts',
+                placeholder: 'Clock in note',
+                message: buildClockInStatusMessage('You are outside your scheduled clock-in windows. Your next shift starts at ' + scheduledTime + '. Please add a note to continue.')
               };
             }
 
@@ -4413,7 +4392,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           
           initializeOfflineDetection();
           initializeIdleRefreshManager();
-          initializeUiScaleMenu();
           initializeUiScale();
           setStatusText(document.getElementById('status') ? document.getElementById('status').innerText : '');
           updateClockNotePlaceholder();

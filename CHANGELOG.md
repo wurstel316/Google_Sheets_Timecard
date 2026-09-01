@@ -43,6 +43,11 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - Validation: Verified mockups directory now contains only index + A1, updated index links to A1 only, and confirmed edited files applied cleanly.
 
 ### Fixed
+- Summary: Added a neutral clock-in note message branch for between-shifts cases where an earlier on-duty start has already passed and a later on-duty start is still upcoming.
+- Why: The prior wording could read as misleading "early for later shift" guidance when users were between two scheduled on-duty windows after missing an earlier start.
+- Files: src/UserInterface.js
+- Validation: Updated `getClockNoteRequirement()` decision ordering and rule-table documentation to classify between-shifts timing separately while keeping required-note gating unchanged; confirmed touched-file diagnostics report no errors.
+
 - Summary: Improved 15-minute idle auto-refresh reliability by preventing passive preview/dayboard fetches from blocking refresh and by guarding idle-trigger unsaved-check errors.
 - Why: Idle time could continue increasing past the soft-refresh threshold when non-critical background loads were still marked in flight or when unsaved-work checks threw at trigger time.
 - Files: src/UserInterface.js
