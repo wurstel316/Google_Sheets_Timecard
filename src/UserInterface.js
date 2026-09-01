@@ -1,5 +1,5 @@
-// Compiled using timecard-gas-project 2.2.2-push.109 (TypeScript 4.9.5)
-function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
+// Compiled using timecard-gas-project 2.2.2-push.113 (TypeScript 4.9.5)
+function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
     ? {
@@ -102,7 +102,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
         return '';
       };
     if (entries.length === 0) {
-        entriesHtml = '<tr><td colspan="4" style="text-align: center; color: #999;">No entries yet</td></tr>';
+        entriesHtml = '<tr><td colspan="4" style="text-align: center; color: var(--tc-preview-empty-text);">No entries yet</td></tr>';
     }
     else {
       const displayEntries = entries.slice().reverse();
@@ -180,13 +180,419 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             --timecard-picker-font-size: 1.02rem;
             --timecard-picker-cell-size: 2.1rem;
             --timecard-picker-time-font-size: 1.08rem;
+            --tc-page-bg: #f5f5f5;
+            --tc-surface: #ffffff;
+            --tc-surface-muted: #f8fafc;
+            --tc-text: #333333;
+            --tc-text-muted: #556477;
+            --tc-border: #d8e0ea;
+            --tc-border-strong: #c7d3e2;
+            --tc-primary: #1a73e8;
+            --tc-primary-contrast: #ffffff;
+            --tc-accent: #0f9d58;
+            --tc-warning: #ff9800;
+            --tc-success: #28a745;
+            --tc-danger: #dc3545;
+            --tc-link: #1a73e8;
+            --tc-button-bg: #1a73e8;
+            --tc-button-disabled-bg: #cccccc;
+            --tc-button-shadow: 0 0.1875rem 0.375rem rgba(0, 0, 0, 0.1);
+            --tc-input-bg: #ffffff;
+            --tc-input-border: #dddddd;
+            --tc-input-placeholder: #6b7788;
+            --tc-input-invalid-bg: #fff2f2;
+            --tc-input-invalid-border: #d93025;
+            --tc-input-invalid-shadow: rgba(217, 48, 37, 0.22);
+            --tc-modal-overlay: rgba(0, 0, 0, 0.5);
+            --tc-status-bg: #ecf3ff;
+            --tc-status-border: #c7d8f2;
+            --tc-status-text: #1f4f8a;
+            --tc-pill-in-bg: #eaf7ef;
+            --tc-pill-in-text: #1f6a3b;
+            --tc-pill-in-border: #bfe2cd;
+            --tc-pill-out-bg: #fff2f1;
+            --tc-pill-out-text: #8d2f2f;
+            --tc-pill-out-border: #f3c6c3;
+            --tc-hours-pill-bg: #edf3ff;
+            --tc-hours-pill-text: #1d4f9a;
+            --tc-hours-pill-border: #c5d8fb;
+            --tc-schedule-pill-bg: #f6faff;
+            --tc-schedule-pill-bg-hover: #edf5ff;
+            --tc-schedule-pill-border: #c9daef;
+            --tc-schedule-pill-text: #243e63;
+            --tc-schedule-pill-title: #4d6380;
+            --tc-schedule-pill-empty: #5d6c80;
+            --tc-schedule-day-row-bg: #fbfdff;
+            --tc-schedule-day-name: #40556f;
+            --tc-segment-duty-bg: #eaf7ef;
+            --tc-segment-duty-text: #1f6a3b;
+            --tc-segment-duty-border: #bfe2cd;
+            --tc-segment-backup-bg: #f1edff;
+            --tc-segment-backup-text: #5b46a8;
+            --tc-segment-backup-border: #d7ccff;
+            --tc-segment-lunch-bg: #fff7df;
+            --tc-segment-lunch-text: #8a5b00;
+            --tc-segment-lunch-border: #f2d27a;
+            --tc-secondary-btn-bg: #edf2f7;
+            --tc-secondary-btn-bg-hover: #e3ebf5;
+            --tc-secondary-btn-border: #cfd8e3;
+            --tc-secondary-btn-text: #1f3a5f;
+            --tc-secondary-btn-disabled-bg: #e5e7eb;
+            --tc-secondary-btn-disabled-border: #d1d5db;
+            --tc-secondary-btn-disabled-text: #6b7280;
+            --tc-idle-btn-bg: #ffffff;
+            --tc-idle-btn-border: #9ca3af;
+            --tc-idle-btn-text: #111827;
+            --tc-idle-primary-bg: #374151;
+            --tc-idle-primary-text: #f9fafb;
+            --tc-modal-bg: #ffffff;
+            --tc-modal-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+            --tc-admin-grid-border: #dddddd;
+            --tc-admin-save-clean-bg: #9e9e9e;
+            --tc-admin-save-clean-text: #ffffff;
+            --tc-admin-save-dirty-bg: #1a73e8;
+            --tc-admin-save-dirty-text: #ffffff;
+            --tc-admin-subtext: #666666;
+            --tc-admin-verify-bg: #ffffff;
+            --tc-admin-verify-border: #b8c3ce;
+            --tc-admin-verify-text: #6b7785;
+            --tc-admin-verify-on-bg: #e8f5e9;
+            --tc-admin-verify-on-border: #8fcf95;
+            --tc-admin-verify-on-text: #1b5e20;
+            --tc-admin-collapse-bg: #f8fafc;
+            --tc-admin-collapse-border: #b8c3d1;
+            --tc-admin-collapse-text: #334155;
+            --tc-admin-add-bg: #eef6ff;
+            --tc-admin-add-border: #c8dcf8;
+            --tc-admin-add-text: #1f4f8a;
+            --tc-admin-workflow-bg: #f8fbff;
+            --tc-admin-workflow-border: #d9e2f1;
+            --tc-admin-close-bg: #eef2f7;
+            --tc-admin-close-border: #cbd5e1;
+            --tc-admin-close-text: #475569;
+            --tc-admin-delete-bg: #c62828;
+            --tc-admin-delete-border: #8e0000;
+            --tc-admin-delete-text: #ffffff;
+            --tc-admin-restore-bg: #388e3c;
+            --tc-admin-restore-border: #1f5f2b;
+            --tc-admin-restore-text: #ffffff;
+            --tc-admin-group-row-bg: #eceff1;
+            --tc-admin-group-row-edge: #cdd6de;
+            --tc-day-tone-default-bg: #dde8f5;
+            --tc-day-tone-default-text: #1f3f66;
+            --tc-day-tone-worked-bg: #c7dbf3;
+            --tc-day-tone-worked-text: #1f3f66;
+            --tc-day-tone-vacation-bg: #f3e1b8;
+            --tc-day-tone-vacation-text: #6b4b0b;
+            --tc-day-tone-sick-bg: #f2cccc;
+            --tc-day-tone-sick-text: #7b2c2f;
+            --tc-day-tone-mixed-bg: #d7d4ef;
+            --tc-day-tone-mixed-text: #3f3566;
+            --tc-pending-chip-border: #d9b95c;
+            --tc-pending-chip-bg: #fff8e1;
+            --tc-pending-chip-text: #7a5a00;
+            --tc-deleted-chip-border: #c8a8a8;
+            --tc-deleted-chip-bg: #f5e8e8;
+            --tc-deleted-chip-text: #6b4444;
+            --tc-row-vacation-bg: #fff7e3;
+            --tc-row-sick-bg: #fdeeee;
+            --tc-recent-accent-worked: #88b1e8;
+            --tc-recent-accent-vacation: #d9a441;
+            --tc-recent-accent-sick: #d98084;
+            --tc-recent-card-vacation-bg: #fff7e9;
+            --tc-recent-card-sick-bg: #feeff0;
+            --tc-recent-card-deleted-bg: #fafafa;
+            --tc-recent-note-add-bg: #e6f0ff;
+            --tc-recent-note-add-border: #bfd3f7;
+            --tc-recent-note-add-text: #1a73e8;
+            --tc-recent-deleted-pill-text: #9a5a5d;
+            --tc-recent-deleted-pill-border: #e4c4c8;
+            --tc-recent-deleted-pill-bg: #fff4f5;
+            --tc-note-bg: #fbfdff;
+            --tc-note-border: #d9e2ec;
+            --tc-note-empty-bg: #ffffff;
+            --tc-note-empty-text: #9aa0a6;
+            --tc-chip-bg: #ffffff;
+            --tc-chip-border: #cfd8e3;
+            --tc-chip-text: #243447;
+            --tc-picker-bg: #ffffff;
+            --tc-picker-border: #cfd8e3;
+            --tc-picker-time-separator: #e2e8f0;
+            --tc-modal-close-bg: #ffffff;
+            --tc-modal-close-border: #d0d7de;
+            --tc-modal-close-text: #666666;
+            --tc-modal-close-hover-bg: #f4f4f4;
+            --tc-modal-close-hover-text: #333333;
+            --tc-table-row-border: #dddddd;
+            --tc-dayboard-title: #203040;
+            --tc-dayboard-subtitle: #5d6c80;
+            --tc-dayboard-border: #d9e2f1;
+            --tc-dayboard-lane-border: #e7edf6;
+            --tc-dayboard-meta-bg: #fbfdff;
+            --tc-dayboard-dot: #94a3b8;
+            --tc-dayboard-dot-in: #22c55e;
+            --tc-dayboard-dot-today: #1a73e8;
+            --tc-dayboard-badge-in-bg: #e6f7ef;
+            --tc-dayboard-badge-in-text: #17633a;
+            --tc-dayboard-badge-in-border: #bfe6d0;
+            --tc-dayboard-badge-today-bg: #e8f0fe;
+            --tc-dayboard-badge-today-text: #1a5fb4;
+            --tc-dayboard-badge-today-border: #c6dafc;
+            --tc-dayboard-badge-unscheduled-bg: #f3f6fb;
+            --tc-dayboard-badge-unscheduled-text: #5d6c80;
+            --tc-dayboard-badge-unscheduled-border: #d9e2f1;
+            --tc-dayboard-chip-bg: #ffffff;
+            --tc-dayboard-chip-border: #d7e1ee;
+            --tc-dayboard-pill-out-bg: #edf3fb;
+            --tc-dayboard-pill-out-text: #33567b;
+            --tc-dayboard-pill-out-border: #cad9ea;
+            --tc-dayboard-arrow: #8595ab;
+            --tc-preview-border: #d6dde7;
+            --tc-preview-title-bg: #f3f6fb;
+            --tc-preview-title-text: #203040;
+            --tc-preview-group-bg: #dfe8f6;
+            --tc-preview-group-text: #24364d;
+            --tc-preview-subhead-bg: #eef3fb;
+            --tc-preview-subhead-text: #31445f;
+            --tc-preview-col-email-bg: #ffffff;
+            --tc-preview-col-week1-bg: #d9ead3;
+            --tc-preview-col-week2-bg: #cfe2f3;
+            --tc-preview-col-extra-bg: #ffffff;
+            --tc-preview-col-total-rt-bg: #b6d7a8;
+            --tc-preview-col-total-ot-bg: #93c47d;
+            --tc-preview-col-total-dt-bg: #6aa84f;
+            --tc-preview-col-total-dt-text: #10320f;
+            --tc-preview-col-aws-bg: #e8e8e8;
+            --tc-preview-empty-text: #999999;
+            --tc-holiday-detected: #2458a6;
+            --tc-holiday-wrap-border: #d8e0ea;
+            --tc-holiday-wrap-bg: #ffffff;
+            --tc-holiday-grid-border: #e2e8f0;
+            --tc-aws-row-border: #eef2f7;
+            --tc-aws-row-label: #334155;
+            --tc-aws-list-bg: #ffffff;
+            --tc-aws-list-border: #d8e0ea;
+            --tc-holiday-matrix-muted: #7a8797;
+            --tc-admin-switch-track: #9aa3ad;
+            --tc-admin-switch-track-on: #1f9d54;
+            --tc-admin-switch-thumb: #ffffff;
+            --tc-admin-switch-label: #5f6a76;
+            --tc-admin-switch-label-on: #176a39;
+            --tc-idle-overlay: rgba(75, 85, 99, 0.64);
+            --tc-shadow: 0 0.3125rem 0.625rem rgba(0, 0, 0, 0.1);
+            --tc-theme-control-bg: #eef4fb;
+            --tc-theme-control-text: #2f3f53;
+          }
+          :root[data-theme="dark"] {
+            --tc-page-bg: #0f1419;
+            --tc-surface: #1a2332;
+            --tc-surface-muted: #141c27;
+            --tc-text: #e7ecf3;
+            --tc-text-muted: #9fb0c9;
+            --tc-border: #2d3a4f;
+            --tc-border-strong: #41506a;
+            --tc-primary: #60a5fa;
+            --tc-primary-contrast: #0f1419;
+            --tc-accent: #22c55e;
+            --tc-warning: #f59e0b;
+            --tc-success: #4ade80;
+            --tc-danger: #f87171;
+            --tc-link: #60a5fa;
+            --tc-button-bg: #60a5fa;
+            --tc-button-disabled-bg: #475569;
+            --tc-button-shadow: 0 0.1875rem 0.375rem rgba(2, 6, 23, 0.44);
+            --tc-input-bg: #101826;
+            --tc-input-border: #41506a;
+            --tc-input-placeholder: #93a4bb;
+            --tc-input-invalid-bg: #3a1d23;
+            --tc-input-invalid-border: #f87171;
+            --tc-input-invalid-shadow: rgba(248, 113, 113, 0.28);
+            --tc-modal-overlay: rgba(2, 6, 23, 0.72);
+            --tc-status-bg: #162132;
+            --tc-status-border: #41506a;
+            --tc-status-text: #c7dcfa;
+            --tc-pill-in-bg: #173323;
+            --tc-pill-in-text: #82e3ac;
+            --tc-pill-in-border: #2f6b49;
+            --tc-pill-out-bg: #3a1d23;
+            --tc-pill-out-text: #f6a8b0;
+            --tc-pill-out-border: #70404a;
+            --tc-hours-pill-bg: #1f2f46;
+            --tc-hours-pill-text: #a8cbff;
+            --tc-hours-pill-border: #375986;
+            --tc-schedule-pill-bg: #1f2a3d;
+            --tc-schedule-pill-bg-hover: #26354c;
+            --tc-schedule-pill-border: #41506a;
+            --tc-schedule-pill-text: #dbe6f5;
+            --tc-schedule-pill-title: #b1c3dd;
+            --tc-schedule-pill-empty: #9fb0c9;
+            --tc-schedule-day-row-bg: #1f2a3d;
+            --tc-schedule-day-name: #c7d8ee;
+            --tc-segment-duty-bg: #1f3a2d;
+            --tc-segment-duty-text: #8de9b6;
+            --tc-segment-duty-border: #356e4f;
+            --tc-segment-backup-bg: #2a2540;
+            --tc-segment-backup-text: #c6b7ff;
+            --tc-segment-backup-border: #574b86;
+            --tc-segment-lunch-bg: #3a2f1a;
+            --tc-segment-lunch-text: #f2d27a;
+            --tc-segment-lunch-border: #7d6540;
+            --tc-secondary-btn-bg: #1f2a3d;
+            --tc-secondary-btn-bg-hover: #26354c;
+            --tc-secondary-btn-border: #41506a;
+            --tc-secondary-btn-text: #dbe6f5;
+            --tc-secondary-btn-disabled-bg: #233044;
+            --tc-secondary-btn-disabled-border: #334155;
+            --tc-secondary-btn-disabled-text: #93a4bb;
+            --tc-idle-btn-bg: #111827;
+            --tc-idle-btn-border: #41506a;
+            --tc-idle-btn-text: #e7ecf3;
+            --tc-idle-primary-bg: #60a5fa;
+            --tc-idle-primary-text: #0f1419;
+            --tc-modal-bg: #1a2332;
+            --tc-modal-shadow: 0 0.625rem 1.35rem rgba(2, 6, 23, 0.58);
+            --tc-admin-grid-border: #334155;
+            --tc-admin-save-clean-bg: #475569;
+            --tc-admin-save-clean-text: #e7ecf3;
+            --tc-admin-save-dirty-bg: #60a5fa;
+            --tc-admin-save-dirty-text: #0f1419;
+            --tc-admin-subtext: #9fb0c9;
+            --tc-admin-verify-bg: #111827;
+            --tc-admin-verify-border: #41506a;
+            --tc-admin-verify-text: #c7d8ee;
+            --tc-admin-verify-on-bg: #1f3a2d;
+            --tc-admin-verify-on-border: #356e4f;
+            --tc-admin-verify-on-text: #8de9b6;
+            --tc-admin-collapse-bg: #111827;
+            --tc-admin-collapse-border: #41506a;
+            --tc-admin-collapse-text: #dbe6f5;
+            --tc-admin-add-bg: #1f2f46;
+            --tc-admin-add-border: #375986;
+            --tc-admin-add-text: #a8cbff;
+            --tc-admin-workflow-bg: #1f2a3d;
+            --tc-admin-workflow-border: #41506a;
+            --tc-admin-close-bg: #162132;
+            --tc-admin-close-border: #41506a;
+            --tc-admin-close-text: #dbe6f5;
+            --tc-admin-delete-bg: #f87171;
+            --tc-admin-delete-border: #b93b3b;
+            --tc-admin-delete-text: #0f1419;
+            --tc-admin-restore-bg: #4ade80;
+            --tc-admin-restore-border: #2f6b49;
+            --tc-admin-restore-text: #0f1419;
+            --tc-admin-group-row-bg: #223247;
+            --tc-admin-group-row-edge: #334155;
+            --tc-day-tone-default-bg: #223247;
+            --tc-day-tone-default-text: #bcd7ff;
+            --tc-day-tone-worked-bg: #1f2f46;
+            --tc-day-tone-worked-text: #bcd7ff;
+            --tc-day-tone-vacation-bg: #3a2f1a;
+            --tc-day-tone-vacation-text: #f2d27a;
+            --tc-day-tone-sick-bg: #3a1d23;
+            --tc-day-tone-sick-text: #f6a8b0;
+            --tc-day-tone-mixed-bg: #2a2540;
+            --tc-day-tone-mixed-text: #d5c9ff;
+            --tc-pending-chip-border: #7d6540;
+            --tc-pending-chip-bg: #3a2f1a;
+            --tc-pending-chip-text: #f2d27a;
+            --tc-deleted-chip-border: #70404a;
+            --tc-deleted-chip-bg: #3a1d23;
+            --tc-deleted-chip-text: #f6a8b0;
+            --tc-row-vacation-bg: #3a2f1a;
+            --tc-row-sick-bg: #3a1d23;
+            --tc-recent-accent-worked: #60a5fa;
+            --tc-recent-accent-vacation: #f2d27a;
+            --tc-recent-accent-sick: #f6a8b0;
+            --tc-recent-card-vacation-bg: #2d2618;
+            --tc-recent-card-sick-bg: #2f1d23;
+            --tc-recent-card-deleted-bg: #1f2735;
+            --tc-recent-note-add-bg: #1f2f46;
+            --tc-recent-note-add-border: #375986;
+            --tc-recent-note-add-text: #a8cbff;
+            --tc-recent-deleted-pill-text: #f6a8b0;
+            --tc-recent-deleted-pill-border: #70404a;
+            --tc-recent-deleted-pill-bg: #3a1d23;
+            --tc-note-bg: #1f2a3d;
+            --tc-note-border: #41506a;
+            --tc-note-empty-bg: #162132;
+            --tc-note-empty-text: #93a4bb;
+            --tc-chip-bg: #1f2a3d;
+            --tc-chip-border: #41506a;
+            --tc-chip-text: #dbe6f5;
+            --tc-picker-bg: #162132;
+            --tc-picker-border: #41506a;
+            --tc-picker-time-separator: #334155;
+            --tc-modal-close-bg: #162132;
+            --tc-modal-close-border: #41506a;
+            --tc-modal-close-text: #dbe6f5;
+            --tc-modal-close-hover-bg: #233044;
+            --tc-modal-close-hover-text: #e7ecf3;
+            --tc-table-row-border: #334155;
+            --tc-dayboard-title: #dbe6f5;
+            --tc-dayboard-subtitle: #9fb0c9;
+            --tc-dayboard-border: #41506a;
+            --tc-dayboard-lane-border: #334155;
+            --tc-dayboard-meta-bg: #1f2a3d;
+            --tc-dayboard-dot: #64748b;
+            --tc-dayboard-dot-in: #22c55e;
+            --tc-dayboard-dot-today: #60a5fa;
+            --tc-dayboard-badge-in-bg: #1f3a2d;
+            --tc-dayboard-badge-in-text: #8de9b6;
+            --tc-dayboard-badge-in-border: #356e4f;
+            --tc-dayboard-badge-today-bg: #1f2f46;
+            --tc-dayboard-badge-today-text: #a8cbff;
+            --tc-dayboard-badge-today-border: #375986;
+            --tc-dayboard-badge-unscheduled-bg: #233044;
+            --tc-dayboard-badge-unscheduled-text: #b9c8dc;
+            --tc-dayboard-badge-unscheduled-border: #41506a;
+            --tc-dayboard-chip-bg: #162132;
+            --tc-dayboard-chip-border: #41506a;
+            --tc-dayboard-pill-out-bg: #233044;
+            --tc-dayboard-pill-out-text: #c7d8ee;
+            --tc-dayboard-pill-out-border: #41506a;
+            --tc-dayboard-arrow: #93a4bb;
+            --tc-preview-border: #41506a;
+            --tc-preview-title-bg: #1f2a3d;
+            --tc-preview-title-text: #dbe6f5;
+            --tc-preview-group-bg: #233044;
+            --tc-preview-group-text: #c7d8ee;
+            --tc-preview-subhead-bg: #26354c;
+            --tc-preview-subhead-text: #c7d8ee;
+            --tc-preview-col-email-bg: #162132;
+            --tc-preview-col-week1-bg: #1f3a2d;
+            --tc-preview-col-week2-bg: #1f2f46;
+            --tc-preview-col-extra-bg: #162132;
+            --tc-preview-col-total-rt-bg: #275037;
+            --tc-preview-col-total-ot-bg: #2f6b49;
+            --tc-preview-col-total-dt-bg: #3b8258;
+            --tc-preview-col-total-dt-text: #d6f7e2;
+            --tc-preview-col-aws-bg: #233044;
+            --tc-preview-empty-text: #9fb0c9;
+            --tc-holiday-detected: #8fb6ff;
+            --tc-holiday-wrap-border: #41506a;
+            --tc-holiday-wrap-bg: #162132;
+            --tc-holiday-grid-border: #334155;
+            --tc-aws-row-border: #334155;
+            --tc-aws-row-label: #c7d8ee;
+            --tc-aws-list-bg: #101826;
+            --tc-aws-list-border: #41506a;
+            --tc-holiday-matrix-muted: #9fb0c9;
+            --tc-admin-switch-track: #4b5563;
+            --tc-admin-switch-track-on: #22c55e;
+            --tc-admin-switch-thumb: #e7ecf3;
+            --tc-admin-switch-label: #9fb0c9;
+            --tc-admin-switch-label-on: #8de9b6;
+            --tc-idle-overlay: rgba(2, 6, 23, 0.74);
+            --tc-shadow: 0 0.625rem 1.5rem rgba(0, 0, 0, 0.44);
+            --tc-theme-control-bg: #1f2a3d;
+            --tc-theme-control-text: #dbe6f5;
           }
           body { 
             font-family: Arial, sans-serif; 
             margin: 0; 
             padding: 0; 
-            background-color: #f5f5f5; 
-            color: #333; 
+            background-color: var(--tc-page-bg); 
+            color: var(--tc-text); 
             min-height: 100dvh; 
             overflow: auto; 
             display: flex; 
@@ -194,10 +600,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             align-items: stretch; 
           }
           .container { 
-            background-color: white; 
+            background-color: var(--tc-surface); 
             padding: clamp(1.25rem, 4vw, 1.75rem); 
             border-radius: clamp(0.625rem, 2vw, 0.875rem); 
-            box-shadow: 0 0.3125rem 0.625rem rgba(0, 0, 0, 0.1); 
+            box-shadow: var(--tc-shadow); 
             width: 100%; 
             max-width: 62rem;
             max-height: none; 
@@ -228,7 +634,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding: 0.45rem 0.75rem;
             font-size: clamp(0.7rem, 2.2vw, 0.9rem);
             margin: 0;
-            background: #0f9d58;
+            background: var(--tc-accent);
+            color: var(--tc-primary-contrast);
           }
           .admin-grid {
             width: max-content;
@@ -239,7 +646,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-grid th,
           .admin-grid td {
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid var(--tc-admin-grid-border);
             padding: 6px;
             vertical-align: top;
           }
@@ -273,16 +680,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 4.85rem;
           }
           .admin-save-clean {
-            background: #9e9e9e;
-            color: #fff;
+            background: var(--tc-admin-save-clean-bg);
+            color: var(--tc-admin-save-clean-text);
           }
           .admin-save-dirty {
-            background: #1a73e8;
-            color: #fff;
+            background: var(--tc-admin-save-dirty-bg);
+            color: var(--tc-admin-save-dirty-text);
           }
           .admin-raw-sub {
             margin-top: 0.2rem;
-            color: #666;
+            color: var(--tc-admin-subtext);
             font-size: 0.72rem;
           }
           .admin-time-pill {
@@ -314,9 +721,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             height: 1.65rem;
             min-height: 1.65rem;
             border-radius: 999px;
-            border: 1px solid #b8c3ce;
-            background: #fff;
-            color: #6b7785;
+            border: 1px solid var(--tc-admin-verify-border);
+            background: var(--tc-admin-verify-bg);
+            color: var(--tc-admin-verify-text);
             padding: 0 !important;
             display: inline-flex;
             align-items: center;
@@ -327,23 +734,23 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
           }
           .admin-verify-toggle.is-on {
-            background: #e8f5e9;
-            border-color: #8fcf95;
-            color: #1b5e20;
+            background: var(--tc-admin-verify-on-bg);
+            border-color: var(--tc-admin-verify-on-border);
+            color: var(--tc-admin-verify-on-text);
           }
           .admin-verify-toggle.static {
             cursor: default;
             opacity: 0.8;
           }
           .admin-time-pill.admin-time-in {
-            background: #eaf7ef;
-            color: #1f6a3b;
-            border: 1px solid #bfe2cd;
+            background: var(--tc-pill-in-bg);
+            color: var(--tc-pill-in-text);
+            border: 1px solid var(--tc-pill-in-border);
           }
           .admin-time-pill.admin-time-out {
-            background: #fff2f1;
-            color: #8d2f2f;
-            border: 1px solid #f3c6c3;
+            background: var(--tc-pill-out-bg);
+            color: var(--tc-pill-out-text);
+            border: 1px solid var(--tc-pill-out-border);
           }
           .admin-time-pill.static {
             pointer-events: none;
@@ -362,9 +769,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-size: 0.78rem;
           }
           .admin-delete-btn {
-            background: #c62828;
-            color: #fff;
-            border: 1px solid #8e0000;
+            background: var(--tc-admin-delete-bg);
+            color: var(--tc-admin-delete-text);
+            border: 1px solid var(--tc-admin-delete-border);
             border-radius: 999px;
             width: 1.65rem !important;
             min-width: 1.65rem;
@@ -379,9 +786,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
           }
           .admin-restore-btn {
-            background: #388e3c;
-            color: #fff;
-            border: 1px solid #1f5f2b;
+            background: var(--tc-admin-restore-bg);
+            color: var(--tc-admin-restore-text);
+            border: 1px solid var(--tc-admin-restore-border);
             border-radius: 999px;
             width: 1.65rem !important;
             min-width: 1.65rem;
@@ -456,13 +863,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             to   { stroke-dashoffset: 0; }
           }
           .admin-group-row td {
-            background: #eceff1;
+            background: var(--tc-admin-group-row-bg);
             font-weight: 700;
             font-size: 0.92rem;
             position: sticky;
             top: 0;
             z-index: 6;
-            box-shadow: inset 0 -1px 0 #cdd6de;
+            box-shadow: inset 0 -1px 0 var(--tc-admin-group-row-edge);
           }
           .admin-group-meta {
             display: flex;
@@ -484,9 +891,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin: 0 !important;
             padding: 0 !important;
             border-radius: 0.2rem !important;
-            border: 1px solid #b8c3d1;
-            background: #f8fafc;
-            color: #334155;
+            border: 1px solid var(--tc-admin-collapse-border);
+            background: var(--tc-admin-collapse-bg);
+            color: var(--tc-admin-collapse-text);
             box-shadow: none;
             font-size: 0.8rem !important;
             line-height: 1;
@@ -503,32 +910,33 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             border-radius: 0.45rem !important;
             font-size: 0.74rem !important;
             line-height: 1.2;
-            background: #eef6ff;
-            color: #1f4f8a;
-            border: 1px solid #c8dcf8;
+            background: var(--tc-admin-add-bg);
+            color: var(--tc-admin-add-text);
+            border: 1px solid var(--tc-admin-add-border);
             box-shadow: none;
             white-space: nowrap;
           }
           .admin-day-row td {
-            background: #dde8f5;
+            background: var(--tc-day-tone-default-bg);
+            color: var(--tc-day-tone-default-text);
             font-weight: 600;
             font-size: 1.02rem;
           }
           .admin-day-row.day-tone-worked td {
-            background: #c7dbf3;
-            color: #1f3f66;
+            background: var(--tc-day-tone-worked-bg);
+            color: var(--tc-day-tone-worked-text);
           }
           .admin-day-row.day-tone-vacation td {
-            background: #f3e1b8;
-            color: #6b4b0b;
+            background: var(--tc-day-tone-vacation-bg);
+            color: var(--tc-day-tone-vacation-text);
           }
           .admin-day-row.day-tone-sick td {
-            background: #f2cccc;
-            color: #7b2c2f;
+            background: var(--tc-day-tone-sick-bg);
+            color: var(--tc-day-tone-sick-text);
           }
           .admin-day-row.day-tone-mixed td {
-            background: #d7d4ef;
-            color: #3f3566;
+            background: var(--tc-day-tone-mixed-bg);
+            color: var(--tc-day-tone-mixed-text);
           }
           .admin-pending-row {
             position: relative;
@@ -542,17 +950,17 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin-top: 0.35rem;
             padding: 0.1rem 0.45rem;
             border-radius: 999px;
-            border: 1px solid #d9b95c;
-            background: #fff8e1;
-            color: #7a5a00;
+            border: 1px solid var(--tc-pending-chip-border);
+            background: var(--tc-pending-chip-bg);
+            color: var(--tc-pending-chip-text);
             font-size: 0.68rem;
             font-weight: 700;
             letter-spacing: 0.01em;
           }
           .admin-deleted-chip {
-            border-color: #c8a8a8;
-            background: #f5e8e8;
-            color: #6b4444;
+            border-color: var(--tc-deleted-chip-border);
+            background: var(--tc-deleted-chip-bg);
+            color: var(--tc-deleted-chip-text);
           }
           @keyframes adminPendingPulse {
             0% { box-shadow: inset 0 0 0 0 rgba(217, 185, 92, 0.14); }
@@ -562,7 +970,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .admin-hours-cell,
           .admin-day-hours {
             font-weight: 700;
-            color: #1a73e8;
+            color: var(--tc-primary);
           }
           .admin-day-total-wrap {
             display: flex;
@@ -589,7 +997,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-day-total-value {
             font-weight: 800;
-            color: #1a73e8;
+            color: var(--tc-primary);
             display: inline-block;
             min-width: 5ch;
             text-align: right;
@@ -610,9 +1018,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             align-items: center;
             justify-content: center;
             gap: 0.3rem;
-            background: #edf3ff;
-            color: #1d4f9a;
-            border: 1px solid #c5d8fb;
+            background: var(--tc-hours-pill-bg);
+            color: var(--tc-hours-pill-text);
+            border: 1px solid var(--tc-hours-pill-border);
             box-sizing: border-box;
           }
           .admin-hours-pill-value {
@@ -627,15 +1035,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-deleted-row td {
             text-decoration: line-through;
-            color: #999;
-            background: #fafafa;
+            color: var(--tc-preview-empty-text);
+            background: var(--tc-surface-muted);
             font-style: italic;
           }
           .entry-type-vacation-row td {
-            background: #fff7e3;
+            background: var(--tc-row-vacation-bg);
           }
           .entry-type-sick-row td {
-            background: #fdeeee;
+            background: var(--tc-row-sick-bg);
           }
           .entry-type-emoji {
             display: inline-flex;
@@ -664,12 +1072,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-deleted-row textarea {
             text-decoration: line-through;
-            color: #aaa;
+            color: var(--tc-note-empty-text);
           }
           .admin-deleted-meta {
             display: block;
             font-size: 0.68rem;
-            color: #c62828;
+            color: var(--tc-danger);
             text-decoration: none;
             font-style: normal;
             font-weight: 600;
@@ -686,15 +1094,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             overflow-wrap: anywhere;
             word-break: break-word;
             font-size: 0.78rem;
-            border: 1px solid #d9e2ec;
+            border: 1px solid var(--tc-note-border);
             border-radius: 0.45rem;
-            background: #fbfdff;
+            background: var(--tc-note-bg);
             padding: 0.35rem 0.5rem;
           }
           .admin-note-line-empty {
-            color: #9aa0a6;
+            color: var(--tc-note-empty-text);
             font-style: italic;
-            background: #fff;
+            background: var(--tc-note-empty-bg);
             border-style: dashed;
           }
           .admin-note-composer {
@@ -714,9 +1122,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             height: 1.65rem;
             min-height: 1.65rem;
             border-radius: 999px;
-            background: #e8f0fe;
-            color: #1a73e8;
-            border: 1px solid #c6dafc;
+            background: var(--tc-admin-add-bg);
+            color: var(--tc-admin-add-text);
+            border: 1px solid var(--tc-admin-add-border);
             font-size: 0.92rem !important;
             line-height: 1;
             padding: 0 !important;
@@ -730,15 +1138,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin-top: 0 !important;
           }
           .admin-workflow-box {
-            border: 1px solid #d9e2f1;
+            border: 1px solid var(--tc-admin-workflow-border);
             border-radius: 0.5rem;
             padding: 0.6rem;
-            background: #f8fbff;
+            background: var(--tc-admin-workflow-bg);
           }
           .admin-dayboard-panel {
             display: flex;
             flex-direction: column;
-            gap: 0.65rem;
+            gap: 0.55rem;
             margin-top: 0.65rem;
           }
           .admin-dayboard-head {
@@ -751,11 +1159,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .admin-dayboard-title {
             font-size: 0.92rem;
             font-weight: 800;
-            color: #203040;
+            color: var(--tc-dayboard-title);
           }
           .admin-dayboard-subtitle {
             margin-top: 0.15rem;
-            color: #5d6c80;
+            color: var(--tc-dayboard-subtitle);
             font-size: 0.78rem;
           }
           .admin-dayboard-summary {
@@ -767,30 +1175,30 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-dayboard-stat {
             min-width: 5.8rem;
-            border: 1px solid #d9e2f1;
+            border: 1px solid var(--tc-dayboard-border);
             border-radius: 0.55rem;
-            background: #fff;
+            background: var(--tc-dayboard-chip-bg);
             padding: 0.42rem 0.55rem;
           }
           .admin-dayboard-stat-label {
             font-size: 0.64rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #5b6a7a;
+            color: var(--tc-dayboard-subtitle);
             font-weight: 700;
           }
           .admin-dayboard-stat-value {
             margin-top: 0.12rem;
             font-size: 0.98rem;
             font-weight: 800;
-            color: #203040;
+            color: var(--tc-dayboard-title);
           }
           .admin-dayboard-board-wrap {
             overflow: auto;
             max-height: min(52vh, 36rem);
-            border: 1px solid #d9e2f1;
+            border: 1px solid var(--tc-dayboard-border);
             border-radius: 0.55rem;
-            background: #fff;
+            background: var(--tc-dayboard-chip-bg);
           }
           .admin-dayboard-board {
             min-width: 48rem;
@@ -804,14 +1212,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             display: grid;
             grid-template-columns: 13rem minmax(0, 1fr);
             min-height: 7rem;
-            border-bottom: 1px solid #e7edf6;
+            border-bottom: 1px solid var(--tc-dayboard-lane-border);
           }
           .admin-dayboard-lane:last-child {
             border-bottom: 0;
           }
           .admin-dayboard-lane-meta {
-            background: #fbfdff;
-            border-right: 1px solid #e7edf6;
+            background: var(--tc-dayboard-meta-bg);
+            border-right: 1px solid var(--tc-dayboard-lane-border);
             padding: 0.65rem;
             display: flex;
             flex-direction: column;
@@ -823,22 +1231,22 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             align-items: center;
             gap: 0.45rem;
             font-weight: 800;
-            color: #203040;
+            color: var(--tc-dayboard-title);
             line-height: 1.15;
           }
           .admin-dayboard-dot {
             width: 0.55rem;
             height: 0.55rem;
             border-radius: 999px;
-            background: #94a3b8;
+            background: var(--tc-dayboard-dot);
             flex: 0 0 auto;
           }
           .admin-dayboard-dot.is-in {
-            background: #22c55e;
+            background: var(--tc-dayboard-dot-in);
             box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
           }
           .admin-dayboard-dot.is-today {
-            background: #1a73e8;
+            background: var(--tc-dayboard-dot-today);
             box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
           }
           .admin-dayboard-status-line {
@@ -850,26 +1258,26 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
-            padding: 0.18rem 0.45rem;
+            padding: 0.14rem 0.4rem;
             border-radius: 999px;
             font-size: 0.68rem;
             font-weight: 700;
             border: 1px solid transparent;
           }
           .admin-dayboard-badge.in-now {
-            background: #e6f7ef;
-            color: #17633a;
-            border-color: #bfe6d0;
+            background: var(--tc-dayboard-badge-in-bg);
+            color: var(--tc-dayboard-badge-in-text);
+            border-color: var(--tc-dayboard-badge-in-border);
           }
           .admin-dayboard-badge.today {
-            background: #e8f0fe;
-            color: #1a5fb4;
-            border-color: #c6dafc;
+            background: var(--tc-dayboard-badge-today-bg);
+            color: var(--tc-dayboard-badge-today-text);
+            border-color: var(--tc-dayboard-badge-today-border);
           }
           .admin-dayboard-badge.unscheduled {
-            background: #f3f6fb;
-            color: #5d6c80;
-            border-color: #d9e2f1;
+            background: var(--tc-dayboard-badge-unscheduled-bg);
+            color: var(--tc-dayboard-badge-unscheduled-text);
+            border-color: var(--tc-dayboard-badge-unscheduled-border);
           }
           .admin-dayboard-lane-body {
             padding: 0.6rem;
@@ -885,7 +1293,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-size: 0.64rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #5b6a7a;
+            color: var(--tc-dayboard-subtitle);
             font-weight: 700;
           }
           .admin-dayboard-chip-row {
@@ -894,7 +1302,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             gap: 0.28rem;
           }
           .admin-dayboard-empty {
-            color: #5d6c80;
+            color: var(--tc-dayboard-subtitle);
             font-size: 0.78rem;
             font-style: italic;
           }
@@ -902,10 +1310,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
-            border: 1px solid #d7e1ee;
+            border: 1px solid var(--tc-dayboard-chip-border);
             border-radius: 0.55rem;
             padding: 0.3rem 0.45rem;
-            background: #fff;
+            background: var(--tc-dayboard-chip-bg);
             font-size: 0.72rem;
             font-weight: 700;
           }
@@ -920,22 +1328,19 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             border: 1px solid transparent;
           }
           .admin-dayboard-session-pill.in {
-            background: #e6f7ef;
-            color: #17633a;
-            border-color: #bfe6d0;
+            background: var(--tc-dayboard-badge-in-bg);
+            color: var(--tc-dayboard-badge-in-text);
+            border-color: var(--tc-dayboard-badge-in-border);
           }
           .admin-dayboard-session-pill.out {
-            background: #edf3fb;
-            color: #33567b;
-            border-color: #cad9ea;
+            background: var(--tc-dayboard-pill-out-bg);
+            color: var(--tc-dayboard-pill-out-text);
+            border-color: var(--tc-dayboard-pill-out-border);
           }
           .admin-dayboard-session-arrow {
-            color: #8595ab;
+            color: var(--tc-dayboard-arrow);
           }
           @media (max-width: 900px) {
-            .admin-dayboard-board {
-              min-width: 42rem;
-            }
             .admin-dayboard-lane {
               grid-template-columns: 10rem minmax(0, 1fr);
             }
@@ -948,37 +1353,36 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-preview-grid th,
           .admin-preview-grid td {
-            border: 1px solid #d6dde7;
+            border: 1px solid var(--tc-preview-border);
             padding: 0.25rem 0.3rem;
             text-align: center;
             vertical-align: middle;
           }
           .admin-preview-grid col.admin-col-email { width: var(--admin-preview-email-width, 7rem); }
-          .admin-preview-grid col.admin-col-week { width: var(--admin-preview-week-width, 2.35rem); }
           .admin-preview-grid col.admin-col-additional { width: var(--admin-preview-additional-width, 2.65rem); }
           .admin-preview-grid col.admin-col-total { width: var(--admin-preview-total-width, 2.65rem); }
           .admin-preview-grid col.admin-col-notes { width: var(--admin-preview-notes-width, 18rem); }
           .admin-preview-grid col.admin-col-aws { width: var(--admin-preview-aws-width, 6.25rem); }
           .admin-preview-grid .admin-preview-title {
-            background: #f3f6fb;
-            color: #203040;
+            background: var(--tc-preview-title-bg);
+            color: var(--tc-preview-title-text);
             font-weight: 700;
             letter-spacing: 0.01em;
             text-align: left;
           }
           .admin-preview-grid .admin-preview-group {
-            background: #dfe8f6;
-            color: #24364d;
+            background: var(--tc-preview-group-bg);
+            color: var(--tc-preview-group-text);
             font-weight: 700;
           }
           .admin-preview-grid .admin-preview-subhead {
-            background: #eef3fb;
-            color: #31445f;
+            background: var(--tc-preview-subhead-bg);
+            color: var(--tc-preview-subhead-text);
             font-weight: 700;
           }
           .admin-preview-grid td:nth-child(1) {
             text-align: left;
-            background: #ffffff;
+            background: var(--tc-preview-col-email-bg);
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -987,32 +1391,32 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .admin-preview-grid td:nth-child(2),
           .admin-preview-grid td:nth-child(3),
           .admin-preview-grid td:nth-child(4) {
-            background: #d9ead3;
+            background: var(--tc-preview-col-week1-bg);
           }
           .admin-preview-grid td:nth-child(5),
           .admin-preview-grid td:nth-child(6),
           .admin-preview-grid td:nth-child(7) {
-            background: #cfe2f3;
+            background: var(--tc-preview-col-week2-bg);
           }
           .admin-preview-grid td:nth-child(8),
           .admin-preview-grid td:nth-child(9),
           .admin-preview-grid td:nth-child(10),
           .admin-preview-grid td:nth-child(11) {
-            background: #ffffff;
+            background: var(--tc-preview-col-extra-bg);
           }
           .admin-preview-grid td:nth-child(12) {
-            background: #b6d7a8;
+            background: var(--tc-preview-col-total-rt-bg);
           }
           .admin-preview-grid td:nth-child(13) {
-            background: #93c47d;
+            background: var(--tc-preview-col-total-ot-bg);
           }
           .admin-preview-grid td:nth-child(14) {
-            background: #6aa84f;
-            color: #10320f;
+            background: var(--tc-preview-col-total-dt-bg);
+            color: var(--tc-preview-col-total-dt-text);
             font-weight: 700;
           }
           .admin-preview-grid td:nth-child(16) {
-            background: #e8e8e8;
+            background: var(--tc-preview-col-aws-bg);
             font-weight: 600;
           }
           .admin-preview-grid td:nth-child(15) {
@@ -1021,8 +1425,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding-bottom: 0.1rem;
           }
           .admin-preview-grid .admin-preview-empty {
-            background: #fff;
-            color: #999;
+            background: var(--tc-preview-col-email-bg);
+            color: var(--tc-preview-empty-text);
             text-align: center;
           }
           .admin-modal-content .admin-preview-note-input {
@@ -1036,10 +1440,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             resize: none !important;
             font-size: 0.72rem !important;
             line-height: 1.05 !important;
-            border: 1px solid #cfd8e3;
+            border: 1px solid var(--tc-input-border);
             border-radius: 0.25rem;
             box-sizing: border-box;
-            background: #fff;
+            background: var(--tc-input-bg);
+            color: var(--tc-text);
             display: block;
           }
           .admin-aws-row {
@@ -1047,14 +1452,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             align-items: center;
             gap: 0.5rem;
             padding: 0.35rem 0;
-            border-bottom: 1px solid #eef2f7;
+            border-bottom: 1px solid var(--tc-aws-row-border);
           }
           .admin-aws-row .admin-switch {
             min-width: 18rem;
           }
           .admin-aws-row .admin-switch-label {
             font-size: 0.82rem;
-            color: #334155;
+            color: var(--tc-aws-row-label);
           }
           .admin-aws-row input[type="date"] {
             width: auto;
@@ -1067,13 +1472,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-holiday-detected {
             margin-top: 0.35rem;
-            color: #2458a6;
+            color: var(--tc-holiday-detected);
             font-size: 0.84rem;
           }
           .admin-holiday-grid-wrap {
-            border: 1px solid #d8e0ea;
+            border: 1px solid var(--tc-holiday-wrap-border);
             border-radius: 0.5rem;
-            background: #fff;
+            background: var(--tc-holiday-wrap-bg);
             max-height: 50vh;
             overflow: auto;
           }
@@ -1085,7 +1490,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-holiday-grid th,
           .admin-holiday-grid td {
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--tc-holiday-grid-border);
             padding: 0.4rem 0.45rem;
             text-align: center;
             vertical-align: middle;
@@ -1095,15 +1500,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .admin-holiday-grid input[type="checkbox"] {
             width: 1.25rem;
             height: 1.25rem;
-            accent-color: #2458a6;
+            accent-color: var(--tc-holiday-detected);
             cursor: pointer;
           }
           .admin-holiday-grid th {
             position: sticky;
             top: 0;
             z-index: 1;
-            background: #f3f6fb;
-            color: #24364d;
+            background: var(--tc-preview-title-bg);
+            color: var(--tc-preview-title-text);
             font-weight: 700;
           }
           .admin-holiday-grid td:first-child,
@@ -1112,23 +1517,23 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             position: sticky;
             left: 0;
             z-index: 2;
-            background: #fff;
+            background: var(--tc-preview-col-email-bg);
           }
           .admin-holiday-grid th:first-child {
-            background: #f3f6fb;
+            background: var(--tc-preview-title-bg);
           }
           .admin-holiday-total {
             font-weight: 700;
-            color: #1e3a8a;
+            color: var(--tc-holiday-detected);
           }
           h2 { 
             font-size: clamp(1.75rem, 6vw, 2rem); 
-            color: #1a73e8; 
+            color: var(--tc-primary); 
             margin: clamp(0.625rem, 2.5vw, 0.875rem) 0; 
           }
           h1 { 
             font-size: clamp(1.5rem, 5.5vw, 1.75rem); 
-            color: #333; 
+            color: var(--tc-text); 
             margin: clamp(0.625rem, 2.5vw, 0.875rem) 0; 
           }
           p { 
@@ -1160,9 +1565,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             align-items: center;
             padding: 0.45rem 0.75rem;
             border-radius: 999px;
-            border: 1px solid #c7d8f2;
-            background: #ecf3ff;
-            color: #1f4f8a;
+            border: 1px solid var(--tc-status-border);
+            background: var(--tc-status-bg);
+            color: var(--tc-status-text);
             box-sizing: border-box;
             font-size: clamp(1.25rem, 4.5vw, 1.5rem);
             font-weight: 700;
@@ -1189,14 +1594,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             animation: archiveSpin 0.8s linear infinite;
           }
           .status-refresh-btn:disabled {
-            background-color: #1a73e8;
+            background-color: var(--tc-button-bg);
             opacity: 0.8;
             cursor: progress;
           }
           .secondary-action-btn {
-            background: #edf2f7;
-            color: #1f3a5f;
-            border: 1px solid #cfd8e3;
+            background: var(--tc-secondary-btn-bg);
+            color: var(--tc-secondary-btn-text);
+            border: 1px solid var(--tc-secondary-btn-border);
             box-shadow: none;
             margin-top: clamp(0.35rem, 1.8vw, 0.55rem);
             margin-bottom: clamp(0.5rem, 2vw, 0.7rem);
@@ -1204,12 +1609,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding: clamp(0.72rem, 2.9vw, 0.95rem);
           }
           .secondary-action-btn:hover {
-            background: #e3ebf5;
+            background: var(--tc-secondary-btn-bg-hover);
           }
           .secondary-action-btn:disabled {
-            background: #e5e7eb;
-            color: #6b7280;
-            border-color: #d1d5db;
+            background: var(--tc-secondary-btn-disabled-bg);
+            color: var(--tc-secondary-btn-disabled-text);
+            border-color: var(--tc-secondary-btn-disabled-border);
             box-shadow: none;
           }
           .manual-entry-helper {
@@ -1217,7 +1622,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             max-width: 25rem;
             margin: -0.35rem 0 0.4rem;
             font-size: clamp(0.86rem, 2.7vw, 0.98rem);
-            color: #546173;
+            color: var(--tc-text-muted);
             text-align: center;
             line-height: 1.2;
           }
@@ -1226,7 +1631,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             max-width: 25rem;
             margin: -0.35rem 0 0.45rem;
             font-size: clamp(0.78rem, 2.5vw, 0.92rem);
-            color: #8d2f2f;
+            color: var(--tc-danger);
             text-align: left;
             line-height: 1.25;
             display: none;
@@ -1245,9 +1650,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin: 0 !important;
             padding: 0.6rem 0.75rem;
             border-radius: 0.7rem;
-            border: 1px solid #c9daef;
-            background: #f6faff;
-            color: #243e63;
+            border: 1px solid var(--tc-schedule-pill-border);
+            background: var(--tc-schedule-pill-bg);
+            color: var(--tc-schedule-pill-text);
             box-shadow: none;
             display: flex;
             flex-direction: column;
@@ -1257,14 +1662,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             text-align: left;
           }
           .schedule-summary-pill:hover {
-            background: #edf5ff;
+            background: var(--tc-schedule-pill-bg-hover);
           }
           .schedule-pill-title {
             font-size: 0.72rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
-            color: #4d6380;
+            color: var(--tc-schedule-pill-title);
           }
           .schedule-pill-body {
             display: block;
@@ -1289,19 +1694,19 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             white-space: nowrap;
           }
           .schedule-segment.on-duty {
-            background: #eaf7ef;
-            color: #1f6a3b;
-            border-color: #bfe2cd;
+            background: var(--tc-segment-duty-bg);
+            color: var(--tc-segment-duty-text);
+            border-color: var(--tc-segment-duty-border);
           }
           .schedule-segment.backup {
-            background: #f1edff;
-            color: #5b46a8;
-            border-color: #d7ccff;
+            background: var(--tc-segment-backup-bg);
+            color: var(--tc-segment-backup-text);
+            border-color: var(--tc-segment-backup-border);
           }
           .schedule-segment.lunch {
-            background: #fff7df;
-            color: #8a5b00;
-            border-color: #f2d27a;
+            background: var(--tc-segment-lunch-bg);
+            color: var(--tc-segment-lunch-text);
+            border-color: var(--tc-segment-lunch-border);
           }
           .schedule-segment-range {
             font-family: 'Roboto Mono', monospace;
@@ -1311,7 +1716,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             opacity: 0.88;
           }
           .schedule-pill-empty {
-            color: #5d6c80;
+            color: var(--tc-schedule-pill-empty);
             font-size: 0.8rem;
             font-style: italic;
           }
@@ -1321,15 +1726,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             gap: 0.55rem;
           }
           .employee-schedule-day-row {
-            border: 1px solid #d8e2ee;
+            border: 1px solid var(--tc-schedule-pill-border);
             border-radius: 0.65rem;
             padding: 0.55rem;
-            background: #fbfdff;
+            background: var(--tc-schedule-day-row-bg);
           }
           .employee-schedule-day-name {
             font-size: 0.86rem;
             font-weight: 700;
-            color: #40556f;
+            color: var(--tc-schedule-day-name);
             margin-bottom: 0.35rem;
           }
           .employee-schedule-day-body {
@@ -1345,8 +1750,26 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             align-items: stretch;
             gap: 0.28rem;
             margin: 0;
-            color: #556477;
+            color: var(--tc-text-muted);
             font-size: clamp(0.68rem, 2vw, 0.86rem);
+          }
+          .theme-mode-controls {
+            width: 100%;
+          }
+          .theme-mode-btn {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            min-height: 2.1rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--tc-border-strong);
+            background: var(--tc-theme-control-bg);
+            color: var(--tc-theme-control-text);
+            font-size: clamp(0.68rem, 2vw, 0.86rem);
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            text-align: center;
           }
           .is-hidden {
             display: none;
@@ -1354,7 +1777,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .ui-scale-controls label {
             margin: 0;
             font-weight: 600;
-            color: #4f5f72;
+            color: var(--tc-text-muted);
             text-align: left;
             padding-left: 0.2rem;
           }
@@ -1370,16 +1793,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin: 0 !important;
             padding: 0.4rem 0.5rem;
             border-radius: 0.45rem;
-            border: 1px solid #c7d3e2;
+            border: 1px solid var(--tc-border-strong);
             box-sizing: border-box;
             line-height: 1.2;
+            background: var(--tc-surface-muted);
           }
           .ui-scale-step-btn {
             width: 2.65rem !important;
             min-width: 2.65rem;
-            max-width: 2.65rem !important;
-            background: #f6f9fd;
-            color: #335377;
+            background: var(--tc-surface-muted);
+            color: var(--tc-primary);
             font-size: 1.1rem;
             font-weight: 700;
             display: inline-flex;
@@ -1391,8 +1814,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .ui-scale-value {
             flex: 1 1 auto;
             width: auto;
-            background: #fff;
-            color: #2f3f53;
+            background: var(--tc-surface);
+            color: var(--tc-text);
             font-size: 0.95rem;
             font-weight: 700;
             display: inline-flex;
@@ -1403,29 +1826,29 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
             margin: clamp(0.875rem, 3.5vw, 1.25rem) 0; 
             text-align: center; 
-            color: #28a745; 
+            color: var(--tc-success); 
           }
           .error { 
             font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
             margin: clamp(0.875rem, 3.5vw, 1.25rem) 0; 
             text-align: center; 
-            color: #dc3545; 
+            color: var(--tc-danger); 
           }
           button { 
             margin: clamp(0.625rem, 2.5vw, 0.875rem) 0; 
             padding: clamp(0.875rem, 3.5vw, 1.25rem); 
             width: 90%; 
             max-width: 25rem; 
-            background-color: #1a73e8; 
-            color: white; 
+            background-color: var(--tc-button-bg); 
+            color: var(--tc-primary-contrast); 
             border: none; 
             border-radius: clamp(0.5rem, 1.5vw, 0.75rem); 
             cursor: pointer; 
             font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
-            box-shadow: 0 0.1875rem 0.375rem rgba(0, 0, 0, 0.1); 
+            box-shadow: var(--tc-button-shadow); 
           }
           button:disabled { 
-            background-color: #ccc; 
+            background-color: var(--tc-button-disabled-bg); 
             cursor: not-allowed; 
           }
           input, textarea { 
@@ -1434,8 +1857,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 90%; 
             max-width: 25rem; 
             font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
-            border: 1px solid #ddd; 
+            border: 1px solid var(--tc-input-border); 
+            background: var(--tc-input-bg);
+            color: var(--tc-text);
             border-radius: clamp(0.5rem, 1.5vw, 0.75rem); 
+          }
+          input::placeholder,
+          textarea::placeholder {
+            color: var(--tc-input-placeholder);
+            opacity: 1;
           }
           textarea { min-height: 80px; resize: vertical; }
           .manual-entry-type-group {
@@ -1451,11 +1881,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             gap: 0.44rem;
             margin: 0;
             padding: 0.25rem 0.56rem;
-            border: 1px solid #cfd8e3;
+            border: 1px solid var(--tc-chip-border);
             border-radius: 999px;
-            background: #fff;
+            background: var(--tc-chip-bg);
             font-size: 1rem;
-            color: #243447;
+            color: var(--tc-chip-text);
           }
           .manual-entry-type-option input {
             margin: 0;
@@ -1467,8 +1897,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .loading { 
             display: none; 
             font-style: italic; 
-            color: #666; 
+            color: var(--tc-text-muted); 
             font-size: clamp(1rem, 3.5vw, 1.25rem); 
+          }
+          .info {
+            color: var(--tc-text-muted);
           }
           .entries { 
             width: 100%; 
@@ -1543,11 +1976,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             gap: 0.5rem;
           }
           .recent-card-day {
-            background: #dfe9f6;
+            background: var(--tc-day-tone-default-bg);
             border-radius: 12px;
             padding: 0.45rem 0.65rem;
             font-weight: 700;
-            color: #1f3f66;
+            color: var(--tc-day-tone-default-text);
             font-size: 0.88rem;
             margin: 0 0 0.2rem 0.18rem;
             position: sticky;
@@ -1556,26 +1989,26 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
           }
           .recent-card-day.day-tone-worked {
-            background: #c7dbf3;
-            color: #1f3f66;
+            background: var(--tc-day-tone-worked-bg);
+            color: var(--tc-day-tone-worked-text);
           }
           .recent-card-day.day-tone-vacation {
-            background: #f3e1b8;
-            color: #6b4b0b;
+            background: var(--tc-day-tone-vacation-bg);
+            color: var(--tc-day-tone-vacation-text);
           }
           .recent-card-day.day-tone-sick {
-            background: #f2cccc;
-            color: #7b2c2f;
+            background: var(--tc-day-tone-sick-bg);
+            color: var(--tc-day-tone-sick-text);
           }
           .recent-card-day.day-tone-mixed {
-            background: #d7d4ef;
-            color: #3f3566;
+            background: var(--tc-day-tone-mixed-bg);
+            color: var(--tc-day-tone-mixed-text);
           }
           .recent-card {
             position: relative;
-            border: 1px solid #d8e0ea;
+            border: 1px solid var(--tc-border);
             border-radius: 13px;
-            background: #fff;
+            background: var(--tc-surface);
             box-shadow: 0 3px 10px rgba(14, 30, 58, 0.08);
             padding: 14px 14px 12px;
             overflow: hidden;
@@ -1587,25 +2020,25 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             top: 0;
             bottom: 0;
             width: 4px;
-            background: #88b1e8;
+            background: var(--tc-recent-accent-worked);
           }
           .recent-card.recent-card-accent-vacation::before {
-            background: #d9a441;
+            background: var(--tc-recent-accent-vacation);
           }
           .recent-card.recent-card-accent-sick::before {
-            background: #d98084;
+            background: var(--tc-recent-accent-sick);
           }
           .recent-card.recent-card-accent-worked::before {
-            background: #88b1e8;
+            background: var(--tc-recent-accent-worked);
           }
           .recent-card.entry-type-vacation-row {
-            background: #fff7e9;
+            background: var(--tc-recent-card-vacation-bg);
           }
           .recent-card.entry-type-sick-row {
-            background: #feeff0;
+            background: var(--tc-recent-card-sick-bg);
           }
           .recent-card.admin-deleted-row {
-            background: #fafafa;
+            background: var(--tc-recent-card-deleted-bg);
           }
           .recent-card-top {
             display: flex;
@@ -1680,11 +2113,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .recent-card-notes .admin-note-line {
             margin: 0;
             border-radius: 0.62rem;
-            background: #f9fbff;
-            border-color: #d6dfeb;
+            background: var(--tc-note-bg);
+            border-color: var(--tc-note-border);
           }
           .recent-card-notes .admin-note-line-empty {
-            background: #ffffff;
+            background: var(--tc-note-empty-bg);
             border-style: dashed;
           }
           .recent-card-note-footer {
@@ -1702,28 +2135,28 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-weight: 700;
             padding: 0.38rem 0.85rem !important;
             border-radius: 999px;
-            background: #e6f0ff;
-            border-color: #bfd3f7;
-            color: #1a73e8;
+            background: var(--tc-recent-note-add-bg);
+            border-color: var(--tc-recent-note-add-border);
+            color: var(--tc-recent-note-add-text);
             white-space: nowrap;
             box-shadow: 0 3px 8px rgba(26, 115, 232, 0.2);
           }
           .recent-card-deleted-text {
-            color: #9a5a5d;
+            color: var(--tc-recent-deleted-pill-text);
             font-size: 0.72rem;
             font-weight: 600;
             padding: 0.2rem 0.45rem;
-            border: 1px solid #e4c4c8;
+            border: 1px solid var(--tc-recent-deleted-pill-border);
             border-radius: 999px;
-            background: #fff4f5;
+            background: var(--tc-recent-deleted-pill-bg);
           }
           .recent-card-notes .admin-note-composer {
             margin-top: 0.22rem;
           }
           .recent-card-notes .admin-note-composer textarea {
             border-radius: 0.62rem;
-            border: 1px solid #c9d7ea;
-            background: #fff;
+            border: 1px solid var(--tc-input-border);
+            background: var(--tc-input-bg);
             min-height: 2.5rem;
           }
           .recent-grid {
@@ -1878,20 +2311,20 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .entries-subtitle {
             margin: 0.25rem 0 0.75rem;
             text-align: left;
-            color: #555;
+            color: var(--tc-text-muted);
             font-size: clamp(0.9rem, 2.8vw, 1.05rem);
             max-width: 100%;
           }
           .app-version {
             margin-top: 1rem;
-            color: #666;
+            color: var(--tc-text-muted);
             font-size: clamp(0.75rem, 2.4vw, 0.9rem);
             text-align: center;
           }
           .layout-debug {
             display: none;
             margin-top: 0.25rem;
-            color: #8a94a6;
+            color: var(--tc-text-muted);
             font-size: clamp(0.72rem, 2.2vw, 0.86rem);
             text-align: center;
           }
@@ -1903,21 +2336,21 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           th, td { 
             padding: 8px; 
             text-align: left; 
-            border-bottom: 1px solid #ddd; 
+            border-bottom: 1px solid var(--tc-table-row-border); 
           }
           th { 
-            background: #f5f5f5; 
+            background: var(--tc-surface-muted); 
             font-weight: 600; 
           }
           a { 
-            color: #1a73e8; 
+            color: var(--tc-link); 
             text-decoration: none; 
             font-size: clamp(1rem, 3vw, 1.2rem); 
           }
           #offlineBar {
             display: none;
-            background-color: #ff9800;
-            color: white;
+            background-color: var(--tc-warning);
+            color: var(--tc-primary-contrast);
             padding: clamp(0.875rem, 3.5vw, 1.25rem);
             text-align: center;
             font-size: clamp(1rem, 3.5vw, 1.25rem);
@@ -1930,8 +2363,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           #idleRefreshBar {
             display: none;
             position: relative;
-            background-color: #f8fafc;
-            color: #1f2937;
+            background-color: var(--tc-surface-muted);
+            color: var(--tc-text);
             padding: 0.34rem 0.55rem;
             text-align: left;
             font-size: 0.72rem;
@@ -1940,7 +2373,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             max-width: none;
             border-radius: 0.8rem;
             box-sizing: border-box;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--tc-border);
             box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
             margin: 0;
             z-index: 1;
@@ -1954,7 +2387,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             line-height: 1.2;
           }
           .idle-refresh-line {
-            color: #374151;
+            color: var(--tc-text-muted);
             font-weight: 600;
             white-space: nowrap;
           }
@@ -1982,7 +2415,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             position: fixed;
             inset: 0;
             z-index: 4000;
-            background: rgba(75, 85, 99, 0.64);
+            background: var(--tc-idle-overlay);
             backdrop-filter: blur(1px);
             -webkit-backdrop-filter: blur(1px);
             align-items: center;
@@ -1991,12 +2424,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .idle-lock-card {
             width: min(32rem, 95vw);
-            background: #f3f4f6;
-            border: 1px solid #9ca3af;
+            background: var(--tc-surface-muted);
+            border: 1px solid var(--tc-border-strong);
             border-radius: 0.85rem;
             box-shadow: 0 14px 30px rgba(15, 23, 42, 0.24);
             padding: 1rem 1rem 0.9rem;
-            color: #111827;
+            color: var(--tc-text);
             display: flex;
             flex-direction: column;
             gap: 0.7rem;
@@ -2008,7 +2441,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .idle-lock-message {
             font-size: clamp(0.9rem, 2.5vw, 1rem);
             line-height: 1.38;
-            color: #374151;
+            color: var(--tc-text-muted);
           }
           .idle-lock-actions {
             display: flex;
@@ -2021,15 +2454,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding: 0.46rem 0.78rem;
             font-size: clamp(0.84rem, 2.3vw, 0.92rem);
             font-weight: 700;
-            border: 1px solid #9ca3af;
-            background: #ffffff;
-            color: #111827;
+            border: 1px solid var(--tc-idle-btn-border);
+            background: var(--tc-idle-btn-bg);
+            color: var(--tc-idle-btn-text);
             cursor: pointer;
           }
           .idle-lock-btn.primary {
-            background: #374151;
-            color: #f9fafb;
-            border-color: #374151;
+            background: var(--tc-idle-primary-bg);
+            color: var(--tc-idle-primary-text);
+            border-color: var(--tc-idle-primary-bg);
           }
           .idle-lock-btn:disabled {
             opacity: 0.65;
@@ -2041,7 +2474,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.5);
+            background: var(--tc-modal-overlay);
             padding: 1rem;
             z-index: 1000;
           }
@@ -2056,13 +2489,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             z-index: 1100;
           }
           .modal-content {
-            background: #fff;
+            background: var(--tc-modal-bg);
             width: min(32rem, 96vw);
             max-height: 90vh;
             overflow-y: auto;
             border-radius: 0.75rem;
             padding: clamp(1rem, 3vw, 1.5rem);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+            box-shadow: var(--tc-modal-shadow);
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
@@ -2082,9 +2515,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin: 0 !important;
             padding: 0 !important;
             border-radius: 999px !important;
-            border: 1px solid #cbd5e1;
-            background: #eef2f7;
-            color: #475569;
+            border: 1px solid var(--tc-admin-close-border);
+            background: var(--tc-admin-close-bg);
+            color: var(--tc-admin-close-text);
             font-size: 1.2rem !important;
             line-height: 1;
             box-shadow: none;
@@ -2141,7 +2574,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 2.2rem;
             height: 1.25rem;
             border-radius: 999px;
-            background: #9aa3ad;
+            background: var(--tc-admin-switch-track);
             transition: background 0.2s ease;
             flex: 0 0 auto;
           }
@@ -2153,39 +2586,39 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 0.95rem;
             height: 0.95rem;
             border-radius: 50%;
-            background: #fff;
+            background: var(--tc-admin-switch-thumb);
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
             transition: transform 0.2s ease;
           }
           .admin-switch-label {
             font-size: 0.88rem;
             font-weight: 600;
-            color: #5f6a76;
+            color: var(--tc-admin-switch-label);
           }
           .admin-switch input:checked + .admin-switch-track {
-            background: #1f9d54;
+            background: var(--tc-admin-switch-track-on);
           }
           .admin-switch input:checked + .admin-switch-track::after {
             transform: translateX(0.95rem);
           }
           .admin-switch input:checked ~ .admin-switch-label {
-            color: #176a39;
+            color: var(--tc-admin-switch-label-on);
           }
           .modal-content h3 {
             margin: 0;
             font-size: clamp(1.5rem, 5vw, 1.75rem);
-            color: #1a73e8;
+            color: var(--tc-link);
           }
           .admin-title-sub {
             font-size: 0.88rem;
-            color: #5f6a76;
+            color: var(--tc-text-muted);
             font-weight: 600;
             margin-left: 0.45rem;
           }
           .modal-note {
             margin: 0;
             font-size: clamp(1rem, 3.5vw, 1.1rem);
-            color: #555;
+            color: var(--tc-text-muted);
           }
           .modal-content label {
             font-weight: 600;
@@ -2214,14 +2647,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .flatpickr-calendar {
             font-size: var(--timecard-picker-font-size);
-            background: #ffffff !important;
-            border: 1px solid #cfd8e3;
+            background: var(--tc-picker-bg) !important;
+            border: 1px solid var(--tc-picker-border);
             border-radius: 0.6rem;
             box-shadow: 0 0.45rem 1rem rgba(15, 23, 42, 0.24);
             width: min(20rem, 92vw);
             opacity: 1 !important;
             z-index: 2200 !important;
             isolation: isolate;
+            color: var(--tc-text) !important;
           }
           .flatpickr-calendar.open,
           .flatpickr-calendar.inline {
@@ -2234,7 +2668,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .flatpickr-calendar .flatpickr-days,
           .flatpickr-calendar .dayContainer {
-            background: #ffffff !important;
+            background: var(--tc-picker-bg) !important;
             width: 100% !important;
             min-width: 100% !important;
             max-width: 100% !important;
@@ -2244,7 +2678,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .flatpickr-months,
           .flatpickr-weekdays,
           .flatpickr-month {
-            background: #ffffff !important;
+            background: var(--tc-picker-bg) !important;
             opacity: 1 !important;
           }
           .flatpickr-calendar .flatpickr-day,
@@ -2255,8 +2689,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             line-height: var(--timecard-picker-cell-size);
           }
           .flatpickr-time {
-            background: #ffffff !important;
-            border-top: 1px solid #e2e8f0;
+            background: var(--tc-picker-bg) !important;
+            border-top: 1px solid var(--tc-picker-time-separator);
             opacity: 1 !important;
             position: relative;
             z-index: 1;
@@ -2264,7 +2698,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .flatpickr-time input,
           .flatpickr-time .flatpickr-am-pm,
           .flatpickr-time .numInputWrapper {
-            background: #ffffff !important;
+            background: var(--tc-picker-bg) !important;
+            color: var(--tc-text) !important;
             opacity: 1 !important;
           }
           .flatpickr-calendar .flatpickr-weekday {
@@ -2289,9 +2724,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .modal-content input.manual-picker-invalid,
           .modal-content input.admin-picker-invalid {
-            border-color: #d93025 !important;
-            background: #fff2f2 !important;
-            box-shadow: 0 0 0 1px rgba(217, 48, 37, 0.22) inset;
+            border-color: var(--tc-input-invalid-border) !important;
+            background: var(--tc-input-invalid-bg) !important;
+            box-shadow: 0 0 0 1px var(--tc-input-invalid-shadow) inset;
           }
           .flatpickr-day.flatpickr-disabled,
           .flatpickr-time .flatpickr-disabled {
@@ -2308,8 +2743,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 100%;
           }
           .modal-actions .secondary {
-            background: #e0e0e0;
-            color: #333;
+            background: var(--tc-secondary-btn-bg);
+            color: var(--tc-secondary-btn-text);
+            border: 1px solid var(--tc-secondary-btn-border);
           }
           .modal-close-x {
             position: absolute;
@@ -2322,9 +2758,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding: 0;
             margin: 0;
             border-radius: 999px;
-            border: 1px solid #d0d7de;
-            background: #fff;
-            color: #666;
+            border: 1px solid var(--tc-modal-close-border);
+            background: var(--tc-modal-close-bg);
+            color: var(--tc-modal-close-text);
             font-size: 1rem;
             font-weight: 700;
             line-height: 1;
@@ -2334,21 +2770,21 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             cursor: pointer;
           }
           .modal-close-x:hover {
-            background: #f4f4f4;
-            color: #333;
+            background: var(--tc-modal-close-hover-bg);
+            color: var(--tc-modal-close-hover-text);
           }
           .archive-loading {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             font-size: clamp(0.95rem, 3.2vw, 1.05rem);
-            color: #666;
+            color: var(--tc-text-muted);
           }
           .archive-spinner {
             width: 1rem;
             height: 1rem;
-            border: 2px solid #ddd;
-            border-top-color: #1a73e8;
+            border: 2px solid var(--tc-border);
+            border-top-color: var(--tc-primary);
             border-radius: 50%;
             animation: archiveSpin 0.8s linear infinite;
           }
@@ -2384,7 +2820,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             position: sticky;
             top: 0;
             z-index: 1;
-            background: #f5f7fa;
+            background: var(--tc-surface-muted);
           }
           .archive-table.recent-grid th,
           .archive-table.recent-grid td {
@@ -2443,7 +2879,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .archive-table td[data-label="Archived"] {
             font-variant-numeric: tabular-nums;
-            color: #36414d;
+            color: var(--tc-text-muted);
           }
           .archive-table.recent-grid th:nth-child(4),
           .archive-table.recent-grid td:nth-child(4) {
@@ -2457,8 +2893,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .archive-range-panel {
             display: none;
             width: 100%;
-            background: #f7f9fc;
-            border: 1px solid #dfe5ee;
+            background: var(--tc-surface-muted);
+            border: 1px solid var(--tc-border);
             border-radius: 0.6rem;
             padding: 0.65rem;
             box-sizing: border-box;
@@ -2704,6 +3140,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 <button type="button" class="ui-scale-step-btn" onclick="stepUiScale(1)" aria-label="Increase UI scale">+</button>
               </div>
             </div>
+            <div class="theme-mode-controls">
+              <button id="themeModeToggleBtn" type="button" class="theme-mode-btn" onclick="toggleThemeMode()" aria-live="polite">Theme: --</button>
+            </div>
             <div id="idleRefreshBar" aria-live="polite">
               <div class="idle-refresh-row">
                 <span id="idleRefreshAuto" class="idle-refresh-line">Auto Refresh -- min</span>
@@ -2838,7 +3277,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                     </tr>
                   </thead>
                   <tbody id="archiveReviewBody">
-                    <tr><td colspan="4" style="text-align: center; color: #999;">Select dates to load entries.</td></tr>
+                    <tr><td colspan="4" style="text-align: center; color: var(--tc-preview-empty-text);">Select dates to load entries.</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -2898,14 +3337,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           <div id="moreReportsModal" class="modal" style="display: none;">
             <div class="modal-content admin-modal-content" style="width:min(46rem,96vw); height:min(48rem,92vh); padding:0; overflow:hidden; position:relative;">
               <button class="admin-close-btn" type="button" aria-label="Close more reports" title="Close" onclick="closeMoreReportsModal()">&#10005;</button>
-              <iframe id="moreReportsFrame" title="Create Report" style="width:100%; height:100%; border:0; background:#fff;"></iframe>
+              <iframe id="moreReportsFrame" title="Create Report" style="width:100%; height:100%; border:0; background:var(--tc-surface);"></iframe>
             </div>
           </div>
 
           <div id="scheduleToolModal" class="modal" style="display: none;">
             <div class="modal-content admin-modal-content" style="width:min(98vw,120rem); height:min(96vh,78rem); padding:0; overflow:hidden; position:relative;">
               <button class="admin-close-btn" type="button" aria-label="Close schedule tool" title="Close" onclick="closeScheduleToolModal()">&#10005;</button>
-              <iframe id="scheduleToolFrame" title="Schedule Tool" style="width:100%; height:100%; border:0; background:#fff;"></iframe>
+              <iframe id="scheduleToolFrame" title="Schedule Tool" style="width:100%; height:100%; border:0; background:var(--tc-surface);"></iframe>
             </div>
           </div>
 
@@ -2922,7 +3361,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <div id="adminHtmlPreviewMsg" class="info">Refresh entries and generate preview to see totals.</div>
               <div id="adminHtmlHolidayDetectedLine" class="admin-holiday-detected" style="display:none;">holidays detected in pay period</div>
 
-              <div style="overflow:auto; max-height:52vh; border:1px solid #e0e0e0; border-radius:8px;">
+              <div style="overflow:auto; max-height:52vh; border:1px solid var(--tc-border); border-radius:8px;">
                 <table class="admin-preview-grid" style="min-width:0;">
                   <colgroup>
                     <col class="admin-col-email">
@@ -2984,8 +3423,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <button class="admin-close-btn" type="button" aria-label="Close AWS settings" title="Close" onclick="closeAdminHtmlAwsModal()">&#10005;</button>
               <h3>AWS Settings</h3>
               <p class="modal-note">Rarely used setting. Enable only where needed and set each effective date.</p>
-              <div id="adminHtmlAwsSettingsList" style="border:1px solid #d8e0ea; border-radius:6px; background:#fff; max-height:48vh; overflow-y:auto; padding:8px 10px;">
-                <div style="text-align:center; color:#999;">Loading employees...</div>
+              <div id="adminHtmlAwsSettingsList" style="border:1px solid var(--tc-aws-list-border); border-radius:6px; background:var(--tc-aws-list-bg); max-height:48vh; overflow-y:auto; padding:8px 10px;">
+                <div style="text-align:center; color:var(--tc-preview-empty-text);">Loading employees...</div>
               </div>
               <p id="adminHtmlAwsError" class="error" style="display:none;"></p>
               <div class="modal-actions">
@@ -3000,7 +3439,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <h3>Add Holiday Pay</h3>
               <p id="adminHtmlHolidayHelp" class="modal-note">Choose holidays per employee. Checked holidays add 8 hours (non-AWS) or 10 hours (AWS on holiday date).</p>
               <div class="admin-holiday-grid-wrap">
-                <div id="adminHtmlHolidayMatrix" style="min-height:8rem; display:flex; align-items:center; justify-content:center; color:#7a8797;">Generate report preview to load employees and holidays.</div>
+                <div id="adminHtmlHolidayMatrix" style="min-height:8rem; display:flex; align-items:center; justify-content:center; color:var(--tc-holiday-matrix-muted);">Generate report preview to load employees and holidays.</div>
               </div>
               <p id="adminHtmlHolidayError" class="error" style="display:none;"></p>
               <div class="modal-actions">
@@ -3067,6 +3506,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           const UI_SCALE_MAX_PERCENT = 300;
           const UI_SCALE_BASE_FONT_SIZE_PX = 20;
           const UI_SCALE_PRESET_VALUES = [85, 90, 95, 100, 105, 110, 115, 120, 130, 140, 150, 175, 200, 225, 250, 275, 300];
+          const THEME_MODE_LOCAL_STORAGE_KEY = 'timecard_theme_mode';
+          const INITIAL_THEME_MODE_FROM_SERVER = ${JSON.stringify((function () {
+        const raw = String(storedThemeModeFromServer || '').trim().toLowerCase();
+        return raw === 'light' || raw === 'dark' ? raw : '';
+    })())};
           const MANUAL_ENTRY_MAX_SPAN_MS = 14 * 60 * 60 * 1000;
           const MANUAL_PICKER_MINUTE_INCREMENT = 1;
           const MANUAL_PICKER_STEP_MS = MANUAL_PICKER_MINUTE_INCREMENT * 60 * 1000;
@@ -3136,6 +3580,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let idleHardRefreshInFlight = false;
           let idleLockActive = false;
           let idleLockMode = '';
+          let currentThemeMode = '';
 
           function getScheduleDayNamesClient() {
             return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -3416,7 +3861,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                     '</div>' +
                   '</article>';
                 }).join('')
-              : '<div style="padding:0.75rem; color:#5d6c80; font-style:italic;">No employee rows available for today.</div>';
+              : '<div style="padding:0.75rem; color:var(--tc-text-muted); font-style:italic;">No employee rows available for today.</div>';
 
             board.innerHTML = '<div class="admin-dayboard-lanes">' + lanesHtml + '</div>';
           }
@@ -3674,6 +4119,84 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               percent,
               source: storedPercent === null ? 'device-default' : 'stored'
             });
+          }
+
+          function normalizeThemeMode(value) {
+            const normalized = String(value || '').trim().toLowerCase();
+            return normalized === 'light' || normalized === 'dark' ? normalized : '';
+          }
+
+          function readStoredThemeMode() {
+            try {
+              return normalizeThemeMode(window.localStorage.getItem(THEME_MODE_LOCAL_STORAGE_KEY));
+            } catch (e) {
+              return '';
+            }
+          }
+
+          function persistThemeModeToLocal(mode) {
+            try {
+              window.localStorage.setItem(THEME_MODE_LOCAL_STORAGE_KEY, mode);
+            } catch (e) {
+              // No-op when storage is unavailable.
+            }
+          }
+
+          function detectSystemThemeMode() {
+            try {
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+                return 'light';
+              }
+              if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return 'dark';
+              }
+            } catch (e) {
+              // Ignore and use fallback.
+            }
+            return 'dark';
+          }
+
+          function updateThemeToggleButton() {
+            const btn = document.getElementById('themeModeToggleBtn');
+            if (!btn) return;
+            const mode = normalizeThemeMode(currentThemeMode) || 'dark';
+            const nextMode = mode === 'dark' ? 'Light' : 'Dark';
+            btn.innerText = mode === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+            btn.title = 'Switch to ' + nextMode + ' mode';
+            btn.setAttribute('aria-label', 'Switch to ' + nextMode + ' mode');
+          }
+
+          function applyThemeMode(mode, persistServer) {
+            const resolved = normalizeThemeMode(mode) || 'dark';
+            currentThemeMode = resolved;
+            document.documentElement.setAttribute('data-theme', resolved);
+            persistThemeModeToLocal(resolved);
+            updateThemeToggleButton();
+            if (persistServer === true && window.google && google.script && google.script.run) {
+              google.script.run
+                .withFailureHandler(() => {
+                  // Keep local mode even if server write fails.
+                })
+                .saveUserThemePreference(resolved);
+            }
+            return resolved;
+          }
+
+          function initializeThemeMode() {
+            const serverMode = normalizeThemeMode(INITIAL_THEME_MODE_FROM_SERVER);
+            const localMode = readStoredThemeMode();
+            const resolved = serverMode || localMode || detectSystemThemeMode() || 'dark';
+            applyThemeMode(resolved, serverMode ? false : true);
+            debugClientLog('theme.initialized', {
+              mode: resolved,
+              source: serverMode ? 'server' : (localMode ? 'local' : 'system-fallback')
+            });
+          }
+
+          function toggleThemeMode() {
+            const current = normalizeThemeMode(currentThemeMode) || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            applyThemeMode(next, true);
           }
 
           function updateClockNotePlaceholder() {
@@ -4390,6 +4913,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
              updateOfflineBar();
            }
           
+          initializeThemeMode();
           initializeOfflineDetection();
           initializeIdleRefreshManager();
           initializeUiScale();
@@ -4569,7 +5093,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
 
             if (displayEntries.length === 0) {
-              if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No entries yet</td></tr>';
+              if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--tc-preview-empty-text);">No entries yet</td></tr>';
               if (cards) cards.innerHTML = emptyHtml;
               return;
             }
@@ -5339,7 +5863,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 if (msg) msg.innerText = message;
                 alert(message);
               })
-              .getCreateReportDialogHtml();
+              .getCreateReportDialogHtml(currentThemeMode);
           }
 
           function closeMoreReportsModal() {
@@ -5378,7 +5902,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 if (msg) msg.innerText = message;
                 alert(message);
               })
-              .getScheduleToolDialogHtml();
+              .getScheduleToolDialogHtml(currentThemeMode);
           }
 
           function closeScheduleToolModal() {
@@ -5585,7 +6109,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             const container = document.getElementById('adminHtmlAwsSettingsList');
             if (container) {
-              container.innerHTML = '<div style="text-align:center; color:#999;">Loading employees...</div>';
+              container.innerHTML = '<div style="text-align:center; color:var(--tc-preview-empty-text);">Loading employees...</div>';
             }
             google.script.run
               .withSuccessHandler((config) => {
@@ -5599,7 +6123,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               })
               .withFailureHandler((error) => {
                 if (container) {
-                  container.innerHTML = '<div style="color:#d32f2f;">Failed to load AWS config: ' + escapeHtml((error && error.message) ? error.message : 'Unknown error') + '</div>';
+                  container.innerHTML = '<div style="color:var(--tc-danger);">Failed to load AWS config: ' + escapeHtml((error && error.message) ? error.message : 'Unknown error') + '</div>';
                 }
                 // Re-enable the generate button even on failure
                 const generateBtn = document.getElementById('adminHtmlGenerateBtn');
@@ -5613,7 +6137,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (!container) return;
             const emails = Object.keys(adminHtmlPreviewAwsDraftConfig || {}).sort();
             if (emails.length === 0) {
-              container.innerHTML = '<div style="color:#999;">No employees found.</div>';
+              container.innerHTML = '<div style="color:var(--tc-preview-empty-text);">No employees found.</div>';
               return;
             }
 
@@ -5992,15 +6516,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
             const ctx = getAdminHtmlHolidayContext();
             if (!ctx.payload) {
-              matrix.innerHTML = '<div style="color:#7a8797;">Generate report preview to load employees and holidays.</div>';
+              matrix.innerHTML = '<div style="color:var(--tc-holiday-matrix-muted);">Generate report preview to load employees and holidays.</div>';
               return;
             }
             if (ctx.rows.length === 0) {
-              matrix.innerHTML = '<div style="color:#7a8797;">No employees in current preview.</div>';
+              matrix.innerHTML = '<div style="color:var(--tc-holiday-matrix-muted);">No employees in current preview.</div>';
               return;
             }
             if (ctx.holidays.length === 0) {
-              matrix.innerHTML = '<div style="color:#7a8797;">No holidays detected in this pay period.</div>';
+              matrix.innerHTML = '<div style="color:var(--tc-holiday-matrix-muted);">No holidays detected in this pay period.</div>';
               return;
             }
 
@@ -6753,7 +7277,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
 
             if (records.length === 0) {
-              body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No rows found for this filter.</td></tr>';
+              body.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--tc-preview-empty-text);">No rows found for this filter.</td></tr>';
               return;
             }
 
@@ -8531,7 +9055,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
             loadingEl.style.display = 'flex';
             loadBtn.disabled = true;
-            bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">Loading...</td></tr>';
+            bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--tc-preview-empty-text);">Loading...</td></tr>';
 
             google.script.run
               .withSuccessHandler((result) => {
@@ -8540,7 +9064,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 if (!result || !result.success) {
                   errorEl.innerText = (result && result.message) ? result.message : 'Unable to load archived entries.';
                   errorEl.style.display = 'block';
-                  bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No entries loaded.</td></tr>';
+                  bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--tc-preview-empty-text);">No entries loaded.</td></tr>';
                   return;
                 }
                 renderArchivedEntries(result.entries || []);
@@ -8552,7 +9076,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 loadBtn.disabled = false;
                 errorEl.innerText = error.message || 'Unable to load archived entries.';
                 errorEl.style.display = 'block';
-                bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No entries loaded.</td></tr>';
+                bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--tc-preview-empty-text);">No entries loaded.</td></tr>';
               })
               .getArchivedEntriesForUser(startInput.value, endInput.value);
           }
@@ -8562,7 +9086,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const displayEntries = Array.isArray(entries) ? entries.slice() : [];
 
             if (displayEntries.length === 0) {
-              bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No archived entries in this range.</td></tr>';
+              bodyEl.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--tc-preview-empty-text);">No archived entries in this range.</td></tr>';
               return;
             }
 

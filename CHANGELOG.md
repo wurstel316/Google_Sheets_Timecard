@@ -7,6 +7,46 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Performed a simplification pass by removing the legacy dark-only override block that had become redundant after token migration, and replaced it with a single shared `.info` rule.
+- Why: Reduces CSS size and cascade complexity while preserving identical theme behavior through existing token-based styles.
+- Files: src/UserInterface.js
+- Validation: Confirmed removed dark override selectors had no remaining unique behavior requirements, added token-based `.info` base styling, and verified diagnostics plus node --check pass.
+
+- Summary: Completed a hardcoded style/color cleanup pass by tokenizing remaining semantic action/button/row states, recent-card accents, iframe and preview-shell inline colors, and AWS error/empty-state inline text colors.
+- Why: Eliminates non-standard hardcoded colors outside token definitions so light/dark theming is consistent and easier to maintain without extra runtime logic.
+- Files: src/UserInterface.js
+- Validation: Replaced remaining selector and inline-style hardcoded hex values with theme variables, verified no non-token hardcoded color selectors remain in targeted sweeps, and confirmed diagnostics plus node --check pass.
+
+- Summary: Standardized element-level color tokens for form fields, picker surfaces, modal secondary/close controls, note surfaces, table row borders, and empty-state text so border/background/text behavior is consistent across light and dark mode.
+- Why: Removes remaining hardcoded neutral colors in high-use UI elements, improving visual consistency and reducing dark-mode contrast glitches without adding runtime overhead.
+- Files: src/UserInterface.js
+- Validation: Added shared field/picker/neutral tokens to both theme roots, migrated targeted selectors and inline empty-state styles to token usage, and confirmed src/UserInterface.js diagnostics plus node --check pass.
+
+- Summary: Completed Zone 5 theme tokenization for the admin dayboard, payroll preview table, holiday matrix surfaces, and AWS settings container, and removed now-redundant dark-only overrides for those selectors.
+- Why: Finishes the staged minimal-CSS refactor by collapsing duplicated dark override rules into shared token-based selectors for lower cascade complexity and stable runtime repaint behavior.
+- Files: src/UserInterface.js
+- Validation: Repaired malformed Zone 5 CSS block boundaries, replaced hardcoded color values with semantic variables, removed matching dark overrides, updated runtime placeholder styles to use tokens, and confirmed src/UserInterface.js passes diagnostics plus node --check.
+
+- Summary: Started zone-by-zone tokenization by converting shared shell/primitives to semantic theme tokens and trimming redundant dark-mode overrides.
+- Why: Reduces CSS cascade complexity and runtime styling conflict risk while keeping theme switching fast and visually stable.
+- Files: src/UserInterface.js
+- Validation: Tokenized shared controls/status/buttons/inputs/modal shell text colors, removed matching dark-only override entries that became redundant, and confirmed diagnostics plus syntax checks pass.
+
+- Summary: Added project-wide light/dark mode support with integrated theme controls, per-user theme persistence, and cross-frame synchronization between the main app, Schedule Tool, and admin report surfaces.
+- Why: Enables users to swap all interactive UI to light or dark mode consistently across the application and retain their preference across sessions.
+- Files: src/UserInterface.js, src/ScheduleHTML.html, src/Code.js
+- Validation: Added theme token layers and runtime toggles, passed theme mode into embedded dialogs/iframes, synced iframe theme updates back to the parent app, and confirmed diagnostics report no errors for all touched files.
+
+- Summary: Reduced theme runtime overhead by removing redundant live cross-frame theme listeners and unused theme read API while preserving per-user persistence and open-time theme alignment.
+- Why: Keeps implementation minimal and improves stability/performance by avoiding extra event wiring and parent-frame mutation work.
+- Files: src/UserInterface.js, src/ScheduleHTML.html, src/Code.js
+- Validation: Removed `timecard-theme-change` emit/listener flow and parent write-back path in schedule iframe, retained server-side theme injection for generated HTML, and confirmed diagnostics/syntax checks pass.
+
+- Summary: Fixed malformed UI scale control CSS introduced during theme edits.
+- Why: Prevents style parsing glitches and unintended button coloration/regressions.
+- Files: src/UserInterface.js
+- Validation: Restored proper rule closure and consistent token-based styling for `ui-scale-step-btn`/`ui-scale-value`; verified diagnostics and syntax checks pass.
+
 - Summary: Aligned the top control pills into a single left-edge stack by placing Display Menu, idle timer pill, and Admin View together with matching widths.
 - Why: Ensures consistent edge alignment and equal visual sizing for the requested top-of-page controls.
 - Files: src/UserInterface.js

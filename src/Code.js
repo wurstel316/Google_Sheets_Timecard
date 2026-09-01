@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.109 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.113 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -836,7 +836,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.109';
+const SCRIPT_VERSION = '2.2.2-push.113';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -849,6 +849,7 @@ const SCHEDULE_SETTINGS_HEADERS = ['Key', 'Value', 'Updated At', 'Updated By'];
 const SCHEDULE_STATE_KEY = 'schedule_state_json';
 const SCHEDULE_DELETED_STATE_KEY = 'schedule_deleted_employees_json';
 const SCHEDULE_STATE_SCHEMA_VERSION = 1;
+const USER_THEME_MODE_KEY = 'ui_theme_mode';
 /**
  * @typedef {Object} AWSConfigEntry
  * @property {boolean} enabled
@@ -859,6 +860,48 @@ const SCHEDULE_STATE_SCHEMA_VERSION = 1;
  */
 const DEBUG_PAYROLL_CALCULATIONS = true;
 const DEBUG_LOG_PREFIX = '[AWS-DEBUG] ';
+
+function normalizeThemeMode_(value) {
+    const mode = String(value || '').trim().toLowerCase();
+    return mode === 'light' || mode === 'dark' ? mode : '';
+}
+
+function getStoredUserThemeMode_() {
+    try {
+        const props = PropertiesService.getUserProperties();
+        return normalizeThemeMode_(props.getProperty(USER_THEME_MODE_KEY));
+    }
+    catch (_e) {
+        return '';
+    }
+}
+
+function resolveRequestedThemeMode_(preferredThemeMode) {
+    return normalizeThemeMode_(preferredThemeMode) || getStoredUserThemeMode_() || 'dark';
+}
+
+function injectThemeModeIntoHtml_(rawHtml, preferredThemeMode) {
+    const html = String(rawHtml || '');
+    const resolvedThemeMode = resolveRequestedThemeMode_(preferredThemeMode);
+    const inject = `<script>(function(){try{document.documentElement.setAttribute('data-theme','${resolvedThemeMode}');}catch(_e){}})();</script>`;
+    if (html.indexOf('<head>') > -1) {
+        return html.replace('<head>', '<head>' + inject);
+    }
+    if (html.indexOf('<body>') > -1) {
+        return html.replace('<body>', '<body>' + inject);
+    }
+    return inject + html;
+}
+
+function saveUserThemePreference(themeMode) {
+    const normalized = normalizeThemeMode_(themeMode);
+    if (!normalized) {
+        return { success: false, message: 'Invalid theme mode.', themeMode: '' };
+    }
+    PropertiesService.getUserProperties().setProperty(USER_THEME_MODE_KEY, normalized);
+    return { success: true, message: '', themeMode: normalized };
+}
+
 function getScriptVersion() {
     return SCRIPT_VERSION;
 }
@@ -932,7 +975,8 @@ function doGet(e) {
         const permissionFlags = getCurrentUserPermissionFlags();
         const schedulePreviewResult = getCurrentUserSchedulePreview();
         const preloadedSchedulePreview = schedulePreviewResult && schedulePreviewResult.preview ? schedulePreviewResult.preview : null;
-        return HtmlService.createHtmlOutput(createMobileHtml(userEmail, statusObj, entries, ss.getId(), activePayPeriod.startDateStr, activePayPeriod.endDateStr, allowedRangeForClient, getScriptVersion(), permissionFlags, preloadedSchedulePreview))
+        const storedThemeMode = getStoredUserThemeMode_();
+        return HtmlService.createHtmlOutput(createMobileHtml(userEmail, statusObj, entries, ss.getId(), activePayPeriod.startDateStr, activePayPeriod.endDateStr, allowedRangeForClient, getScriptVersion(), permissionFlags, preloadedSchedulePreview, storedThemeMode))
             .setTitle('TimeCard System')
             .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     }
@@ -3477,11 +3521,11 @@ function fetchAWSConfigForDialog() {
     debugLog('fetchAWSConfigForDialog complete', { employeeCount: Object.keys(config).length });
     return config;
 }
-function getScheduleToolDialogHtml() {
+function getScheduleToolDialogHtml(preferredThemeMode) {
     if (!hasPermission('payroll') || !hasPermission('edit')) {
         return '<div style="font-family:Arial,sans-serif;padding:16px;color:#b91c1c;">Payroll and edit permissions are required.</div>';
     }
-    return HtmlService.createHtmlOutputFromFile('ScheduleHTML').getContent();
+    return injectThemeModeIntoHtml_(HtmlService.createHtmlOutputFromFile('ScheduleHTML').getContent(), preferredThemeMode);
 }
 function getStoredScheduleToolData_() {
     return getStoredScheduleState_();
@@ -4236,7 +4280,7 @@ function executeGeneratePreview(startDate) {
  * Open dialog to manually set current pay period start date.
  * End date is auto-calculated as start date + 13 days.
  */
-function openSetCurrentPayPeriodDialog() {
+function openSetCurrentPayPeriodDialog(preferredThemeMode) {
     const startMs = Date.now();
     const tz = Session.getScriptTimeZone();
     const activePeriod = getActivePayPeriod();
@@ -4253,33 +4297,58 @@ function openSetCurrentPayPeriodDialog() {
     const defaultEndIso = formatIsoLocal(defaultEndDate);
     const defaultStartDisplay = Utilities.formatDate(defaultStartDate, tz, 'MM/dd/yyyy');
     const defaultEndDisplay = Utilities.formatDate(defaultEndDate, tz, 'MM/dd/yyyy');
+    const resolvedThemeMode = resolveRequestedThemeMode_(preferredThemeMode);
     const html = `
     <!DOCTYPE html>
     <html>
       <head>
         <style>
-          body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+                    :root {
+                        --dlg-bg: #ffffff;
+                        --dlg-surface: #f8f9fa;
+                        --dlg-text: #1f2937;
+                        --dlg-muted: #666666;
+                        --dlg-border: #d1d5db;
+                        --dlg-border-strong: #9ca3af;
+                        --dlg-primary: #1a73e8;
+                        --dlg-primary-contrast: #ffffff;
+                        --dlg-secondary: #e0e0e0;
+                        --dlg-danger: #d32f2f;
+                    }
+                    :root[data-theme="dark"] {
+                        --dlg-bg: #111827;
+                        --dlg-surface: #1f2937;
+                        --dlg-text: #e5edf7;
+                        --dlg-muted: #9ca3af;
+                        --dlg-border: #374151;
+                        --dlg-border-strong: #4b5563;
+                        --dlg-primary: #60a5fa;
+                        --dlg-primary-contrast: #0b1220;
+                        --dlg-secondary: #334155;
+                        --dlg-danger: #f87171;
+                    }
+                    body { font-family: Arial, sans-serif; padding: 20px; margin: 0; background: var(--dlg-bg); color: var(--dlg-text); }
           .form-group { margin: 14px 0; }
           label { display: block; font-weight: bold; margin-bottom: 6px; }
-          input { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; }
+                    input { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; background: var(--dlg-bg); color: var(--dlg-text); border: 1px solid var(--dlg-border); }
           button { padding: 10px 20px; margin: 5px 5px 5px 0; cursor: pointer; font-size: 14px; }
-          .primary { background: #1a73e8; color: white; border: none; border-radius: 4px; }
-          .secondary { background: #e0e0e0; color: #333; border: none; border-radius: 4px; }
-          .error { color: #d32f2f; margin-top: 10px; display: none; }
-          .info { color: #666; font-size: 12px; margin-top: 5px; }
-          .preview { background: #f8f9fa; border-left: 4px solid #1a73e8; padding: 10px; margin-top: 10px; }
+                    .primary { background: var(--dlg-primary); color: var(--dlg-primary-contrast); border: none; border-radius: 4px; }
+                    .secondary { background: var(--dlg-secondary); color: var(--dlg-text); border: none; border-radius: 4px; }
+                    .error { color: var(--dlg-danger); margin-top: 10px; display: none; }
+                    .info { color: var(--dlg-muted); font-size: 12px; margin-top: 5px; }
+                    .preview { background: var(--dlg-surface); border-left: 4px solid var(--dlg-primary); padding: 10px; margin-top: 10px; }
           .preview-title { font-weight: bold; margin-bottom: 4px; }
-          #submitBtn:disabled { background: #ccc; cursor: not-allowed; }
-                    .idle-bar { display: none; margin-bottom: 12px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 12px; }
+                    #submitBtn:disabled { background: var(--dlg-border-strong); cursor: not-allowed; }
+                                        .idle-bar { display: none; margin-bottom: 12px; padding: 8px 10px; border: 1px solid var(--dlg-border); border-radius: 6px; background: var(--dlg-surface); color: var(--dlg-text); font-size: 12px; }
                     .idle-bar.show { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-                    .idle-bar button { padding: 5px 9px; font-size: 12px; border: 1px solid #9ca3af; border-radius: 5px; background: #fff; cursor: pointer; }
+                                        .idle-bar button { padding: 5px 9px; font-size: 12px; border: 1px solid var(--dlg-border-strong); border-radius: 5px; background: var(--dlg-bg); color: var(--dlg-text); cursor: pointer; }
                     .idle-lock-overlay { position: fixed; inset: 0; background: rgba(75, 85, 99, 0.6); display: none; align-items: center; justify-content: center; z-index: 20; padding: 12px; }
-                    .idle-lock-card { width: min(400px, 95vw); background: #f9fafb; border: 1px solid #9ca3af; border-radius: 8px; padding: 12px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22); }
-                    .idle-lock-title { font-weight: 700; margin-bottom: 6px; color: #111827; }
-                    .idle-lock-message { color: #374151; font-size: 12px; line-height: 1.35; margin-bottom: 10px; }
+                                        .idle-lock-card { width: min(400px, 95vw); background: var(--dlg-surface); border: 1px solid var(--dlg-border-strong); border-radius: 8px; padding: 12px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22); }
+                                        .idle-lock-title { font-weight: 700; margin-bottom: 6px; color: var(--dlg-text); }
+                                        .idle-lock-message { color: var(--dlg-muted); font-size: 12px; line-height: 1.35; margin-bottom: 10px; }
                     .idle-lock-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-                    .idle-lock-actions button { padding: 7px 11px; border-radius: 5px; border: 1px solid #9ca3af; background: #fff; cursor: pointer; }
-                    .idle-lock-actions .primary { background: #374151; border-color: #374151; color: #fff; }
+                                        .idle-lock-actions button { padding: 7px 11px; border-radius: 5px; border: 1px solid var(--dlg-border-strong); background: var(--dlg-bg); color: var(--dlg-text); cursor: pointer; }
+                                        .idle-lock-actions .primary { background: var(--dlg-text); border-color: var(--dlg-text); color: var(--dlg-bg); }
         </style>
       </head>
       <body>
@@ -4564,7 +4633,7 @@ function openSetCurrentPayPeriodDialog() {
     </html>
   `;
     const ui = SpreadsheetApp.getUi();
-    ui.showModelessDialog(HtmlService.createHtmlOutput(html).setWidth(420).setHeight(360), 'Set Current Pay Period');
+    ui.showModelessDialog(HtmlService.createHtmlOutput(injectThemeModeIntoHtml_(html, resolvedThemeMode)).setWidth(420).setHeight(360), 'Set Current Pay Period');
     Logger.log('openSetCurrentPayPeriodDialog: opened (source=%s)', source);
     debugLog('openSetCurrentPayPeriodDialog complete', {
         source: source,
@@ -5439,7 +5508,7 @@ function exportReportPdf(htmlContent, reportLabel, employeeId, startDate, endDat
 /**
  * Returns HTML for the Create Report UI so the web app can render it in a modal frame.
  */
-function getCreateReportDialogHtml() {
+function getCreateReportDialogHtml(preferredThemeMode) {
     const startMs = Date.now();
     const html = `
     <!DOCTYPE html>
@@ -5447,61 +5516,93 @@ function getCreateReportDialogHtml() {
       <head>
         <style>
           * { box-sizing: border-box; }
-          body { font-family: Arial, sans-serif; padding: 14px; margin: 0; font-size: 14px; }
+                    :root {
+                        --rep-bg: #ffffff;
+                        --rep-surface: #f8fafc;
+                        --rep-text: #1f2937;
+                        --rep-muted: #666666;
+                        --rep-border: #e0e0e0;
+                        --rep-border-strong: #9ca3af;
+                        --rep-primary: #1a73e8;
+                        --rep-primary-contrast: #ffffff;
+                        --rep-secondary: #e0e0e0;
+                        --rep-danger: #d32f2f;
+                        --rep-success: #2e7d32;
+                        --rep-even-row: #f5f5f5;
+                        --rep-odd-row: #ffffff;
+                        --rep-summary-bg: #e8f0fe;
+                    }
+                    :root[data-theme="dark"] {
+                        --rep-bg: #0f172a;
+                        --rep-surface: #111827;
+                        --rep-text: #e5edf7;
+                        --rep-muted: #9ca3af;
+                        --rep-border: #334155;
+                        --rep-border-strong: #475569;
+                        --rep-primary: #60a5fa;
+                        --rep-primary-contrast: #0b1220;
+                        --rep-secondary: #334155;
+                        --rep-danger: #f87171;
+                        --rep-success: #4ade80;
+                        --rep-even-row: #0f2135;
+                        --rep-odd-row: #111827;
+                        --rep-summary-bg: #17263a;
+                    }
+                    body { font-family: Arial, sans-serif; padding: 14px; margin: 0; font-size: 14px; background: var(--rep-bg); color: var(--rep-text); }
           h3 { margin: 0 0 12px; }
           .form-group { margin: 10px 0; }
           label { display: block; font-weight: bold; margin-bottom: 4px; }
-          select, input[type="date"] { width: 100%; padding: 8px; font-size: 14px; }
+                    select, input[type="date"] { width: 100%; padding: 8px; font-size: 14px; background: var(--rep-bg); color: var(--rep-text); border: 1px solid var(--rep-border); }
           button { padding: 10px 18px; margin: 4px 4px 0 0; cursor: pointer; font-size: 14px; border: none; border-radius: 4px; }
-          .primary { background: #1a73e8; color: #fff; }
-          .primary:disabled { background: #ccc; cursor: not-allowed; }
-          .secondary { background: #e0e0e0; color: #333; }
-          .danger { background: #d32f2f; color: white; }
+                    .primary { background: var(--rep-primary); color: var(--rep-primary-contrast); }
+                    .primary:disabled { background: var(--rep-border-strong); cursor: not-allowed; }
+                    .secondary { background: var(--rep-secondary); color: var(--rep-text); }
+                    .danger { background: var(--rep-danger); color: var(--rep-primary-contrast); }
           .mini { padding: 6px 10px; font-size: 12px; margin: 0 0 0 8px; }
-          .error { color: #d32f2f; margin-top: 8px; display: none; }
-          .info { color: #666; font-size: 12px; margin-top: 4px; }
-          .success { color: #2e7d32; font-weight: bold; margin-top: 8px; display: none; }
-          .success a { color: #1a73e8; }
-          .loading { text-align: center; color: #999; padding: 20px 0; }
+                    .error { color: var(--rep-danger); margin-top: 8px; display: none; }
+                    .info { color: var(--rep-muted); font-size: 12px; margin-top: 4px; }
+                    .success { color: var(--rep-success); font-weight: bold; margin-top: 8px; display: none; }
+                    .success a { color: var(--rep-primary); }
+                    .loading { text-align: center; color: var(--rep-muted); padding: 20px 0; }
           .presets { margin: 6px 0; }
-          .presets button { padding: 4px 10px; font-size: 11px; margin: 2px 4px 2px 0; background: #e8f0fe; color: #1a73e8; border-radius: 12px; }
-          .presets button:hover { background: #d2e3fc; }
+                    .presets button { padding: 4px 10px; font-size: 11px; margin: 2px 4px 2px 0; background: var(--rep-summary-bg); color: var(--rep-primary); border-radius: 12px; }
+                    .presets button:hover { filter: brightness(0.96); }
           .inline-row { display: flex; align-items: center; gap: 8px; }
           #selectionView, #reportView { display: none; }
 
           /* Summary strip */
-          .summary-strip { background: #e8f0fe; padding: 10px 12px; border-radius: 6px; margin: 10px 0; font-size: 13px; display: flex; flex-wrap: wrap; gap: 16px; }
+                    .summary-strip { background: var(--rep-summary-bg); padding: 10px 12px; border-radius: 6px; margin: 10px 0; font-size: 13px; display: flex; flex-wrap: wrap; gap: 16px; }
           .summary-strip .stat { display: flex; flex-direction: column; }
-          .summary-strip .stat-label { color: #555; font-size: 11px; text-transform: uppercase; }
-          .summary-strip .stat-value { font-weight: bold; color: #1a73e8; }
+                    .summary-strip .stat-label { color: var(--rep-muted); font-size: 11px; text-transform: uppercase; }
+                    .summary-strip .stat-value { font-weight: bold; color: var(--rep-primary); }
 
           /* Report table */
           .report-header { margin: 10px 0 4px; }
           .report-header h3 { margin: 0; }
-          .report-header .sub { color: #666; font-size: 12px; }
+          .report-header .sub { color: var(--rep-muted); font-size: 12px; }
           .report-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
-          .report-table th { background: #1a73e8; color: #fff; padding: 8px 6px; text-align: left; font-size: 12px; }
-          .report-table td { padding: 6px; border-bottom: 1px solid #e0e0e0; }
-          .report-table .day-even td { background: #f5f5f5; }
-          .report-table .day-odd td { background: #ffffff; }
-          .report-table .ot-flag { color: #d32f2f; font-weight: bold; }
+          .report-table th { background: var(--rep-primary); color: var(--rep-primary-contrast); padding: 8px 6px; text-align: left; font-size: 12px; }
+          .report-table td { padding: 6px; border-bottom: 1px solid var(--rep-border); }
+          .report-table .day-even td { background: var(--rep-even-row); }
+          .report-table .day-odd td { background: var(--rep-odd-row); }
+          .report-table .ot-flag { color: var(--rep-danger); font-weight: bold; }
           .report-table .hours { text-align: right; font-family: 'Roboto Mono', monospace; }
           .report-table .time { font-family: 'Roboto Mono', monospace; font-weight: bold; }
-          .report-table .notes { color: #555; font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .report-table .notes { color: var(--rep-muted); font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
           .action-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
-          .sticky-top { position: sticky; top: 0; background: #fff; z-index: 1; padding: 6px 0; border-bottom: 1px solid #e0e0e0; }
-                    .idle-bar { display: none; margin-bottom: 10px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 12px; }
+          .sticky-top { position: sticky; top: 0; background: var(--rep-bg); z-index: 1; padding: 6px 0; border-bottom: 1px solid var(--rep-border); }
+                    .idle-bar { display: none; margin-bottom: 10px; padding: 8px 10px; border: 1px solid var(--rep-border); border-radius: 6px; background: var(--rep-surface); color: var(--rep-text); font-size: 12px; }
                     .idle-bar.show { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-                    .idle-bar .idle-btn { padding: 5px 9px; font-size: 12px; border: 1px solid #9ca3af; border-radius: 5px; background: #fff; color: #1f2937; cursor: pointer; }
+                    .idle-bar .idle-btn { padding: 5px 9px; font-size: 12px; border: 1px solid var(--rep-border-strong); border-radius: 5px; background: var(--rep-bg); color: var(--rep-text); cursor: pointer; }
                     .idle-bar .idle-btn:disabled { opacity: 0.65; cursor: not-allowed; }
                     .idle-lock-overlay { position: fixed; inset: 0; background: rgba(75, 85, 99, 0.6); display: none; align-items: center; justify-content: center; z-index: 20; padding: 12px; }
-                    .idle-lock-card { width: min(420px, 95vw); background: #f9fafb; border: 1px solid #9ca3af; border-radius: 8px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22); padding: 12px; }
-                    .idle-lock-title { font-weight: 700; margin-bottom: 6px; color: #111827; }
-                    .idle-lock-msg { color: #374151; font-size: 12px; line-height: 1.35; margin-bottom: 10px; }
+                    .idle-lock-card { width: min(420px, 95vw); background: var(--rep-surface); border: 1px solid var(--rep-border-strong); border-radius: 8px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22); padding: 12px; }
+                    .idle-lock-title { font-weight: 700; margin-bottom: 6px; color: var(--rep-text); }
+                    .idle-lock-msg { color: var(--rep-muted); font-size: 12px; line-height: 1.35; margin-bottom: 10px; }
                     .idle-lock-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
-                    .idle-lock-actions button { padding: 7px 11px; border-radius: 5px; border: 1px solid #9ca3af; background: #fff; color: #111827; font-size: 12px; cursor: pointer; }
-                    .idle-lock-actions .primary-lock { background: #374151; border-color: #374151; color: #fff; }
+                    .idle-lock-actions button { padding: 7px 11px; border-radius: 5px; border: 1px solid var(--rep-border-strong); background: var(--rep-bg); color: var(--rep-text); font-size: 12px; cursor: pointer; }
+                    .idle-lock-actions .primary-lock { background: var(--rep-text); border-color: var(--rep-text); color: var(--rep-bg); }
                     .idle-lock-actions button:disabled { opacity: 0.65; cursor: not-allowed; }
         </style>
       </head>
@@ -6262,5 +6363,5 @@ function getCreateReportDialogHtml() {
   `;
     Logger.log('getCreateReportDialogHtml: generated report dialog html');
     debugLog('getCreateReportDialogHtml complete', { durationMs: Date.now() - startMs });
-    return html;
+    return injectThemeModeIntoHtml_(html, preferredThemeMode);
 }

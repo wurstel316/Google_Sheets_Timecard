@@ -11,6 +11,7 @@
       --border: #2d3a4f;
       --text: #e7ecf3;
       --muted: #8b9bb4;
+      --text-muted: #8b9bb4;
       --header-bg: #141c27;
       --o: #22c55e;
       --o-bg: rgba(34, 197, 94, 0.18);
@@ -20,6 +21,23 @@
       --l-bg: rgba(242, 210, 122, 0.24);
       --uncovered: #fb7185;
       --uncovered-bg: rgba(251, 113, 133, 0.20);
+    }
+    :root[data-theme="light"] {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --border: #d8e2ee;
+      --text: #243447;
+      --muted: #5d6c80;
+      --text-muted: #5d6c80;
+      --header-bg: #edf2f7;
+      --o: #15803d;
+      --o-bg: rgba(34, 197, 94, 0.16);
+      --b: #6d28d9;
+      --b-bg: rgba(109, 40, 217, 0.14);
+      --l: #a16207;
+      --l-bg: rgba(217, 119, 6, 0.14);
+      --uncovered: #be123c;
+      --uncovered-bg: rgba(225, 29, 72, 0.14);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -130,6 +148,15 @@
     }
     .sidebar-btn.secondary:hover {
       filter: brightness(1.04);
+    }
+    .theme-btn {
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 88%, var(--header-bg));
+      color: var(--text);
+      font-weight: 700;
+    }
+    .theme-btn:hover {
+      filter: brightness(1.05);
     }
     .schedule-status {
       font-size: 0.72rem;
@@ -1072,6 +1099,7 @@
 
       <div class="save-block">
         <button type="button" class="sidebar-btn save-btn" id="save-btn" onclick="saveSchedule()">Save</button>
+        <button type="button" class="sidebar-btn theme-btn" id="theme-toggle-btn" onclick="toggleScheduleThemeMode()">Theme: --</button>
         <button type="button" class="sidebar-btn secondary" id="check-new-employees-btn" onclick="checkForNewEmployees()">Check for new employees</button>
         <div class="save-timer-row" title="Auto-saves every 60 seconds">
           <div class="timer-ring-wrap" id="timer-ring-wrap">
@@ -1251,6 +1279,53 @@
     let selectedEmployeeTypes = new Set();
     let hasInitializedEmployeeTypeFilter = false;
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    let currentScheduleThemeMode = "";
+
+    function normalizeThemeMode(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+      return normalized === "light" || normalized === "dark" ? normalized : "";
+    }
+
+    function detectSystemThemeMode() {
+      try {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return "light";
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return "dark";
+      } catch (_e) {}
+      return "dark";
+    }
+
+    function setScheduleThemeButtonLabel() {
+      const btn = document.getElementById("theme-toggle-btn");
+      if (!btn) return;
+      const mode = normalizeThemeMode(currentScheduleThemeMode) || "dark";
+      const nextLabel = mode === "dark" ? "Light" : "Dark";
+      btn.textContent = mode === "dark" ? "Theme: Dark" : "Theme: Light";
+      btn.setAttribute("aria-label", "Switch to " + nextLabel + " mode");
+      btn.title = "Switch to " + nextLabel + " mode";
+    }
+
+    function applyScheduleThemeMode(mode, persistServer) {
+      const resolved = normalizeThemeMode(mode) || "dark";
+      currentScheduleThemeMode = resolved;
+      document.documentElement.setAttribute("data-theme", resolved);
+      setScheduleThemeButtonLabel();
+      if (persistServer === true && window.google && google.script && google.script.run) {
+        google.script.run.withFailureHandler(function () {}).saveUserThemePreference(resolved);
+      }
+      return resolved;
+    }
+
+    function initializeScheduleThemeMode() {
+      const initial = normalizeThemeMode(document.documentElement.getAttribute("data-theme"));
+      const resolved = initial || detectSystemThemeMode() || "dark";
+      applyScheduleThemeMode(resolved, false);
+    }
+
+    function toggleScheduleThemeMode() {
+      const current = normalizeThemeMode(currentScheduleThemeMode) || "dark";
+      const next = current === "dark" ? "light" : "dark";
+      applyScheduleThemeMode(next, true);
+    }
 
     function getWorkweekForEmployee(email) {
       const normalized = normalizeEmployeeEmail(email);
@@ -3291,6 +3366,7 @@
   }
 
   // Run on HTML load (script is at end of body, so DOM is ready)
+  initializeScheduleThemeMode();
   initializeScheduleIdleManager();
   populateLiveSchedule();
 
