@@ -7,6 +7,106 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Expanded B2.1 implementation comments for Add Missed Time with explicit server hook routing, optimistic reconcile/rollback flow, and a custom picker module plan that avoids reusing the current calendar picker stack.
+- Why: Prepares the mockup as an implementation-ready spec for a dedicated Admin HTML modal with fast, reliable data flow and clear ownership of missed-time validation/submission behavior.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Reviewed live hook compatibility (`submitManualEntryFromMenu`, `submitManualTimeEntry`), documented custom picker contract and error handling flow, and confirmed diagnostics report no file errors.
+
+- Summary: Completed an internal consistency pass on B2.1 by wiring `warn`/CHECK rows to timeline color states and adding explicit implementation comments about adopting established `--tc-*` dark/light styling tokens during production migration.
+- Why: Ensures example data matches legend semantics (missing schedule snippet visibly renders as CHECK) and keeps future Admin HTML migration aligned with the existing theme-token architecture.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed rows with `status: 'warn'` render warn-colored dots/lines in timeline view, legend semantics now match visible state, and diagnostics report no file errors.
+
+- Summary: Expanded B2.1 mockup implementation comments with a performance-first backend/data-flow plan for the future dedicated Admin HTML modal migration.
+- Why: Establishes concrete non-visual optimization guidance for responsive UX, including normalized client stores, row/day patch rendering, optimistic rollback scopes, delta payloads, lazy deleted-data loading, and batched verify contracts.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed added comments map to existing live endpoints and workflows (`getAllEntriesForAdminView`, `adminSaveEntryUpdate`, `adminSetEntryVerifiedBatch`, iframe bridge pattern) and diagnostics report no file errors.
+
+- Summary: Added an in-file implementation blueprint to B2.1 with a deep-dive parity map against the current admin modal, including concrete hook names, mutation endpoints, and a dedicated Admin HTML-file migration/data-flow plan.
+- Why: Captures the implementation path before production changes so the mockup doubles as a technical spec for moving Admin View into its own HTML surface (Schedule Tool style).
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Verified comments reference current live client/server hook names (`getAllEntriesForAdminView`, `adminSaveEntryUpdate`, `adminSetEntryVerifiedBatch`, schedule iframe bridge pattern) and diagnostics report no file errors.
+
+- Summary: Added a red strike-through visual state for deleted B2.1 timeline entries so deleted punches render crossed out until restored.
+- Why: Makes deleted-row state immediately visible on the timeline while preserving recoverability through restore.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed deleted rows render red strike overlays across the punch segment with muted red-labeled dots, and restored rows return to normal styling; diagnostics report no file errors.
+
+- Summary: Corrected B2.1 timeline hour-label alignment by replacing auto-distributed tick layout with exact percentage-positioned tick anchors.
+- Why: Ensures the text above the bars lines up precisely with the 24-hour grid and expected-bar positions.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed each 2-hour tick is anchored at exact 1/12 intervals from 00:00 through 24:00 and diagnostics report no file errors.
+
+- Summary: Adjusted B2.1 edit-modal behavior so saving a note is note-only and does not trigger time-edit pending flows, and Apply now skips time-edit execution when Clock In/Out are unchanged.
+- Why: Prevents note-only workflows from appearing to edit punches and avoids creating synthetic time-edit actions when no actual time change was made.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed Save Note updates only the modal notes list with toast feedback, and Apply with unchanged times closes modal with a no-op message instead of running edit mutation flow.
+
+- Summary: Updated B2.1 Edit Times inputs to 24-hour HH:MM format for both display and save behavior.
+- Why: Keeps edit fields consistent with timeline dot labels and avoids AM/PM ambiguity during admin edits.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed opening Edit Times now pre-fills Clock In/Out as HH:MM, applying edits persists HH:MM values, and diagnostics report no file errors.
+
+- Summary: Cleaned B2.1 punch/timeline visuals by switching punch-dot captions to 24-hour HH:MM format only and removing IN/OUT and AM/PM text, while aligning expected bars to parsed schedule hours and hiding expected-bar text labels.
+- Why: Reduces visual noise on dense timelines and improves hour alignment readability by anchoring schedule bars to explicit start/end clock times.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed punch dots render HH:MM labels only, expected bars render without text overlays, and schedule bars use time-parsed placement across the full 24-hour axis with clean diagnostics.
+
+- Summary: Performed a B2.1 timeline formatting pass to reduce clipping, switch to a full 24-hour axis, and render all punch entries on one shared visual row.
+- Why: Improves scan consistency and makes the timeline a complete-day view while avoiding edge clipping for punch anchors and labels.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed timeline ticks render 00:00 through 24:00, hourly grid spans full width, punch dots and connectors share a single row, and diagnostics report no file errors.
+
+- Summary: Refined B2.1 edit-modal controls by restoring the original icon-style hold-delete/green-restore button behavior, closing the edit modal immediately after a completed hold-delete, removing day-row cards under the timeline, and adding Enter-to-save note support.
+- Why: Keeps the timeline as the only row-level interaction surface, preserves safer delete confirmation ergonomics, and speeds note entry workflows without extra pointer travel.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed row edit opens from timeline dots only, active rows require 3-second hold on DEL icon before delete, modal closes immediately after hold-delete completes, restore uses green pill state, and pressing Enter (without Shift) in note input saves the note.
+
+- Summary: Updated B2.1 Edit Times modal so active rows require a 3-second hold action to delete, while deleted rows can be restored with a normal click.
+- Why: Preserves the safer hold-to-delete pattern after moving row controls into the modal and prevents accidental deletes during fast edit workflows.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed active modal row actions now show Hold 3s to Delete, only delete after sustained hold, and keep restore as a one-click action with clean diagnostics.
+
+- Summary: Moved B2.1 note management and delete/restore controls into the Edit Times modal, and simplified the day note list to timestamp rows that open the modal.
+- Why: Consolidates row editing workflows into one popup, reduces visual clutter below the timeline, and keeps timeline space prioritized while preserving existing admin actions.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed clicking timeline dots or day-row Open Edit launches the modal with row details, existing notes, add-note input, and delete/restore toggle; verified day panel no longer renders inline note/delete controls and diagnostics report no errors.
+
+- Summary: Updated B2.1 to use a single day-level verify control in the day header and removed per-entry verify controls from the timeline area.
+- Why: Frees horizontal space for the day timeline while preserving the same verification workflow semantics at the day scope.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed one Verify Day button appears on each day row, toggles all non-deleted entries for that day, and timeline width expands after removing the left verify rail.
+
+- Summary: Simplified B2.1 day details by removing duplicate per-session in/out/schedule bars below the timeline and replacing them with a day-level notes panel containing timestamped notes plus delete/restore actions.
+- Why: In/out and schedule context are already represented in the day timeline, so the lower area now focuses on note auditing and entry removal workflows with less visual duplication.
+- Files: mockups/option-b2-1-day-timeline.html
+- Validation: Confirmed timeline remains the primary source for in/out and schedule context, dot-click edit and left-rail verify interactions remain active, and add-note stays alongside the note lines for each timestamped note item.
+
+- Summary: Consolidated mockup exploration around B2 by removing non-B2 variants and adding B2.1 as a full workflow-parity day-timeline iteration.
+- Why: Review focus shifted to timeline-first admin UX; B2.1 preserves current admin workflows while testing one timeline per user-day with dot-driven edit interaction.
+- Files: mockups/index.html, mockups/option-b2-1-day-timeline.html, mockups/option-a1-punch-paired.html, mockups/option-b1-row-audit.html, mockups/option-b3-exception-queue.html, mockups/option-b4-current-view-sync.html, mockups/option-b5-full-admin-workflow-parity.html
+- Validation: Verified B2 remains unchanged as baseline, B2.1 includes full parity controls/modals, clickable in/out dots open edit flow, verify controls sit left of timeline, add-note action is located by note lines, and removed options are no longer listed in index.
+
+- Summary: Upgraded B2 from a directional timeline concept to a full workflow-parity admin mock while retaining timeline-overlay visualization.
+- Why: B2 needed the same functional depth as the parity mock so timeline-first review can validate complete admin workflows, not just visual treatment.
+- Files: mockups/index.html, mockups/option-b2-timeline-overlay.html
+- Validation: Added interactive admin controls and modal workflows (verify/edit/add-note/hold-delete/restore/add-missed/payroll preview+export/AWS settings/holiday pay/schedule tool/more reports) and preserved per-punch schedule snippet + +/-15 minute sync cues on timeline tracks.
+
+- Summary: Added a full workflow parity admin mockup (B5) that preserves current Admin View controls and end-to-end workflows while layering in per-punch schedule sync context.
+- Why: Directional concepts were not sufficient for implementation planning; this provides a closer functional simulation of the existing admin experience before production edits.
+- Files: mockups/index.html, mockups/option-b5-full-admin-workflow-parity.html
+- Validation: Implemented interactive mock flows for row verify/edit/add-note/delete-hold/restore and modal workflows for missed time, payroll preview/export, AWS settings, holiday pay, schedule tool, and more reports.
+
+- Summary: Added a fourth admin mockup option (B4) that closely mirrors the current Admin View layout while adding per-punch schedule snippets and +/-15 minute sync flags.
+- Why: Provides a low-risk visual path for rollout by keeping familiar grouping, controls, and punch rows while exposing schedule alignment at the exact punch level.
+- Files: mockups/index.html, mockups/option-b4-current-view-sync.html
+- Validation: Confirmed B4 is linked from the mockup index and verified the new file is isolated to the mockups directory.
+
+- Summary: Added three new admin-view mockup options focused on per-punch schedule snippet visibility and out-of-sync highlighting using a +/-15 minute leeway model.
+- Why: Provides side-by-side design directions for quickly auditing punch-to-schedule alignment before implementation changes to production files.
+- Files: mockups/index.html, mockups/option-b1-row-audit.html, mockups/option-b2-timeline-overlay.html, mockups/option-b3-exception-queue.html
+- Validation: Confirmed new mockup files exist, updated the mockup index with navigation cards for each option, and verified changes were isolated to the mockups directory plus changelog documentation.
+
 - Summary: Performed a simplification pass by removing the legacy dark-only override block that had become redundant after token migration, and replaced it with a single shared `.info` rule.
 - Why: Reduces CSS size and cascade complexity while preserving identical theme behavior through existing token-based styles.
 - Files: src/UserInterface.js

@@ -1,0 +1,1907 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B2.1 Mockup - One Timeline Per Day</title>
+  <style>
+    /*
+      Token note for production migration:
+      - This mock keeps local palette tokens for prototype speed.
+      - Final Admin HTML should consume the established light/dark --tc-* tokens
+        from the main UI token system in src/UserInterface.js to keep parity.
+    */
+    :root {
+      --bg: #243242;
+      --panel: #2d3a4b;
+      --panel-2: #253243;
+      --line: #435672;
+      --line-soft: #3b4b63;
+      --ink: #e4edf8;
+      --muted: #adc0d7;
+      --accent: #72baff;
+      --ok: #70dfac;
+      --bad: #ff879c;
+      --warn: #ffd589;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(980px 460px at 10% -20%, #40597a 0%, transparent 72%),
+        radial-gradient(980px 460px at 100% 0%, #37455c 0%, transparent 72%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      padding: 12px;
+    }
+
+    .admin-shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 20px 38px rgba(0,0,0,0.38);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 12px;
+      border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(180deg, #314052 0%, #2b3748 100%);
+    }
+
+    .head-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+      color: var(--accent);
+      letter-spacing: 0.01em;
+    }
+
+    .sub {
+      color: #c2d3e8;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid #7398c3;
+      background: #304a67;
+      color: #e8f3ff;
+      cursor: pointer;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid #73b4fb;
+      background: #67aff8;
+      color: #0a2b51;
+      border-radius: 10px;
+      padding: 7px 11px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: #5a95d2;
+      border-color: #72aeea;
+      color: #eaf4ff;
+    }
+
+    .switches {
+      margin-top: 12px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: #c4d4e8;
+      user-select: none;
+    }
+
+    .switch input { display: none; }
+
+    .track {
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid #708197;
+      background: #566273;
+      position: relative;
+      transition: 0.2s;
+    }
+
+    .track::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      top: 2px;
+      left: 2px;
+      border-radius: 50%;
+      background: #eef4fc;
+      transition: 0.2s;
+    }
+
+    .switch input:checked + .track {
+      background: #23b760;
+      border-color: #5ad08a;
+    }
+
+    .switch input:checked + .track::after {
+      left: 20px;
+    }
+
+    .msg {
+      margin-top: 10px;
+      font-size: 1.9rem;
+      line-height: 1;
+      color: #c7d8eb;
+    }
+
+    .content {
+      max-height: 62vh;
+      overflow: auto;
+      padding: 10px;
+      background: var(--panel-2);
+    }
+
+    .employee {
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      background: #273447;
+    }
+
+    .employee-head {
+      background: #c8ced8;
+      color: #223246;
+      border-bottom: 1px solid #a9b5c6;
+      padding: 7px 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .employee-head .left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .collapse-btn {
+      width: 25px;
+      height: 25px;
+      border: 1px solid #41526a;
+      border-radius: 5px;
+      background: #24344b;
+      color: #e9f3ff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .sync-pill {
+      border-radius: 999px;
+      border: 1px solid;
+      padding: 5px 9px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .sync-pill.ok {
+      color: var(--ok);
+      border-color: rgba(112,223,172,0.6);
+      background: rgba(112,223,172,0.16);
+    }
+
+    .sync-pill.bad {
+      color: var(--bad);
+      border-color: rgba(255,135,156,0.6);
+      background: rgba(255,135,156,0.16);
+    }
+
+    .sync-pill.warn {
+      color: var(--warn);
+      border-color: rgba(255,213,137,0.6);
+      background: rgba(255,213,137,0.16);
+    }
+
+    .day {
+      border-bottom: 1px solid #45556f;
+    }
+
+    .day:last-child { border-bottom: none; }
+
+    .day-head {
+      background: #aec3df;
+      color: #16375e;
+      border-bottom: 1px solid #7f9fc6;
+      padding: 6px 8px;
+      font-size: 1.32rem;
+      font-weight: 700;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .day-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .day-actions {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .day-verify-btn {
+      border: 1px solid #4f6887;
+      background: #254161;
+      color: #d8e8fb;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .day-verify-btn.on {
+      border-color: rgba(112,223,172,0.6);
+      background: rgba(112,223,172,0.16);
+      color: var(--ok);
+    }
+
+    .day-total {
+      font-size: 0.88rem;
+      border: 1px solid #6b85a5;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: rgba(24,59,94,0.14);
+      color: #16375e;
+    }
+
+    .add-missed {
+      border: 1px solid #42658f;
+      background: #2a4e7c;
+      color: #e0edff;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .day-body {
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+      background: #2b3545;
+    }
+
+    .day-timeline-card {
+      border: 1px solid #485c7a;
+      border-radius: 10px;
+      background: #1f2d42;
+      padding: 8px;
+    }
+
+    .timeline-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .timeline {
+      border: 1px solid #4d6384;
+      border-radius: 9px;
+      background: #16253a;
+      padding: 6px 7px 12px;
+      position: relative;
+    }
+
+    .ticks {
+      position: relative;
+      height: 12px;
+      color: #99afca;
+      font-size: 0.68rem;
+      margin-bottom: 5px;
+    }
+
+    .ticks .tick {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .ticks .tick.start {
+      transform: none;
+      left: 0;
+      text-align: left;
+    }
+
+    .ticks .tick.end {
+      transform: translateX(-100%);
+      text-align: right;
+    }
+
+    .track-grid {
+      position: relative;
+      height: 70px;
+      border-radius: 7px;
+      background-image: linear-gradient(to right, rgba(114, 146, 181, 0.16) 1px, transparent 1px);
+      background-size: calc(100% / 24) 100%;
+      background-color: #1f3048;
+      overflow: visible;
+    }
+
+    .expected {
+      position: absolute;
+      top: 6px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(90, 178, 130, 0.2);
+      border: 1px solid rgba(90, 178, 130, 0.6);
+    }
+
+    .expected::after {
+      content: none;
+    }
+
+    .dot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      border: 2px solid #ffffff;
+      background: #6db7ff;
+      box-shadow: 0 0 0 2px rgba(109,183,255,0.26);
+      cursor: pointer;
+    }
+
+    .dot.out {
+      background: #8cc4ff;
+    }
+
+    .dot.bad {
+      background: var(--bad);
+      box-shadow: 0 0 0 3px rgba(255,135,156,0.25);
+      animation: pulse 1.8s infinite;
+    }
+
+    .dot.warn {
+      background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(255, 213, 137, 0.28);
+      border-color: #fff5d9;
+    }
+
+    .dot::after {
+      content: attr(data-label);
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.62rem;
+      color: #d5e4f7;
+      white-space: nowrap;
+    }
+
+    .dot-line {
+      position: absolute;
+      height: 1px;
+      background: rgba(171, 199, 232, 0.55);
+      transform: translateY(-50%);
+    }
+
+    .dot-line.deleted-row {
+      background: rgba(255, 132, 148, 0.5);
+    }
+
+    .dot-line.warn-row {
+      background: rgba(255, 213, 137, 0.78);
+    }
+
+    .deleted-strike {
+      position: absolute;
+      height: 2px;
+      background: #ff657d;
+      box-shadow: 0 0 6px rgba(255, 101, 125, 0.35);
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .dot.deleted-row {
+      border-color: #ffc3cc;
+      box-shadow: 0 0 0 2px rgba(255, 101, 125, 0.3);
+      opacity: 0.88;
+    }
+
+    .dot.deleted-row::after {
+      color: #ff9daf;
+      text-decoration: line-through;
+      text-decoration-color: #ff657d;
+      text-decoration-thickness: 2px;
+    }
+
+    .timeline-axis-note {
+      margin-top: 4px;
+      font-size: 0.68rem;
+      color: #90a8c6;
+      text-align: right;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,135,156,0.3); }
+      70% { box-shadow: 0 0 0 8px rgba(255,135,156,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,135,156,0); }
+    }
+
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid #4f6686;
+      background: #2d4564;
+      color: #deedff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn.restore {
+      width: auto;
+      padding: 0 10px;
+      border-radius: 999px;
+      border-color: #2f6b49;
+      background: #2c5b42;
+      color: #9df0c4;
+      font-size: 0.75rem;
+    }
+
+    .hold-ring {
+      position: absolute;
+      inset: -2px;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .hold-ring circle {
+      fill: none;
+      stroke-width: 2.8;
+    }
+
+    .hold-ring .track { stroke: rgba(255,255,255,0.24); }
+    .hold-ring .progress {
+      stroke: #ffd57e;
+      stroke-dasharray: 88;
+      stroke-dashoffset: 88;
+    }
+
+    .holding .hold-ring { opacity: 1; }
+    .holding .hold-ring .progress {
+      animation: holdSweep 3s linear forwards;
+      transform-origin: 18px 18px;
+    }
+
+    @keyframes holdSweep {
+      from {
+        stroke-dashoffset: 88;
+        transform: rotate(-90deg);
+      }
+      to {
+        stroke-dashoffset: 0;
+        transform: rotate(270deg);
+      }
+    }
+
+    .raw {
+      margin-top: 6px;
+      font-size: 0.76rem;
+      color: #9eb2cb;
+      display: none;
+    }
+
+    .show-raw .raw { display: block; }
+
+    .pending {
+      animation: pendingPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pendingPulse {
+      0% { box-shadow: inset 0 0 0 0 rgba(255, 212, 136, 0.24); }
+      50% { box-shadow: inset 0 0 0 999px rgba(255, 212, 136, 0.05); }
+      100% { box-shadow: inset 0 0 0 0 rgba(255, 212, 136, 0.24); }
+    }
+
+    .legend {
+      border-top: 1px solid var(--line-soft);
+      padding: 10px 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      background: #293446;
+      color: #b7cae2;
+    }
+
+    .dot-key {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 20, 0.56);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      z-index: 20;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal-card {
+      width: min(96vw, 980px);
+      max-height: 92vh;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #1f2a3b;
+      color: #dce8fa;
+      box-shadow: 0 20px 35px rgba(0,0,0,0.45);
+      position: relative;
+      padding: 12px;
+    }
+
+    .modal-card.small { width: min(96vw, 540px); }
+    .modal-card.medium { width: min(96vw, 740px); }
+
+    .modal-card h3 {
+      margin: 0 0 8px;
+      color: #7fc0ff;
+    }
+
+    .modal-note {
+      margin: 0 0 8px;
+      color: #a8bdd7;
+      font-size: 0.88rem;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      height: 30px;
+      border: 1px solid #6787ac;
+      background: #30455f;
+      color: #eaf3ff;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-size: 0.84rem;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid #4f6587;
+      background: #151f2f;
+      color: #e5efff;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+
+    .modal-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .edit-note-list {
+      margin-top: 8px;
+      border: 1px solid #4d6486;
+      background: #1a283c;
+      border-radius: 8px;
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+      max-height: 180px;
+      overflow: auto;
+    }
+
+    .edit-note-item {
+      border: 1px dashed #5b6f8d;
+      border-radius: 8px;
+      background: #24354d;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+      color: #d6e3f4;
+      line-height: 1.25;
+    }
+
+    .edit-note-empty {
+      color: #9db2cb;
+      font-size: 0.8rem;
+    }
+
+    .edit-note-add-row {
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .danger-btn.holding {
+      box-shadow: 0 0 0 2px rgba(255, 146, 163, 0.36);
+      background: #6b3540;
+    }
+
+    .btn.alt {
+      background: #2a3f5a;
+      color: #e2edff;
+      border-color: #506b8e;
+    }
+
+    .preview-box {
+      border: 1px solid #435a79;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 46vh;
+      background: #152031;
+    }
+
+    .preview-table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .preview-table th,
+    .preview-table td {
+      border-bottom: 1px solid #32455f;
+      padding: 6px;
+      text-align: center;
+      color: #d5e3f7;
+    }
+
+    .preview-table th {
+      position: sticky;
+      top: 0;
+      background: #203049;
+      z-index: 1;
+      color: #beddff;
+    }
+
+    .preview-msg {
+      margin: 8px 0;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid #496486;
+      background: #1f2f47;
+      font-size: 0.86rem;
+      color: #c9dbf2;
+    }
+
+    .aws-list,
+    .holiday-grid {
+      border: 1px solid #465c7b;
+      border-radius: 8px;
+      padding: 8px;
+      background: #18263a;
+      display: grid;
+      gap: 7px;
+      max-height: 44vh;
+      overflow: auto;
+      margin-top: 8px;
+    }
+
+    .aws-row,
+    .holiday-row {
+      border: 1px solid #3e5575;
+      border-radius: 8px;
+      padding: 7px;
+      background: #1e2e45;
+      display: grid;
+      gap: 6px;
+      font-size: 0.84rem;
+    }
+
+    .report-frame,
+    .tool-frame {
+      border: 1px dashed #5e7898;
+      border-radius: 8px;
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b7cae2;
+      background: #162337;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      background: #16304f;
+      color: #dbeaff;
+      border: 1px solid #4d719b;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      display: none;
+      z-index: 40;
+    }
+
+    .toast.show { display: block; }
+
+    @media (max-width: 980px) {
+      .day-head { grid-template-columns: 1fr; }
+      .timeline-layout { grid-template-columns: 1fr; }
+      .field-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section class="admin-shell" id="adminRoot">
+    <header class="head">
+      <div class="head-top">
+        <div>
+          <h1>Admin View <span class="sub">(Active pay period: 08/17/2026 to 08/30/2026)</span></h1>
+        </div>
+        <button class="close-btn" type="button" aria-label="Close">x</button>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn" id="btnRefresh">Refresh Entries</button>
+        <button class="btn" id="btnPayroll">Create Payroll Report</button>
+        <button class="btn secondary" id="btnSchedule">Schedule Tool</button>
+        <button class="btn secondary" id="btnReports">More Reports</button>
+      </div>
+
+      <div class="switches">
+        <label class="switch"><input id="showRaw" type="checkbox"><span class="track"></span><span>Show raw times</span></label>
+        <label class="switch"><input id="showDeleted" type="checkbox"><span class="track"></span><span>Show deleted rows</span></label>
+        <label class="switch"><input id="showActiveOnly" type="checkbox" checked><span class="track"></span><span style="color:#87f4c0;font-weight:700;">Show only active pay period</span></label>
+        <label class="switch"><input id="autoCollapse" type="checkbox"><span class="track"></span><span>Auto-collapse verified days</span></label>
+      </div>
+
+      <div class="msg" id="adminLoadMsg">Loaded 125 entries.</div>
+    </header>
+
+    <div class="content" id="timelineBoard"></div>
+
+    <footer class="legend">
+      <span><span class="dot-key" style="background:var(--ok)"></span>OK = every anchor is within +/-15 minutes</span>
+      <span><span class="dot-key" style="background:var(--bad)"></span>OUT = at least one anchor exceeds +/-15 minutes</span>
+      <span><span class="dot-key" style="background:var(--warn)"></span>CHECK = missing schedule snippet for that punch</span>
+      <span><span class="dot-key" style="background:#f2d48a"></span>Click in/out dots to trigger edit workflow</span>
+    </footer>
+  </section>
+
+  <div class="overlay" id="manualEntryModal">
+    <div class="modal-card small">
+      <button class="modal-close" data-close="manualEntryModal">x</button>
+      <h3>Add Missed Time (Mock)</h3>
+      <!--
+        Implementation note (Add Missed Time):
+        - Final Admin HTML should keep this modal as a first-class flow, but wire submit to live server methods:
+          * admin-targeted path: submitManualEntryFromMenu(targetEmail, clockInISO, clockOutISO, notes, entryType)
+          * self path fallback: submitManualTimeEntry(clockInISO, clockOutISO, notes, entryType)
+        - Keep optimistic insert behavior scoped to one employee/day section, then reconcile with server result.
+      -->
+      <p class="modal-note" id="manualTargetInfo">Target: employee/day</p>
+      <div class="field-grid">
+        <!--
+          Custom picker requirement for new implementation:
+          - Do NOT reuse current global calendar picker stack used in live Admin UI.
+          - Build an isolated picker module inside the new Admin HTML file (e.g., createManualPickerController()).
+          - Picker output contract remains ISO local datetime strings for server methods.
+          - Recommended internal model: { date: 'YYYY-MM-DD', time: 'HH:MM', tz: scriptTz } -> toISO().
+          - Keep validation local (end > start, not future, 14-hour cap), then rely on server as authority.
+        -->
+        <label class="field"><span>Clock In</span><input type="text" id="manualClockIn" value="08/19/2026 08:00 AM"></label>
+        <label class="field"><span>Clock Out</span><input type="text" id="manualClockOut" value="08/19/2026 01:00 PM"></label>
+      </div>
+      <label class="field"><span>Type</span>
+        <select id="manualType">
+          <option value="worked" selected>Worked</option>
+          <option value="vacation">Vacation</option>
+          <option value="sick">Sick</option>
+        </select>
+      </label>
+      <label class="field"><span>Note (required)</span><textarea id="manualNotes">Added by admin: missed punch reported by employee.</textarea></label>
+      <div class="modal-actions">
+        <button class="btn" id="manualSubmit">Submit</button>
+        <button class="btn alt" data-close="manualEntryModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="adminTimeEditModal">
+    <div class="modal-card small">
+      <button class="modal-close" data-close="adminTimeEditModal">x</button>
+      <h3>Edit Times (Mock)</h3>
+      <p class="modal-note" id="editRowLabel">Editing row</p>
+      <label class="field"><span>Clock In (24h)</span><input type="text" id="editClockIn" placeholder="HH:MM"></label>
+      <label class="field"><span>Clock Out (24h)</span><input type="text" id="editClockOut" placeholder="HH:MM"></label>
+      <div id="editNotesList" class="edit-note-list"></div>
+      <div class="edit-note-add-row">
+        <textarea id="editAddNoteInput" maxlength="150" placeholder="Write a quick note..."></textarea>
+        <button class="btn alt" id="editAddNoteBtn" type="button">Save Note</button>
+      </div>
+      <div class="modal-actions">
+        <button class="icon-btn" id="editDeleteRestoreBtn" type="button" title="Hold 3s to delete">DEL<svg class="hold-ring" viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="14"></circle><circle class="progress" cx="18" cy="18" r="14"></circle></svg></button>
+        <button class="btn" id="editApply">Apply</button>
+        <button class="btn alt" data-close="adminTimeEditModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="payrollModal">
+    <div class="modal-card">
+      <button class="modal-close" data-close="payrollModal">x</button>
+      <h3>Payroll Report (Mock)</h3>
+      <div class="toolbar" style="margin-top:0;">
+        <button class="btn" id="generatePayroll">Generate Report</button>
+        <button class="btn secondary" id="exportPayroll" disabled>Export and Archive Payroll</button>
+        <button class="btn secondary" id="holidayPayBtn">Add Holiday Pay</button>
+        <button class="btn secondary" id="awsSettingsBtn" style="margin-left:auto;">AWS : 2 enabled</button>
+      </div>
+      <div class="preview-msg" id="payrollMsg">Refresh entries and generate preview to see totals.</div>
+      <div class="preview-box">
+        <table class="preview-table" id="payrollTable">
+          <thead>
+            <tr>
+              <th>Email</th><th>W1 RT</th><th>W1 OT</th><th>W1 DT</th><th>W2 RT</th><th>W2 OT</th><th>W2 DT</th><th>Vacation</th><th>Holiday</th><th>Sick</th><th>Hrs > 40</th><th>Total RT</th><th>Total OT</th><th>Total DT</th><th>Notes</th><th>AWS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="16">No preview generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="awsModal">
+    <div class="modal-card medium">
+      <button class="modal-close" data-close="awsModal">x</button>
+      <h3>AWS Settings (Mock)</h3>
+      <p class="modal-note">Enable per employee and set effective date.</p>
+      <div class="aws-list" id="awsList"></div>
+      <div class="modal-actions">
+        <button class="btn" id="saveAwsBtn">Save AWS Settings</button>
+        <button class="btn alt" data-close="awsModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="holidayModal">
+    <div class="modal-card medium">
+      <button class="modal-close" data-close="holidayModal">x</button>
+      <h3>Add Holiday Pay (Mock)</h3>
+      <p class="modal-note">Checked holidays add 8h (non-AWS) or 10h (AWS on holiday date).</p>
+      <div class="holiday-grid" id="holidayGrid"></div>
+      <div class="modal-actions">
+        <button class="btn" id="applyHolidayBtn">Apply Holiday Pay</button>
+        <button class="btn alt" data-close="holidayModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="scheduleModal">
+    <div class="modal-card" style="width:min(98vw,1200px);">
+      <button class="modal-close" data-close="scheduleModal">x</button>
+      <h3>Schedule Tool (Mock)</h3>
+      <div class="tool-frame">Schedule Tool iframe placeholder. Workflow preserved: open from Admin View, work schedule, close to return.</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="reportsModal">
+    <div class="modal-card" style="width:min(96vw,880px);">
+      <button class="modal-close" data-close="reportsModal">x</button>
+      <h3>More Reports (Mock)</h3>
+      <div class="report-frame">More Reports iframe placeholder. Workflow preserved: open from Admin View, run report, close.</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /*
+      IMPLEMENTATION BLUEPRINT (Mockup -> Production Admin Modal)
+
+      Goal:
+      - Keep this file as a behavior prototype while documenting how to wire it into the real Apps Script admin stack.
+      - Do not change production files yet; this comment block maps this mock to existing hooks.
+
+      Deep-dive parity notes against current live admin implementation:
+
+      1) Container / modal shell parity
+      - Live today renders admin UI inside #adminViewModal in src/UserInterface.js.
+      - This mock uses a standalone shell, but toolbar/switch/modal concepts match.
+
+      2) Data source parity
+      - Live load path: google.script.run.getAllEntriesForAdminView(includeDeleted)
+      - Server shape from src/Code.js:getAllEntriesForAdminView(...):
+        rowIndex, entryId, email, rawClockIn, rawClockOut, modifiedClockIn, modifiedClockOut,
+        effectiveClockIn, effectiveClockOut, hours, verified, notes, entryType, deleted.
+      - Mock state.entries mirrors this semantically, grouped by user/day for timeline rendering.
+
+      3) Mutation parity
+      - Live save/delete/restore path: google.script.run.adminSaveEntryUpdate(rowIndex, payload)
+      - Payload fields in live UI include:
+        entryId, modifiedClockInISO, modifiedClockOutISO, notes, deleted, clientAppendedTimeEditNote.
+      - Verify path is separate in live UI:
+        google.script.run.adminSetEntryVerifiedBatch([{ rowIndex, entryId, verified }...]).
+
+      4) Hold-to-delete parity
+      - Live UI uses row hold state + pointer handlers before requestAdminDelete/requestAdminRestore.
+      - Mock preserves the same UX expectation (hold to delete, explicit restore).
+
+      5) Note composer parity
+      - Live UI merges pending note text using composeAdminNotesForSave(...), then saveAdminRow(...).
+      - Mock keeps note-add local, but this should map to payload.notes in adminSaveEntryUpdate.
+
+      ----------------------------------------------------------------------
+      Planned migration: dedicated HTML file for new Admin Modal (like ScheduleHTML flow)
+      ----------------------------------------------------------------------
+
+      Target architecture:
+      A) Add a new dedicated HTML file (example: src/AdminTimelineHTML.html) that owns this UI.
+      B) Add a server method to return HTML string (pattern mirrors getScheduleToolDialogHtml).
+      C) In main UI, open a container modal with an iframe and set frame.srcdoc to returned HTML.
+      D) Inject a small bridge script into iframe HTML so child can call parent google.script.run,
+         matching buildScheduleToolFrameHtml(...) / buildMoreReportsFrameHtml(...) pattern.
+
+      Suggested bridge-level hooks for this mock:
+      - loadAdminTimelineEntries(includeDeleted)
+      - saveAdminTimelineEntry(rowIndex, payload)
+      - saveAdminTimelineVerifyBatch(actions)
+      - fetchPayrollPreviewData(startDateIso) / exportPayrollPreview(...)
+      - fetchScheduleToolData() passthrough when modal opens schedule tool
+
+      Data-flow sequence (production wiring):
+      1) Open modal -> fetch HTML -> iframe srcdoc.
+      2) On iframe boot -> call getAllEntriesForAdminView(includeDeleted=false).
+      3) Normalize rows -> group by employee/day -> derive timeline expected segments.
+      4) User actions:
+         - Verify day => fan out row verify actions => adminSetEntryVerifiedBatch.
+         - Edit times => adminSaveEntryUpdate with modifiedClockInISO/modifiedClockOutISO.
+         - Add note only => adminSaveEntryUpdate notes-only payload (no time mutation).
+         - Delete/restore => adminSaveEntryUpdate deleted true/false.
+      5) On success => optimistic merge or refresh list via getAllEntriesForAdminView.
+      6) Keep permission gating on both client and server (server remains source of truth).
+
+      Theme token parity note (dark/light):
+      - When this mock is promoted to dedicated Admin HTML, replace local one-off colors
+        with the established --tc-* semantic tokens already used by live Admin View.
+      - Keep a single token map for light/dark in one place, then consume those variables
+        for badges, row states (ok/bad/warn/deleted), controls, and modal surfaces.
+
+      ----------------------------------------------------------------------
+      Performance-first data movement plan (target: fast, responsive admin UX)
+      ----------------------------------------------------------------------
+
+      A) Canonical client store (normalized)
+      - Keep one source of truth keyed by entryId (fallback rowIndex only if missing):
+        entriesById[entryId] = serverEntry
+      - Keep index layers for render only:
+        dayIndexByUser[userEmail][dayKey] = [entryId, ...]
+      - Rebuild index incrementally when one entry changes; avoid full regroup per action.
+
+      B) Row/day patch rendering instead of full repaint
+      - Current mock often re-renders full board for simplicity.
+      - Production plan: patch only affected day container after edit/delete/restore/note.
+      - Verify-day should patch one day block, not every employee/day.
+
+      C) Optimistic writes + deterministic rollback
+      - Apply optimistic state immediately for edit/delete/restore/verify/note.
+      - Keep immutable rollback snapshot per request key:
+        pendingTx[txId] = { entryId, before, scope: 'row'|'day' }
+      - On failure, rollback only impacted scope.
+
+      D) Delta payloads only
+      - For adminSaveEntryUpdate, send only fields that changed:
+        { entryId, modifiedClockInISO?, modifiedClockOutISO?, notes?, deleted? }
+      - Add optional clientRevision/version token to detect stale writes.
+
+      E) Batch network calls where safe
+      - Keep verify in batched calls (already aligned with adminSetEntryVerifiedBatch).
+      - For note spam/time edits, debounce rapid edits into short write window
+        (e.g., 150-300ms) while preserving explicit Apply semantics.
+
+      F) Lazy data expansion
+      - Keep includeDeleted=false default; fetch deleted only when toggle enabled.
+      - Keep heavyweight report/schedule data lazy-loaded when those modals open.
+
+      G) Server response shape for minimal client work
+      - Prefer returning updated entry snapshot(s) from mutation endpoints.
+      - Client merges returned snapshot into entriesById and patches one row/day.
+      - Full reload is fallback path only for conflict recovery.
+
+      H) Suggested endpoint contract additions (future)
+      - getAllEntriesForAdminView(includeDeleted, sinceRevision?)
+      - adminSaveEntryUpdate(...) -> { success, entry, revision }
+      - adminSetEntryVerifiedBatch(...) -> { success, updatedEntries[], revision }
+      - Optional: getAdminEntriesDiff(revision) for cheap background refresh.
+
+      I) Contention/conflict model
+      - Server remains authority; client treats conflicts as recoverable:
+        1) show row-level conflict message
+        2) fetch latest affected row/day
+        3) replay pending local draft if still valid
+
+      J) Performance budgets (implementation guardrails)
+      - Initial admin load: one data call + one render pass.
+      - Single row mutation: <=1 server call, <=1 row/day patch.
+      - Verify-day: <=1 batch call, <=1 day patch.
+      - Avoid unconditional full loadAdminEntries() except after structural events
+        (midnight split, large conflict, export/archive boundary changes).
+
+      ----------------------------------------------------------------------
+      Add Missed Time deep-dive plan (implementation hooks)
+      ----------------------------------------------------------------------
+
+      1) Open flow
+      - Trigger source: day-level "+ Add missed time" action.
+      - Preload target context:
+        { targetEmail, targetDayKey, activePayPeriodBounds, existingDayEntries[] }.
+      - Prime picker defaults from day context (nearest schedule block or day start) instead of static text.
+
+      2) Client validation (fast fail)
+      - Required: clockIn, clockOut, note, entryType.
+      - Rules mirrored from live behavior:
+        * clockOut > clockIn
+        * both <= now
+        * duration <= 14 hours
+        * no overlap with current visible entries for target employee
+      - Show inline field errors; keep modal open.
+
+      3) Server hook selection
+      - If admin is adding for another employee:
+        submitManualEntryFromMenu(targetEmail, clockInISO, clockOutISO, notes, entryType)
+      - Else:
+        submitManualTimeEntry(clockInISO, clockOutISO, notes, entryType)
+
+      4) Optimistic state + reconcile
+      - Insert optimistic temporary entry in target day timeline with pending badge/state.
+      - On success:
+        * replace temp with committed server entry when returned
+        * fallback to day-level refresh when splitOccurred or row identity ambiguous
+      - On failure:
+        * rollback temp entry
+        * preserve user inputs in modal for correction/retry
+
+      5) Custom picker module contract (new Admin HTML)
+      - Public API sketch:
+        picker.mount(clockInEl, clockOutEl)
+        picker.getRange() -> { clockInISO, clockOutISO }
+        picker.setRange(clockInISO, clockOutISO)
+        picker.validate() -> { valid, errors[] }
+      - Keep module self-contained in Admin HTML scope; no dependency on current shared picker globals.
+
+      ----------------------------------------------------------------------
+      Comment readiness checklist (this mock)
+      ----------------------------------------------------------------------
+
+      - [x] Parity mapping to current admin hooks/endpoints is explicit.
+      - [x] Dedicated Admin HTML migration path is documented.
+      - [x] Performance/data movement constraints are documented.
+      - [x] Add Missed Time flow includes server hook routing and optimistic rollback plan.
+      - [x] Custom picker replacement requirement is explicit (no reuse of current picker stack).
+      - [ ] Final production task: convert checklist bullets into tracked engineering tasks/owners.
+    */
+
+    const state = {
+      showRawTimes: false,
+      showDeleted: false,
+      showOnlyActive: true,
+      autoCollapse: false,
+      payrollReady: false,
+      editTarget: null,
+      manualTarget: { email: '', dayLabel: '' },
+      entries: [
+        {
+          email: 'alex@shop.com',
+          label: 'Alex R.',
+          collapsed: false,
+          days: [
+            {
+              key: 'alex|2026-08-18',
+              label: '08-18-2026 (Tue - 8.01Hrs)',
+              total: 8.01,
+              inActivePeriod: true,
+              collapsed: false,
+              timeline: [
+                { start: 12.5, width: 25, label: 'Expected 08:00-12:00' },
+                { start: 56.25, width: 21.875, label: 'Expected 01:30-05:00' }
+              ],
+              rows: [
+                {
+                  id: 'a1',
+                  clockIn: '08:01 AM',
+                  clockOut: '12:48 PM',
+                  rawIn: '2026-08-18T08:01:12-07:00',
+                  rawOut: '2026-08-18T12:48:04-07:00',
+                  inPoint: 13.0,
+                  outPoint: 37.5,
+                  inBad: false,
+                  outBad: false,
+                  hours: 4.78,
+                  schedule: 'Sched: IN 08:00 -> OUT 12:45 (Morning shift)',
+                  delta: '+1m / +3m',
+                  status: 'ok',
+                  verified: true,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                },
+                {
+                  id: 'a2',
+                  clockIn: '01:52 PM',
+                  clockOut: '05:06 PM',
+                  rawIn: '2026-08-18T13:52:20-07:00',
+                  rawOut: '2026-08-18T17:06:31-07:00',
+                  inPoint: 58.6,
+                  outPoint: 78.0,
+                  inBad: true,
+                  outBad: false,
+                  hours: 3.24,
+                  schedule: 'Sched: IN 01:30 -> OUT 05:00 (Afternoon shift)',
+                  delta: '+22m / +6m',
+                  status: 'bad',
+                  verified: false,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          email: 'jordan@shop.com',
+          label: 'Jordan L.',
+          collapsed: false,
+          days: [
+            {
+              key: 'jordan|2026-08-21',
+              label: '08-21-2026 (Fri - 15.35Hrs)',
+              total: 15.35,
+              inActivePeriod: true,
+              collapsed: false,
+              timeline: [
+                { start: 12.5, width: 18.75, label: 'Expected 08:00-11:30' },
+                { start: 43.75, width: 34.375, label: 'Expected 12:00-10:00' }
+              ],
+              rows: [
+                {
+                  id: 'j1',
+                  clockIn: '08:00 AM',
+                  clockOut: '11:32 AM',
+                  rawIn: '2026-08-21T08:00:05-07:00',
+                  rawOut: '2026-08-21T11:32:33-07:00',
+                  inPoint: 12.5,
+                  outPoint: 30.9,
+                  inBad: false,
+                  outBad: false,
+                  hours: 3.53,
+                  schedule: 'Sched: IN 08:00 -> OUT 11:30 (Morning shift)',
+                  delta: '0m / +2m',
+                  status: 'ok',
+                  verified: true,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                },
+                {
+                  id: 'j2',
+                  clockIn: '12:11 PM',
+                  clockOut: '11:59 PM',
+                  rawIn: '2026-08-21T12:11:14-07:00',
+                  rawOut: '2026-08-21T23:59:00-07:00',
+                  inPoint: 44.6,
+                  outPoint: 93.8,
+                  inBad: false,
+                  outBad: true,
+                  hours: 11.81,
+                  schedule: 'Sched: IN 12:00 -> OUT 10:00 (Extended shift)',
+                  delta: '+11m / +119m',
+                  status: 'bad',
+                  verified: false,
+                  deleted: false,
+                  notes: ['Auto clock-out after 14 hours.', 'Entry crossed midnight and was auto-split.'],
+                  pending: false
+                },
+                {
+                  id: 'j3',
+                  clockIn: '12:00 AM',
+                  clockOut: '04:26 AM',
+                  rawIn: '2026-08-22T00:00:00-07:00',
+                  rawOut: '2026-08-22T04:26:00-07:00',
+                  inPoint: 0,
+                  outPoint: 9,
+                  inBad: false,
+                  outBad: false,
+                  hours: 4.43,
+                  schedule: 'Sched: No overnight shift found for this snippet',
+                  delta: 'N/A',
+                  status: 'warn',
+                  verified: false,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                }
+              ]
+            },
+            {
+              key: 'jordan|2026-08-16',
+              label: '08-16-2026 (Sun - 6.00Hrs)',
+              total: 6.0,
+              inActivePeriod: false,
+              collapsed: false,
+              timeline: [
+                { start: 25, width: 25, label: 'Expected 10:00-02:00' }
+              ],
+              rows: [
+                {
+                  id: 'j4',
+                  clockIn: '10:07 AM',
+                  clockOut: '04:07 PM',
+                  rawIn: '2026-08-16T10:07:00-07:00',
+                  rawOut: '2026-08-16T16:07:00-07:00',
+                  inPoint: 25.8,
+                  outPoint: 56.2,
+                  inBad: false,
+                  outBad: false,
+                  hours: 6.0,
+                  schedule: 'Sched: IN 10:00 -> OUT 04:00 (Outside active period)',
+                  delta: '+7m / +7m',
+                  status: 'ok',
+                  verified: true,
+                  deleted: false,
+                  notes: ['Outside active period sample row'],
+                  pending: false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const el = {
+      root: document.getElementById('adminRoot'),
+      board: document.getElementById('timelineBoard'),
+      msg: document.getElementById('adminLoadMsg'),
+      showRaw: document.getElementById('showRaw'),
+      showDeleted: document.getElementById('showDeleted'),
+      showActiveOnly: document.getElementById('showActiveOnly'),
+      autoCollapse: document.getElementById('autoCollapse'),
+      toast: document.getElementById('toast')
+    };
+
+    function toast(message) {
+      el.toast.textContent = message;
+      el.toast.classList.add('show');
+      setTimeout(() => el.toast.classList.remove('show'), 1600);
+    }
+
+    function countVisibleRows() {
+      let count = 0;
+      state.entries.forEach((u) => {
+        u.days.forEach((d) => {
+          if (state.showOnlyActive && !d.inActivePeriod) return;
+          d.rows.forEach((r) => {
+            if (!state.showDeleted && r.deleted) return;
+            count += 1;
+          });
+        });
+      });
+      return count;
+    }
+
+    function isDayFullyVerified(day) {
+      const eligible = day.rows.filter((r) => !r.deleted);
+      if (!eligible.length) return false;
+      return eligible.every((r) => r.verified === true);
+    }
+
+    function userSummary(user) {
+      let total = 0;
+      let ok = 0;
+      user.days.forEach((d) => {
+        if (state.showOnlyActive && !d.inActivePeriod) return;
+        d.rows.forEach((r) => {
+          if (!state.showDeleted && r.deleted) return;
+          total += 1;
+          if (r.status === 'ok') ok += 1;
+        });
+      });
+      return { ok, total };
+    }
+
+    function renderTimelineSegments(day) {
+      const oldStartHour = 7;
+      const oldSpanHours = 14;
+      function clampPercent(value) {
+        return Math.max(0, Math.min(100, value));
+      }
+
+      function oldScalePercentTo24Scale(percent) {
+        const hour = oldStartHour + ((Number(percent) / 100) * oldSpanHours);
+        return clampPercent((hour / 24) * 100);
+      }
+
+      function parseHourToken(token) {
+        const m = String(token || '').trim().match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return null;
+        const h = Number(m[1]);
+        const min = Number(m[2]);
+        if (Number.isNaN(h) || Number.isNaN(min) || h < 0 || h > 12 || min < 0 || min > 59) return null;
+        return (h % 12) + (min / 60);
+      }
+
+      function resolveHour(token, approxHour, minHour) {
+        const base = parseHourToken(token);
+        if (base == null) return null;
+        const candidates = [base, base + 12, base + 24].filter((v) => v <= 24);
+        const eligible = candidates.filter((v) => (minHour == null ? true : v > minHour));
+        const pool = eligible.length ? eligible : candidates;
+        return pool.reduce((best, value) => (
+          Math.abs(value - approxHour) < Math.abs(best - approxHour) ? value : best
+        ), pool[0]);
+      }
+
+      function segmentFromLabel(seg) {
+        const fallbackStart = oldScalePercentTo24Scale(seg.start);
+        const fallbackEnd = oldScalePercentTo24Scale(seg.start + seg.width);
+        const fallback = {
+          left: fallbackStart,
+          width: Math.max(0, fallbackEnd - fallbackStart)
+        };
+
+        const m = String(seg.label || '').match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+        if (!m) return fallback;
+
+        const approxStartHour = oldStartHour + ((Number(seg.start) / 100) * oldSpanHours);
+        const approxEndHour = oldStartHour + ((Number(seg.start + seg.width) / 100) * oldSpanHours);
+        const startHour = resolveHour(m[1], approxStartHour, null);
+        const endHour = resolveHour(m[2], approxEndHour, startHour == null ? null : startHour);
+        if (startHour == null || endHour == null || endHour <= startHour) return fallback;
+
+        const left = clampPercent((startHour / 24) * 100);
+        const right = clampPercent((endHour / 24) * 100);
+        return { left, width: Math.max(0, right - left) };
+      }
+
+      return day.timeline.map((seg) => {
+        const lane = segmentFromLabel(seg);
+        return '<div class="expected" style="left:' + lane.left + '%; width:' + lane.width + '%;"></div>';
+      }).join('');
+    }
+
+    function parseClockText(timeText) {
+      if (!timeText || typeof timeText !== 'string') return 0;
+      const m = timeText.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (!m) return null;
+      let hour = Number(m[1]) % 12;
+      const minute = Number(m[2]);
+      const meridiem = m[3].toUpperCase();
+      if (meridiem === 'PM') hour += 12;
+      return { hour, minute, minutesOfDay: (hour * 60) + minute };
+    }
+
+    function clockTextTo24Percent(timeText) {
+      const parsed = parseClockText(timeText);
+      if (!parsed) return 0;
+      return Math.max(0, Math.min(100, (parsed.minutesOfDay / 1440) * 100));
+    }
+
+    function clockTextTo24Label(timeText) {
+      const parsed = parseClockText(timeText);
+      if (!parsed) return '--:--';
+      const hh = String(parsed.hour).padStart(2, '0');
+      const mm = String(parsed.minute).padStart(2, '0');
+      return hh + ':' + mm;
+    }
+
+    function normalizeTo24Label(value, fallbackText) {
+      const direct = String(value || '').trim().match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+      if (direct) return direct[1].padStart(2, '0') + ':' + direct[2];
+      return clockTextTo24Label(fallbackText);
+    }
+
+    function clampLabelPercent(value) {
+      return Math.max(1, Math.min(99, value));
+    }
+
+    function renderDayTimeline(day, uIdx, dIdx) {
+      const visibleRows = day.rows.filter((row) => state.showDeleted || !row.deleted);
+
+      const dots = visibleRows.map((row) => {
+        const y = 35;
+        const inPoint = clampLabelPercent(clockTextTo24Percent(row.clockIn));
+        const outPoint = clampLabelPercent(clockTextTo24Percent(row.clockOut));
+        const warnClass = row.status === 'warn' ? ' warn' : '';
+        const deletedClass = row.deleted ? ' deleted-row' : '';
+        const inDot = '<button class="dot in ' + (row.inBad ? 'bad' : '') + warnClass + deletedClass + '" style="left:' + inPoint + '%; top:' + y + 'px;" data-label="' + clockTextTo24Label(row.clockIn) + '" data-action="edit-dot" data-part="in" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + day.rows.indexOf(row) + '"></button>';
+        const outDot = '<button class="dot out ' + (row.outBad ? 'bad' : '') + warnClass + deletedClass + '" style="left:' + outPoint + '%; top:' + y + 'px;" data-label="' + clockTextTo24Label(row.clockOut) + '" data-action="edit-dot" data-part="out" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + day.rows.indexOf(row) + '"></button>';
+        const left = Math.min(inPoint, outPoint);
+        const width = Math.abs(outPoint - inPoint);
+        const line = '<span class="dot-line' + warnClass.replace('warn', 'warn-row') + deletedClass + '" style="left:' + left + '%; width:' + width + '%; top:' + (y + 6) + 'px;"></span>';
+        const strike = row.deleted ? '<span class="deleted-strike" style="left:' + left + '%; width:' + width + '%; top:' + (y + 6) + 'px;"></span>' : '';
+        return line + strike + inDot + outDot;
+      }).join('');
+
+      return '' +
+        '<div class="day-timeline-card">' +
+          '<div class="timeline-layout">' +
+            '<div class="timeline">' +
+              '<div class="ticks">' +
+                '<span class="tick start" style="left:0%;">00:00</span>' +
+                '<span class="tick" style="left:8.3333%;">02:00</span>' +
+                '<span class="tick" style="left:16.6667%;">04:00</span>' +
+                '<span class="tick" style="left:25%;">06:00</span>' +
+                '<span class="tick" style="left:33.3333%;">08:00</span>' +
+                '<span class="tick" style="left:41.6667%;">10:00</span>' +
+                '<span class="tick" style="left:50%;">12:00</span>' +
+                '<span class="tick" style="left:58.3333%;">14:00</span>' +
+                '<span class="tick" style="left:66.6667%;">16:00</span>' +
+                '<span class="tick" style="left:75%;">18:00</span>' +
+                '<span class="tick" style="left:83.3333%;">20:00</span>' +
+                '<span class="tick" style="left:91.6667%;">22:00</span>' +
+                '<span class="tick end" style="left:100%;">24:00</span>' +
+              '</div>' +
+              '<div class="track-grid">' + renderTimelineSegments(day) + dots + '</div>' +
+              '<div class="timeline-axis-note">24-hour timeline</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function openEditModalForRow(u, d, r) {
+      const row = getRow(u, d, r);
+      state.editTarget = { u, d, r };
+      document.getElementById('editRowLabel').textContent = state.entries[u].label + ' | ' + state.entries[u].days[d].label;
+      document.getElementById('editClockIn').value = clockTextTo24Label(row.clockIn);
+      document.getElementById('editClockOut').value = clockTextTo24Label(row.clockOut);
+      renderEditModalDetails();
+      openModal('adminTimeEditModal');
+    }
+
+    function renderEditModalDetails() {
+      if (!state.editTarget) return;
+      const row = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
+      const notesList = document.getElementById('editNotesList');
+      const toggleBtn = document.getElementById('editDeleteRestoreBtn');
+      const notes = row.notes;
+      notesList.innerHTML = '';
+      if (!notes.length || (notes.length === 1 && notes[0] === 'No notes')) {
+        notesList.innerHTML = '<div class="edit-note-empty">No notes</div>';
+      } else {
+        notes.forEach((note, idx) => {
+          notesList.innerHTML += '<div class="edit-note-item">#' + (idx + 1) + ' ' + note + '</div>';
+        });
+      }
+      toggleBtn.innerHTML = row.deleted
+        ? 'Restore'
+        : 'DEL<svg class="hold-ring" viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="14"></circle><circle class="progress" cx="18" cy="18" r="14"></circle></svg>';
+      toggleBtn.classList.toggle('restore', row.deleted);
+      toggleBtn.classList.remove('holding');
+      toggleBtn.title = row.deleted ? 'Restore this entry' : 'Hold 3s to delete';
+    }
+
+    function render() {
+      // Production note: this render pass corresponds to live renderAdminEntries(),
+      // but draws grouped day timelines instead of row table cards.
+      el.root.classList.toggle('show-raw', state.showRawTimes);
+      el.msg.textContent = 'Loaded ' + countVisibleRows() + ' entries.';
+
+      const out = [];
+      state.entries.forEach((user, uIdx) => {
+        const visibleDays = user.days.filter((d) => !(state.showOnlyActive && !d.inActivePeriod));
+        if (!visibleDays.length) return;
+
+        const summary = userSummary(user);
+        const summaryClass = summary.total === 0 ? 'warn' : (summary.ok === summary.total ? 'ok' : 'bad');
+        const summaryText = summary.total === 0 ? 'No visible rows' : (summary.ok + '/' + summary.total + ' punches in sync');
+
+        out.push('<article class="employee">');
+        out.push('<div class="employee-head"><span class="left"><button class="collapse-btn" data-action="toggle-user" data-user="' + uIdx + '">' + (user.collapsed ? '+' : '-') + '</button>' + user.label + '</span><span class="sync-pill ' + summaryClass + '">' + summaryText + '</span></div>');
+
+        if (!user.collapsed) {
+          visibleDays.forEach((day) => {
+            const dIdx = user.days.indexOf(day);
+            if (state.autoCollapse && isDayFullyVerified(day)) day.collapsed = true;
+            const dayVerified = isDayFullyVerified(day);
+
+            out.push('<section class="day">');
+            out.push('<div class="day-head"><span class="day-left"><button class="collapse-btn" data-action="toggle-day" data-user="' + uIdx + '" data-day="' + dIdx + '">' + (day.collapsed ? '+' : '-') + '</button>' + day.label + '</span><span class="day-actions"><button class="day-verify-btn ' + (dayVerified ? 'on' : '') + '" data-action="verify-day" data-user="' + uIdx + '" data-day="' + dIdx + '">' + (dayVerified ? 'Verified Day' : 'Verify Day') + '</button><span class="day-total">Total ' + day.total.toFixed(2) + ' Hrs</span><button class="add-missed" data-action="add-missed" data-user="' + uIdx + '" data-day="' + dIdx + '">+ Add missed time</button></span></div>');
+
+            if (!day.collapsed) {
+              out.push('<div class="day-body">');
+              out.push(renderDayTimeline(day, uIdx, dIdx));
+              out.push('</div>');
+            }
+            out.push('</section>');
+          });
+        }
+        out.push('</article>');
+      });
+
+      el.board.innerHTML = out.join('');
+      bindDynamicEvents();
+    }
+
+    function getRow(u, d, r) {
+      return state.entries[u].days[d].rows[r];
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function bindDynamicEvents() {
+      // Production hook map:
+      // - verify-day => adminSetEntryVerifiedBatch fan-out in live code
+      // - edit-dot => openAdminTimeEditor(rowIndex) equivalent
+      // - add-missed => submitManualEntry/openAdminManualEntryForEmployee equivalent
+      document.querySelectorAll('[data-action="toggle-user"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          state.entries[u].collapsed = !state.entries[u].collapsed;
+          render();
+        };
+      });
+
+      document.querySelectorAll('[data-action="toggle-day"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          state.entries[u].days[d].collapsed = !state.entries[u].days[d].collapsed;
+          render();
+        };
+      });
+
+      document.querySelectorAll('[data-action="verify-day"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const day = state.entries[u].days[d];
+          const eligibleRows = day.rows.filter((row) => !row.deleted);
+          if (!eligibleRows.length) return;
+          const targetVerified = !eligibleRows.every((row) => row.verified === true);
+          eligibleRows.forEach((row) => {
+            row.verified = targetVerified;
+            row.pending = true;
+          });
+          render();
+          setTimeout(() => {
+            eligibleRows.forEach((row) => {
+              row.pending = false;
+            });
+            render();
+            toast(targetVerified ? 'Day verified (mock).' : 'Day unverified (mock).');
+          }, 450);
+        };
+      });
+
+      document.querySelectorAll('[data-action="edit-dot"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const r = Number(btn.dataset.row);
+          openEditModalForRow(u, d, r);
+        };
+      });
+
+      document.querySelectorAll('[data-action="add-missed"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          state.manualTarget = { email: state.entries[u].email, dayLabel: state.entries[u].days[d].label };
+          document.getElementById('manualTargetInfo').textContent = 'Target: ' + state.entries[u].label + ' | ' + state.entries[u].days[d].label;
+          openModal('manualEntryModal');
+        };
+      });
+    }
+
+    function saveEditModalNote() {
+      // Production mapping: send notes-only mutation through adminSaveEntryUpdate
+      // using existing entryId/rowIndex, without modifying time fields.
+      if (!state.editTarget) return;
+      const row = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
+      const input = document.getElementById('editAddNoteInput');
+      const value = String(input.value || '').trim();
+      if (!value) {
+        toast('Note cannot be empty.');
+        return;
+      }
+      if (row.notes.length === 1 && row.notes[0] === 'No notes') row.notes = [];
+      const stamp = new Date().toLocaleString();
+      row.notes.push('[' + stamp + '] ' + value);
+      input.value = '';
+      renderEditModalDetails();
+      toast('Note added (mock).');
+    }
+
+    document.getElementById('editAddNoteBtn').addEventListener('click', saveEditModalNote);
+    document.getElementById('editAddNoteInput').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        saveEditModalNote();
+      }
+    });
+
+    const editDeleteRestoreBtn = document.getElementById('editDeleteRestoreBtn');
+    let editDeleteHoldTimer = null;
+
+    function clearEditDeleteHold() {
+      editDeleteRestoreBtn.classList.remove('holding');
+      if (editDeleteHoldTimer) {
+        clearTimeout(editDeleteHoldTimer);
+        editDeleteHoldTimer = null;
+      }
+    }
+
+    editDeleteRestoreBtn.addEventListener('pointerdown', () => {
+      if (!state.editTarget) return;
+      const row = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
+      if (row.deleted) return;
+      clearEditDeleteHold();
+      editDeleteRestoreBtn.classList.add('holding');
+      editDeleteHoldTimer = setTimeout(() => {
+        row.deleted = true;
+        row.pending = true;
+        clearEditDeleteHold();
+        closeModal('adminTimeEditModal');
+        state.editTarget = null;
+        render();
+        setTimeout(() => {
+          row.pending = false;
+          render();
+          toast('Row deleted (mock).');
+        }, 300);
+      }, 3000);
+    });
+
+    editDeleteRestoreBtn.addEventListener('pointerup', clearEditDeleteHold);
+    editDeleteRestoreBtn.addEventListener('pointerleave', clearEditDeleteHold);
+    editDeleteRestoreBtn.addEventListener('pointercancel', clearEditDeleteHold);
+
+    editDeleteRestoreBtn.addEventListener('click', () => {
+      if (!state.editTarget) return;
+      const row = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
+      if (!row.deleted) {
+        toast('Hold delete for 3 seconds to remove row.');
+        return;
+      }
+      row.deleted = false;
+      row.pending = true;
+      render();
+      setTimeout(() => {
+        row.pending = false;
+        render();
+        renderEditModalDetails();
+        toast('Row restored (mock).');
+      }, 300);
+    });
+
+    document.querySelectorAll('[data-close]').forEach((btn) => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      el.msg.textContent = 'Loading...';
+      setTimeout(() => {
+        el.msg.textContent = 'Loaded ' + countVisibleRows() + ' entries.';
+        toast('Entries refreshed (mock).');
+      }, 420);
+    });
+
+    document.getElementById('btnPayroll').addEventListener('click', () => openModal('payrollModal'));
+    document.getElementById('btnSchedule').addEventListener('click', () => openModal('scheduleModal'));
+    document.getElementById('btnReports').addEventListener('click', () => openModal('reportsModal'));
+
+    el.showRaw.addEventListener('change', () => {
+      state.showRawTimes = el.showRaw.checked;
+      render();
+    });
+
+    el.showDeleted.addEventListener('change', () => {
+      state.showDeleted = el.showDeleted.checked;
+      render();
+    });
+
+    el.showActiveOnly.addEventListener('change', () => {
+      state.showOnlyActive = el.showActiveOnly.checked;
+      render();
+    });
+
+    el.autoCollapse.addEventListener('change', () => {
+      state.autoCollapse = el.autoCollapse.checked;
+      if (!state.autoCollapse) {
+        state.entries.forEach((u) => u.days.forEach((d) => { d.collapsed = false; }));
+      }
+      render();
+      toast(state.autoCollapse ? 'Auto-collapse verified days enabled.' : 'Auto-collapse verified days disabled.');
+    });
+
+    document.getElementById('manualSubmit').addEventListener('click', () => {
+      // Implementation mapping:
+      // - Replace mock submit with custom-picker extraction + validation + server call.
+      // - Route to submitManualEntryFromMenu(...) when target email is selected.
+      // - Route to submitManualTimeEntry(...) for self-entry fallback.
+      // - Apply optimistic insert + rollback strategy from blueprint comments above.
+      closeModal('manualEntryModal');
+      toast('Missed time submitted for ' + state.manualTarget.email + ' (mock).');
+    });
+
+    document.getElementById('editApply').addEventListener('click', () => {
+      // Production mapping: this becomes adminSaveEntryUpdate payload with
+      // modifiedClockInISO/modifiedClockOutISO and optional clientAppendedTimeEditNote.
+      if (!state.editTarget) return;
+      const row = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
+      const clockInValue = document.getElementById('editClockIn').value;
+      const clockOutValue = document.getElementById('editClockOut').value;
+      const oldClockIn = clockTextTo24Label(row.clockIn);
+      const oldClockOut = clockTextTo24Label(row.clockOut);
+      const newClockIn = normalizeTo24Label(clockInValue, row.clockIn);
+      const newClockOut = normalizeTo24Label(clockOutValue, row.clockOut);
+      if (newClockIn === oldClockIn && newClockOut === oldClockOut) {
+        closeModal('adminTimeEditModal');
+        toast('No time edits to apply.');
+        return;
+      }
+      row.clockIn = newClockIn;
+      row.clockOut = newClockOut;
+      row.pending = true;
+      closeModal('adminTimeEditModal');
+      render();
+      setTimeout(() => {
+        row.pending = false;
+        if (row.notes.length === 1 && row.notes[0] === 'No notes') row.notes = [];
+        row.notes.push('[' + new Date().toLocaleString() + '] Admin edited times (mock).');
+        render();
+        toast('Time edits applied (mock).');
+      }, 380);
+    });
+
+    const payrollTableBody = document.querySelector('#payrollTable tbody');
+    document.getElementById('generatePayroll').addEventListener('click', () => {
+      payrollTableBody.innerHTML = [
+        '<tr><td>alex@shop.com</td><td>35.00</td><td>2.00</td><td>0.00</td><td>34.00</td><td>1.50</td><td>0.00</td><td>0.00</td><td>8.00</td><td>0.00</td><td>0.00</td><td>69.00</td><td>3.50</td><td>0.00</td><td><input type="text" value="" placeholder="Preview note"></td><td>AWS Off</td></tr>',
+        '<tr><td>jordan@shop.com</td><td>30.00</td><td>4.00</td><td>0.50</td><td>32.00</td><td>3.00</td><td>1.25</td><td>0.00</td><td>10.00</td><td>0.00</td><td>2.00</td><td>62.00</td><td>7.00</td><td>1.75</td><td><input type="text" value="Auto-clockout on Fri" placeholder="Preview note"></td><td>AWS On</td></tr>'
+      ].join('');
+      state.payrollReady = true;
+      document.getElementById('exportPayroll').disabled = false;
+      document.getElementById('payrollMsg').textContent = 'Preview generated. Unverified entries: 1 (mock).';
+      toast('Payroll preview generated (mock).');
+    });
+
+    document.getElementById('exportPayroll').addEventListener('click', () => {
+      if (!state.payrollReady) return;
+      toast('Payroll exported and archived (mock).');
+      closeModal('payrollModal');
+    });
+
+    function seedAwsModal() {
+      const list = document.getElementById('awsList');
+      list.innerHTML = [
+        '<label class="aws-row"><strong>alex@shop.com</strong><span><input type="checkbox"> AWS enabled</span><span>Effective date <input type="date" value="2026-08-17"></span></label>',
+        '<label class="aws-row"><strong>jordan@shop.com</strong><span><input type="checkbox" checked> AWS enabled</span><span>Effective date <input type="date" value="2026-08-01"></span></label>',
+        '<label class="aws-row"><strong>maria@shop.com</strong><span><input type="checkbox" checked> AWS enabled</span><span>Effective date <input type="date" value="2026-07-15"></span></label>'
+      ].join('');
+    }
+
+    function seedHolidayModal() {
+      const grid = document.getElementById('holidayGrid');
+      grid.innerHTML = [
+        '<div class="holiday-row"><strong>alex@shop.com</strong><label><input type="checkbox" checked> Labor Day (09/07)</label><label><input type="checkbox"> Independence Day (07/04)</label></div>',
+        '<div class="holiday-row"><strong>jordan@shop.com</strong><label><input type="checkbox" checked> Labor Day (09/07)</label><label><input type="checkbox" checked> Independence Day (07/04)</label></div>'
+      ].join('');
+    }
+
+    document.getElementById('awsSettingsBtn').addEventListener('click', () => {
+      seedAwsModal();
+      openModal('awsModal');
+    });
+
+    document.getElementById('holidayPayBtn').addEventListener('click', () => {
+      seedHolidayModal();
+      openModal('holidayModal');
+    });
+
+    document.getElementById('saveAwsBtn').addEventListener('click', () => {
+      closeModal('awsModal');
+      toast('AWS settings saved (mock).');
+    });
+
+    document.getElementById('applyHolidayBtn').addEventListener('click', () => {
+      closeModal('holidayModal');
+      toast('Holiday pay applied (mock).');
+    });
+
+    render();
+  </script>
+</body>
+</html>

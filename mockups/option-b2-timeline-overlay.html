@@ -1,0 +1,1639 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B2 Mockup - Timeline Overlay Full Workflow Parity</title>
+  <style>
+    :root {
+      --bg: #243242;
+      --panel: #2d3a4b;
+      --panel-2: #253243;
+      --line: #435672;
+      --line-soft: #3b4b63;
+      --ink: #e4edf8;
+      --muted: #adc0d7;
+      --accent: #72baff;
+      --ok: #70dfac;
+      --bad: #ff879c;
+      --warn: #ffd589;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(980px 460px at 10% -20%, #40597a 0%, transparent 72%),
+        radial-gradient(980px 460px at 100% 0%, #37455c 0%, transparent 72%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      padding: 12px;
+    }
+
+    .admin-shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 20px 38px rgba(0,0,0,0.38);
+      overflow: hidden;
+    }
+
+    .head {
+      padding: 12px;
+      border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(180deg, #314052 0%, #2b3748 100%);
+    }
+
+    .head-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+      color: var(--accent);
+      letter-spacing: 0.01em;
+    }
+
+    .sub {
+      color: #c2d3e8;
+      font-size: 1rem;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid #7398c3;
+      background: #304a67;
+      color: #e8f3ff;
+      cursor: pointer;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid #73b4fb;
+      background: #67aff8;
+      color: #0a2b51;
+      border-radius: 10px;
+      padding: 7px 11px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn.secondary {
+      background: #5a95d2;
+      border-color: #72aeea;
+      color: #eaf4ff;
+    }
+
+    .switches {
+      margin-top: 12px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: #c4d4e8;
+      user-select: none;
+    }
+
+    .switch input { display: none; }
+
+    .track {
+      width: 42px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid #708197;
+      background: #566273;
+      position: relative;
+      transition: 0.2s;
+    }
+
+    .track::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      top: 2px;
+      left: 2px;
+      border-radius: 50%;
+      background: #eef4fc;
+      transition: 0.2s;
+    }
+
+    .switch input:checked + .track {
+      background: #23b760;
+      border-color: #5ad08a;
+    }
+
+    .switch input:checked + .track::after {
+      left: 20px;
+    }
+
+    .msg {
+      margin-top: 10px;
+      font-size: 1.9rem;
+      line-height: 1;
+      color: #c7d8eb;
+    }
+
+    .content {
+      max-height: 62vh;
+      overflow: auto;
+      padding: 10px;
+      background: var(--panel-2);
+    }
+
+    .employee {
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      background: #273447;
+    }
+
+    .employee-head {
+      background: #c8ced8;
+      color: #223246;
+      border-bottom: 1px solid #a9b5c6;
+      padding: 7px 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .employee-head .left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .collapse-btn {
+      width: 25px;
+      height: 25px;
+      border: 1px solid #41526a;
+      border-radius: 5px;
+      background: #24344b;
+      color: #e9f3ff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .sync-pill {
+      border-radius: 999px;
+      border: 1px solid;
+      padding: 5px 9px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .sync-pill.ok {
+      color: var(--ok);
+      border-color: rgba(112,223,172,0.6);
+      background: rgba(112,223,172,0.16);
+    }
+
+    .sync-pill.bad {
+      color: var(--bad);
+      border-color: rgba(255,135,156,0.6);
+      background: rgba(255,135,156,0.16);
+    }
+
+    .day {
+      border-bottom: 1px solid #45556f;
+    }
+
+    .day:last-child { border-bottom: none; }
+
+    .day-head {
+      background: #aec3df;
+      color: #16375e;
+      border-bottom: 1px solid #7f9fc6;
+      padding: 6px 8px;
+      font-size: 1.32rem;
+      font-weight: 700;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .day-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .day-actions {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .day-total {
+      font-size: 0.88rem;
+      border: 1px solid #6b85a5;
+      border-radius: 999px;
+      padding: 3px 8px;
+      background: rgba(24,59,94,0.14);
+      color: #16375e;
+    }
+
+    .add-missed {
+      border: 1px solid #42658f;
+      background: #2a4e7c;
+      color: #e0edff;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .day-body {
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+      background: #2b3545;
+    }
+
+    .timeline-card {
+      border: 1px solid #485c7a;
+      border-radius: 10px;
+      background: #1f2d42;
+      padding: 8px;
+    }
+
+    .timeline-top {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .verify {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1px solid #627a98;
+      background: #1c2738;
+      color: #c8d8ea;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .verify.on {
+      background: #1f3a2d;
+      border-color: #3f7e5c;
+      color: #9ef2bf;
+    }
+
+    .punch-meta {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .chip {
+      border-radius: 999px;
+      border: 1px solid;
+      padding: 5px 9px;
+      font-size: 0.83rem;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .chip.in {
+      background: #1f4a36;
+      border-color: #407d60;
+      color: #9cf2c8;
+    }
+
+    .chip.out {
+      background: #4e2e37;
+      border-color: #7c4a56;
+      color: #ffc2cd;
+    }
+
+    .chip.hours {
+      background: #2f4664;
+      border-color: #55779f;
+      color: #c5daf6;
+      cursor: default;
+    }
+
+    .timeline {
+      position: relative;
+      border: 1px solid #4d6384;
+      border-radius: 9px;
+      background: #16253a;
+      margin-top: 8px;
+      padding: 6px 7px 12px;
+    }
+
+    .ticks {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      color: #99afca;
+      font-size: 0.68rem;
+      margin-bottom: 5px;
+    }
+
+    .track-grid {
+      position: relative;
+      height: 45px;
+      border-radius: 7px;
+      background-image: linear-gradient(to right, rgba(114, 146, 181, 0.16) 1px, transparent 1px);
+      background-size: calc(100% / 8) 100%;
+      background-color: #1f3048;
+      overflow: hidden;
+    }
+
+    .expected {
+      position: absolute;
+      top: 6px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(90, 178, 130, 0.2);
+      border: 1px solid rgba(90, 178, 130, 0.6);
+    }
+
+    .expected::after {
+      content: attr(data-label);
+      position: absolute;
+      top: -16px;
+      left: 0;
+      font-size: 0.62rem;
+      color: #9fe2bd;
+      white-space: nowrap;
+    }
+
+    .punch {
+      position: absolute;
+      top: 24px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      transform: translateX(-50%);
+      border: 2px solid #ffffff;
+      background: #6db7ff;
+      box-shadow: 0 0 0 2px rgba(109,183,255,0.26);
+    }
+
+    .punch.bad {
+      background: var(--bad);
+      box-shadow: 0 0 0 3px rgba(255,135,156,0.25);
+      animation: pulse 1.8s infinite;
+    }
+
+    .punch::after {
+      content: attr(data-label);
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.62rem;
+      color: #d5e4f7;
+      white-space: nowrap;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,135,156,0.3); }
+      70% { box-shadow: 0 0 0 8px rgba(255,135,156,0); }
+      100% { box-shadow: 0 0 0 0 rgba(255,135,156,0); }
+    }
+
+    .raw {
+      margin-top: 6px;
+      font-size: 0.76rem;
+      color: #9eb2cb;
+      display: none;
+    }
+
+    .show-raw .raw { display: block; }
+
+    .detail {
+      margin-top: 6px;
+      border: 1px solid #506786;
+      background: #25374f;
+      border-radius: 8px;
+      padding: 6px 8px;
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) auto auto auto;
+      gap: 7px;
+      align-items: center;
+      font-size: 0.8rem;
+    }
+
+    .schedule-snippet {
+      color: #d3e0f1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .delta {
+      font-family: "Consolas", "Menlo", monospace;
+      font-weight: 700;
+      color: #c6d8ee;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .status {
+      border-radius: 999px;
+      border: 1px solid;
+      padding: 5px 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    .status.ok {
+      color: var(--ok);
+      border-color: rgba(112,223,172,0.6);
+      background: rgba(112,223,172,0.16);
+    }
+
+    .status.bad {
+      color: var(--bad);
+      border-color: rgba(255,135,156,0.6);
+      background: rgba(255,135,156,0.16);
+    }
+
+    .status.warn {
+      color: var(--warn);
+      border-color: rgba(255,213,137,0.6);
+      background: rgba(255,213,137,0.16);
+    }
+
+    .row-actions {
+      display: inline-flex;
+      gap: 6px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid #4f6686;
+      background: #2d4564;
+      color: #deedff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn.restore {
+      width: auto;
+      padding: 0 10px;
+      border-radius: 999px;
+      border-color: #2f6b49;
+      background: #2c5b42;
+      color: #9df0c4;
+      font-size: 0.75rem;
+    }
+
+    .note-btn {
+      border: 1px solid #3d5d84;
+      background: #284973;
+      color: #deecff;
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .hold-ring {
+      position: absolute;
+      inset: -2px;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .hold-ring circle {
+      fill: none;
+      stroke-width: 2.8;
+    }
+
+    .hold-ring .track { stroke: rgba(255,255,255,0.24); }
+    .hold-ring .progress {
+      stroke: #ffd57e;
+      stroke-dasharray: 88;
+      stroke-dashoffset: 88;
+    }
+
+    .holding .hold-ring { opacity: 1; }
+    .holding .hold-ring .progress { animation: holdFill 3s linear forwards; }
+
+    @keyframes holdFill {
+      from { stroke-dashoffset: 88; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    .deleted { opacity: 0.88; }
+
+    .pending {
+      animation: pendingPulse 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pendingPulse {
+      0% { box-shadow: inset 0 0 0 0 rgba(255, 212, 136, 0.24); }
+      50% { box-shadow: inset 0 0 0 999px rgba(255, 212, 136, 0.05); }
+      100% { box-shadow: inset 0 0 0 0 rgba(255, 212, 136, 0.24); }
+    }
+
+    .notes {
+      margin-top: 6px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .note-line {
+      border: 1px dashed #566983;
+      background: #2e4058;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+      color: #d4e0f0;
+    }
+
+    .composer {
+      margin-top: 6px;
+      display: none;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .composer textarea {
+      width: min(720px, 100%);
+      min-height: 46px;
+      border: 1px solid #4f6587;
+      background: #1a2a40;
+      color: #e4eefc;
+      border-radius: 8px;
+      padding: 7px;
+      font-family: inherit;
+    }
+
+    .composer button {
+      border: 1px solid #3d5d84;
+      background: #284973;
+      color: #deecff;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .legend {
+      border-top: 1px solid var(--line-soft);
+      padding: 10px 12px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 0.82rem;
+      background: #293446;
+      color: #b7cae2;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 12, 20, 0.56);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      z-index: 20;
+    }
+
+    .overlay.open { display: flex; }
+
+    .modal-card {
+      width: min(96vw, 980px);
+      max-height: 92vh;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #1f2a3b;
+      color: #dce8fa;
+      box-shadow: 0 20px 35px rgba(0,0,0,0.45);
+      position: relative;
+      padding: 12px;
+    }
+
+    .modal-card.small { width: min(96vw, 540px); }
+    .modal-card.medium { width: min(96vw, 740px); }
+
+    .modal-card h3 {
+      margin: 0 0 8px;
+      color: #7fc0ff;
+    }
+
+    .modal-note {
+      margin: 0 0 8px;
+      color: #a8bdd7;
+      font-size: 0.88rem;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      height: 30px;
+      border: 1px solid #6787ac;
+      background: #30455f;
+      color: #eaf3ff;
+      border-radius: 50%;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+      margin-bottom: 8px;
+      font-size: 0.84rem;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid #4f6587;
+      background: #151f2f;
+      color: #e5efff;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+
+    .modal-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn.alt {
+      background: #2a3f5a;
+      color: #e2edff;
+      border-color: #506b8e;
+    }
+
+    .preview-box {
+      border: 1px solid #435a79;
+      border-radius: 8px;
+      overflow: auto;
+      max-height: 46vh;
+      background: #152031;
+    }
+
+    .preview-table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .preview-table th,
+    .preview-table td {
+      border-bottom: 1px solid #32455f;
+      padding: 6px;
+      text-align: center;
+      color: #d5e3f7;
+    }
+
+    .preview-table th {
+      position: sticky;
+      top: 0;
+      background: #203049;
+      z-index: 1;
+      color: #beddff;
+    }
+
+    .preview-msg {
+      margin: 8px 0;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid #496486;
+      background: #1f2f47;
+      font-size: 0.86rem;
+      color: #c9dbf2;
+    }
+
+    .aws-list,
+    .holiday-grid {
+      border: 1px solid #465c7b;
+      border-radius: 8px;
+      padding: 8px;
+      background: #18263a;
+      display: grid;
+      gap: 7px;
+      max-height: 44vh;
+      overflow: auto;
+      margin-top: 8px;
+    }
+
+    .aws-row,
+    .holiday-row {
+      border: 1px solid #3e5575;
+      border-radius: 8px;
+      padding: 7px;
+      background: #1e2e45;
+      display: grid;
+      gap: 6px;
+      font-size: 0.84rem;
+    }
+
+    .report-frame,
+    .tool-frame {
+      border: 1px dashed #5e7898;
+      border-radius: 8px;
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b7cae2;
+      background: #162337;
+      text-align: center;
+      padding: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 14px;
+      bottom: 14px;
+      background: #16304f;
+      color: #dbeaff;
+      border: 1px solid #4d719b;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      display: none;
+      z-index: 40;
+    }
+
+    .toast.show { display: block; }
+
+    @media (max-width: 980px) {
+      .day-head {
+        grid-template-columns: 1fr;
+      }
+      .detail {
+        grid-template-columns: 1fr;
+      }
+      .timeline-top {
+        grid-template-columns: 1fr;
+        align-items: start;
+      }
+      .row-actions {
+        justify-content: flex-start;
+      }
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="admin-shell" id="adminRoot">
+    <header class="head">
+      <div class="head-top">
+        <div>
+          <h1>Admin View <span class="sub">(Active pay period: 08/17/2026 to 08/30/2026)</span></h1>
+        </div>
+        <button class="close-btn" type="button" aria-label="Close">x</button>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn" id="btnRefresh">Refresh Entries</button>
+        <button class="btn" id="btnPayroll">Create Payroll Report</button>
+        <button class="btn secondary" id="btnSchedule">Schedule Tool</button>
+        <button class="btn secondary" id="btnReports">More Reports</button>
+      </div>
+
+      <div class="switches">
+        <label class="switch"><input id="showRaw" type="checkbox"><span class="track"></span><span>Show raw times</span></label>
+        <label class="switch"><input id="showDeleted" type="checkbox"><span class="track"></span><span>Show deleted rows</span></label>
+        <label class="switch"><input id="showActiveOnly" type="checkbox" checked><span class="track"></span><span style="color:#87f4c0;font-weight:700;">Show only active pay period</span></label>
+        <label class="switch"><input id="autoCollapse" type="checkbox"><span class="track"></span><span>Auto-collapse verified days</span></label>
+      </div>
+
+      <div class="msg" id="adminLoadMsg">Loaded 125 entries.</div>
+    </header>
+
+    <div class="content" id="timelineBoard"></div>
+
+    <footer class="legend">
+      <span><span class="dot" style="background:var(--ok)"></span>OK = every anchor is within +/-15 minutes</span>
+      <span><span class="dot" style="background:var(--bad)"></span>OUT = at least one anchor exceeds +/-15 minutes</span>
+      <span><span class="dot" style="background:var(--warn)"></span>CHECK = missing schedule snippet for that punch</span>
+      <span><span class="dot" style="background:#f2d48a"></span>Delete action uses 3-second hold-to-confirm flow</span>
+    </footer>
+  </section>
+
+  <div class="overlay" id="manualEntryModal">
+    <div class="modal-card small">
+      <button class="modal-close" data-close="manualEntryModal">x</button>
+      <h3>Add Missed Time (Mock)</h3>
+      <p class="modal-note" id="manualTargetInfo">Target: employee/day</p>
+      <div class="field-grid">
+        <label class="field"><span>Clock In</span><input type="text" id="manualClockIn" value="08/19/2026 08:00 AM"></label>
+        <label class="field"><span>Clock Out</span><input type="text" id="manualClockOut" value="08/19/2026 01:00 PM"></label>
+      </div>
+      <label class="field"><span>Type</span>
+        <select id="manualType">
+          <option value="worked" selected>Worked</option>
+          <option value="vacation">Vacation</option>
+          <option value="sick">Sick</option>
+        </select>
+      </label>
+      <label class="field"><span>Note (required)</span><textarea id="manualNotes">Added by admin: missed punch reported by employee.</textarea></label>
+      <div class="modal-actions">
+        <button class="btn" id="manualSubmit">Submit</button>
+        <button class="btn alt" data-close="manualEntryModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="adminTimeEditModal">
+    <div class="modal-card small">
+      <button class="modal-close" data-close="adminTimeEditModal">x</button>
+      <h3>Edit Times (Mock)</h3>
+      <p class="modal-note" id="editRowLabel">Editing row</p>
+      <label class="field"><span>Clock In</span><input type="text" id="editClockIn"></label>
+      <label class="field"><span>Clock Out</span><input type="text" id="editClockOut"></label>
+      <div class="modal-actions">
+        <button class="btn" id="editApply">Apply</button>
+        <button class="btn alt" data-close="adminTimeEditModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="payrollModal">
+    <div class="modal-card">
+      <button class="modal-close" data-close="payrollModal">x</button>
+      <h3>Payroll Report (Mock)</h3>
+      <div class="toolbar" style="margin-top:0;">
+        <button class="btn" id="generatePayroll">Generate Report</button>
+        <button class="btn secondary" id="exportPayroll" disabled>Export and Archive Payroll</button>
+        <button class="btn secondary" id="holidayPayBtn">Add Holiday Pay</button>
+        <button class="btn secondary" id="awsSettingsBtn" style="margin-left:auto;">AWS : 2 enabled</button>
+      </div>
+      <div class="preview-msg" id="payrollMsg">Refresh entries and generate preview to see totals.</div>
+      <div class="preview-box">
+        <table class="preview-table" id="payrollTable">
+          <thead>
+            <tr>
+              <th>Email</th><th>W1 RT</th><th>W1 OT</th><th>W1 DT</th><th>W2 RT</th><th>W2 OT</th><th>W2 DT</th><th>Vacation</th><th>Holiday</th><th>Sick</th><th>Hrs > 40</th><th>Total RT</th><th>Total OT</th><th>Total DT</th><th>Notes</th><th>AWS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="16">No preview generated yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="awsModal">
+    <div class="modal-card medium">
+      <button class="modal-close" data-close="awsModal">x</button>
+      <h3>AWS Settings (Mock)</h3>
+      <p class="modal-note">Enable per employee and set effective date.</p>
+      <div class="aws-list" id="awsList"></div>
+      <div class="modal-actions">
+        <button class="btn" id="saveAwsBtn">Save AWS Settings</button>
+        <button class="btn alt" data-close="awsModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="holidayModal">
+    <div class="modal-card medium">
+      <button class="modal-close" data-close="holidayModal">x</button>
+      <h3>Add Holiday Pay (Mock)</h3>
+      <p class="modal-note">Checked holidays add 8h (non-AWS) or 10h (AWS on holiday date).</p>
+      <div class="holiday-grid" id="holidayGrid"></div>
+      <div class="modal-actions">
+        <button class="btn" id="applyHolidayBtn">Apply Holiday Pay</button>
+        <button class="btn alt" data-close="holidayModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="scheduleModal">
+    <div class="modal-card" style="width:min(98vw,1200px);">
+      <button class="modal-close" data-close="scheduleModal">x</button>
+      <h3>Schedule Tool (Mock)</h3>
+      <div class="tool-frame">Schedule Tool iframe placeholder. Workflow preserved: open from Admin View, work schedule, close to return.</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="reportsModal">
+    <div class="modal-card" style="width:min(96vw,880px);">
+      <button class="modal-close" data-close="reportsModal">x</button>
+      <h3>More Reports (Mock)</h3>
+      <div class="report-frame">More Reports iframe placeholder. Workflow preserved: open from Admin View, run report, close.</div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const state = {
+      showRawTimes: false,
+      showDeleted: false,
+      showOnlyActive: true,
+      autoCollapse: false,
+      payrollReady: false,
+      editTarget: null,
+      manualTarget: { email: '', dayLabel: '' },
+      entries: [
+        {
+          email: 'alex@shop.com',
+          label: 'Alex R.',
+          collapsed: false,
+          days: [
+            {
+              key: 'alex|2026-08-18',
+              label: '08-18-2026 (Tue - 8.01Hrs)',
+              total: 8.01,
+              inActivePeriod: true,
+              collapsed: false,
+              timeline: [
+                { start: 12.5, width: 25, label: 'Expected 08:00-12:00' },
+                { start: 56.25, width: 21.875, label: 'Expected 01:30-05:00' }
+              ],
+              rows: [
+                {
+                  id: 'a1',
+                  clockIn: '08:01 AM',
+                  clockOut: '12:48 PM',
+                  rawIn: '2026-08-18T08:01:12-07:00',
+                  rawOut: '2026-08-18T12:48:04-07:00',
+                  inPoint: 13.0,
+                  outPoint: 37.5,
+                  inBad: false,
+                  outBad: false,
+                  hours: 4.78,
+                  schedule: 'Sched: IN 08:00 -> OUT 12:45 (Morning shift)',
+                  delta: '+1m / +3m',
+                  status: 'ok',
+                  verified: true,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                },
+                {
+                  id: 'a2',
+                  clockIn: '01:52 PM',
+                  clockOut: '05:06 PM',
+                  rawIn: '2026-08-18T13:52:20-07:00',
+                  rawOut: '2026-08-18T17:06:31-07:00',
+                  inPoint: 58.6,
+                  outPoint: 78.0,
+                  inBad: true,
+                  outBad: false,
+                  hours: 3.24,
+                  schedule: 'Sched: IN 01:30 -> OUT 05:00 (Afternoon shift)',
+                  delta: '+22m / +6m',
+                  status: 'bad',
+                  verified: false,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          email: 'jordan@shop.com',
+          label: 'Jordan L.',
+          collapsed: false,
+          days: [
+            {
+              key: 'jordan|2026-08-21',
+              label: '08-21-2026 (Fri - 15.35Hrs)',
+              total: 15.35,
+              inActivePeriod: true,
+              collapsed: false,
+              timeline: [
+                { start: 12.5, width: 18.75, label: 'Expected 08:00-11:30' },
+                { start: 43.75, width: 34.375, label: 'Expected 12:00-10:00' }
+              ],
+              rows: [
+                {
+                  id: 'j1',
+                  clockIn: '08:00 AM',
+                  clockOut: '11:32 AM',
+                  rawIn: '2026-08-21T08:00:05-07:00',
+                  rawOut: '2026-08-21T11:32:33-07:00',
+                  inPoint: 12.5,
+                  outPoint: 30.9,
+                  inBad: false,
+                  outBad: false,
+                  hours: 3.53,
+                  schedule: 'Sched: IN 08:00 -> OUT 11:30 (Morning shift)',
+                  delta: '0m / +2m',
+                  status: 'ok',
+                  verified: true,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                },
+                {
+                  id: 'j2',
+                  clockIn: '12:11 PM',
+                  clockOut: '11:59 PM',
+                  rawIn: '2026-08-21T12:11:14-07:00',
+                  rawOut: '2026-08-21T23:59:00-07:00',
+                  inPoint: 44.6,
+                  outPoint: 93.8,
+                  inBad: false,
+                  outBad: true,
+                  hours: 11.81,
+                  schedule: 'Sched: IN 12:00 -> OUT 10:00 (Extended shift)',
+                  delta: '+11m / +119m',
+                  status: 'bad',
+                  verified: false,
+                  deleted: false,
+                  notes: ['Auto clock-out after 14 hours.', 'Entry crossed midnight and was auto-split.'],
+                  pending: false
+                },
+                {
+                  id: 'j3',
+                  clockIn: '12:00 AM',
+                  clockOut: '04:26 AM',
+                  rawIn: '2026-08-22T00:00:00-07:00',
+                  rawOut: '2026-08-22T04:26:00-07:00',
+                  inPoint: 0,
+                  outPoint: 9,
+                  inBad: false,
+                  outBad: false,
+                  hours: 4.43,
+                  schedule: 'Sched: No overnight shift found for this snippet',
+                  delta: 'N/A',
+                  status: 'warn',
+                  verified: false,
+                  deleted: false,
+                  notes: ['No notes'],
+                  pending: false
+                }
+              ]
+            },
+            {
+              key: 'jordan|2026-08-16',
+              label: '08-16-2026 (Sun - 6.00Hrs)',
+              total: 6.0,
+              inActivePeriod: false,
+              collapsed: false,
+              timeline: [
+                { start: 25, width: 25, label: 'Expected 10:00-02:00' }
+              ],
+              rows: [
+                {
+                  id: 'j4',
+                  clockIn: '10:07 AM',
+                  clockOut: '04:07 PM',
+                  rawIn: '2026-08-16T10:07:00-07:00',
+                  rawOut: '2026-08-16T16:07:00-07:00',
+                  inPoint: 25.8,
+                  outPoint: 56.2,
+                  inBad: false,
+                  outBad: false,
+                  hours: 6.0,
+                  schedule: 'Sched: IN 10:00 -> OUT 04:00 (Outside active period)',
+                  delta: '+7m / +7m',
+                  status: 'ok',
+                  verified: true,
+                  deleted: false,
+                  notes: ['Outside active period sample row'],
+                  pending: false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const el = {
+      root: document.getElementById('adminRoot'),
+      board: document.getElementById('timelineBoard'),
+      msg: document.getElementById('adminLoadMsg'),
+      showRaw: document.getElementById('showRaw'),
+      showDeleted: document.getElementById('showDeleted'),
+      showActiveOnly: document.getElementById('showActiveOnly'),
+      autoCollapse: document.getElementById('autoCollapse'),
+      toast: document.getElementById('toast')
+    };
+
+    function toast(message) {
+      el.toast.textContent = message;
+      el.toast.classList.add('show');
+      setTimeout(() => el.toast.classList.remove('show'), 1600);
+    }
+
+    function statusText(status) {
+      if (status === 'ok') return 'OK';
+      if (status === 'bad') return 'OUT';
+      return 'CHECK';
+    }
+
+    function countVisibleRows() {
+      let count = 0;
+      state.entries.forEach((u) => {
+        u.days.forEach((d) => {
+          if (state.showOnlyActive && !d.inActivePeriod) return;
+          d.rows.forEach((r) => {
+            if (!state.showDeleted && r.deleted) return;
+            count += 1;
+          });
+        });
+      });
+      return count;
+    }
+
+    function isDayFullyVerified(day) {
+      const eligible = day.rows.filter((r) => !r.deleted);
+      if (!eligible.length) return false;
+      return eligible.every((r) => r.verified === true);
+    }
+
+    function userSummary(user) {
+      let total = 0;
+      let ok = 0;
+      user.days.forEach((d) => {
+        if (state.showOnlyActive && !d.inActivePeriod) return;
+        d.rows.forEach((r) => {
+          if (!state.showDeleted && r.deleted) return;
+          total += 1;
+          if (r.status === 'ok') ok += 1;
+        });
+      });
+      return { ok, total };
+    }
+
+    function renderTimelineSegments(day) {
+      return day.timeline.map((seg) =>
+        '<div class="expected" style="left:' + seg.start + '%; width:' + seg.width + '%;" data-label="' + seg.label + '"></div>'
+      ).join('');
+    }
+
+    function render() {
+      el.root.classList.toggle('show-raw', state.showRawTimes);
+      el.msg.textContent = 'Loaded ' + countVisibleRows() + ' entries.';
+
+      const out = [];
+
+      state.entries.forEach((user, uIdx) => {
+        const visibleDays = user.days.filter((d) => !(state.showOnlyActive && !d.inActivePeriod));
+        if (!visibleDays.length) return;
+
+        const summary = userSummary(user);
+        const summaryClass = summary.total === 0 ? 'warn' : (summary.ok === summary.total ? 'ok' : 'bad');
+        const summaryText = summary.total === 0 ? 'No visible rows' : (summary.ok + '/' + summary.total + ' punches in sync');
+
+        out.push('<article class="employee">');
+        out.push(
+          '<div class="employee-head">' +
+            '<span class="left"><button class="collapse-btn" data-action="toggle-user" data-user="' + uIdx + '">' + (user.collapsed ? '+' : '-') + '</button>' + user.label + '</span>' +
+            '<span class="sync-pill ' + summaryClass + '">' + summaryText + '</span>' +
+          '</div>'
+        );
+
+        if (!user.collapsed) {
+          visibleDays.forEach((day, dRealIdx) => {
+            const dayIdx = user.days.indexOf(day);
+            if (state.autoCollapse && isDayFullyVerified(day)) day.collapsed = true;
+
+            out.push('<section class="day">');
+            out.push(
+              '<div class="day-head">' +
+                '<span class="day-left"><button class="collapse-btn" data-action="toggle-day" data-user="' + uIdx + '" data-day="' + dayIdx + '">' + (day.collapsed ? '+' : '-') + '</button>' + day.label + '</span>' +
+                '<span class="day-actions"><span class="day-total">Total ' + day.total.toFixed(2) + ' Hrs</span><button class="add-missed" data-action="add-missed" data-user="' + uIdx + '" data-day="' + dayIdx + '">+ Add missed time</button></span>' +
+              '</div>'
+            );
+
+            if (!day.collapsed) {
+              out.push('<div class="day-body">');
+
+              day.rows.forEach((row, rIdx) => {
+                if (!state.showDeleted && row.deleted) return;
+
+                const classes = ['timeline-card'];
+                if (row.deleted) classes.push('deleted');
+                if (row.pending) classes.push('pending');
+
+                out.push('<div class="' + classes.join(' ') + '">');
+                out.push(
+                  '<div class="timeline-top">' +
+                    '<button class="verify ' + (row.verified ? 'on' : '') + '" data-action="verify" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">' + (row.verified ? '✓' : '○') + '</button>' +
+                    '<div class="punch-meta">' +
+                      '<button class="chip in" data-action="edit" data-part="in" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">IN ' + row.clockIn + '</button>' +
+                      '<button class="chip out" data-action="edit" data-part="out" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">OUT ' + row.clockOut + '</button>' +
+                      '<span class="chip hours">' + row.hours.toFixed(2) + ' Hrs</span>' +
+                    '</div>' +
+                    '<span class="row-actions">' +
+                      (row.deleted
+                        ? '<button class="icon-btn restore" data-action="restore" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">Restore</button>'
+                        : '<button class="note-btn" data-action="toggle-note" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">+ Add Note</button>' +
+                          '<button class="icon-btn" data-action="delete" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '" title="Hold 3s to delete">DEL' +
+                          '<svg class="hold-ring" viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="14"></circle><circle class="progress" cx="18" cy="18" r="14"></circle></svg>' +
+                          '</button>') +
+                    '</span>' +
+                  '</div>'
+                );
+
+                out.push('<div class="timeline"><div class="ticks"><span>07:00</span><span>09:00</span><span>11:00</span><span>01:00</span><span>03:00</span><span>05:00</span><span>07:00</span><span>09:00</span></div>');
+                out.push('<div class="track-grid">');
+                out.push(renderTimelineSegments(day));
+                out.push('<div class="punch ' + (row.inBad ? 'bad' : '') + '" style="left:' + row.inPoint + '%;" data-label="' + row.clockIn + ' IN"></div>');
+                out.push('<div class="punch ' + (row.outBad ? 'bad' : '') + '" style="left:' + row.outPoint + '%;" data-label="' + row.clockOut + ' OUT"></div>');
+                out.push('</div></div>');
+
+                out.push('<div class="raw">Raw IN: ' + row.rawIn + ' | Raw OUT: ' + row.rawOut + '</div>');
+
+                out.push(
+                  '<div class="detail">' +
+                    '<span class="schedule-snippet">' + row.schedule + '</span>' +
+                    '<span class="delta">' + row.delta + '</span>' +
+                    '<span class="status ' + row.status + '">' + statusText(row.status) + '</span>' +
+                    '<span style="text-align:right;color:#9db3cd;">' + (row.deleted ? 'Deleted row' : 'Active row') + '</span>' +
+                  '</div>'
+                );
+
+                out.push('<div class="notes">');
+                row.notes.forEach((n) => out.push('<div class="note-line">' + n + '</div>'));
+                out.push('</div>');
+
+                out.push(
+                  '<div class="composer" id="composer-' + row.id + '">' +
+                    '<textarea maxlength="150" placeholder="Write a quick note..."></textarea>' +
+                    '<button data-action="save-note" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">Save Note</button>' +
+                  '</div>'
+                );
+
+                out.push('</div>');
+              });
+
+              out.push('</div>');
+            }
+
+            out.push('</section>');
+          });
+        }
+
+        out.push('</article>');
+      });
+
+      el.board.innerHTML = out.join('');
+      bindDynamicEvents();
+    }
+
+    function getRow(u, d, r) {
+      return state.entries[u].days[d].rows[r];
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function bindDynamicEvents() {
+      document.querySelectorAll('[data-action="toggle-user"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          state.entries[u].collapsed = !state.entries[u].collapsed;
+          render();
+        };
+      });
+
+      document.querySelectorAll('[data-action="toggle-day"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          state.entries[u].days[d].collapsed = !state.entries[u].days[d].collapsed;
+          render();
+        };
+      });
+
+      document.querySelectorAll('[data-action="verify"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const r = Number(btn.dataset.row);
+          const row = getRow(u, d, r);
+          row.verified = !row.verified;
+          row.pending = true;
+          render();
+          setTimeout(() => {
+            row.pending = false;
+            render();
+            toast('Verify state saved (mock).');
+          }, 450);
+        };
+      });
+
+      document.querySelectorAll('[data-action="edit"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const r = Number(btn.dataset.row);
+          const row = getRow(u, d, r);
+          state.editTarget = { u, d, r };
+          document.getElementById('editRowLabel').textContent = state.entries[u].label + ' | ' + state.entries[u].days[d].label;
+          document.getElementById('editClockIn').value = row.clockIn;
+          document.getElementById('editClockOut').value = row.clockOut;
+          openModal('adminTimeEditModal');
+        };
+      });
+
+      document.querySelectorAll('[data-action="toggle-note"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const r = Number(btn.dataset.row);
+          const row = getRow(u, d, r);
+          const comp = document.getElementById('composer-' + row.id);
+          if (!comp) return;
+          comp.style.display = comp.style.display === 'grid' ? 'none' : 'grid';
+        };
+      });
+
+      document.querySelectorAll('[data-action="save-note"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const r = Number(btn.dataset.row);
+          const row = getRow(u, d, r);
+          const comp = document.getElementById('composer-' + row.id);
+          const textarea = comp ? comp.querySelector('textarea') : null;
+          if (!textarea) return;
+          const value = textarea.value.trim();
+          if (!value) {
+            toast('Note cannot be empty.');
+            return;
+          }
+          if (row.notes.length === 1 && row.notes[0] === 'No notes') row.notes = [];
+          row.notes.push(value);
+          comp.style.display = 'none';
+          textarea.value = '';
+          render();
+          toast('Note added (mock).');
+        };
+      });
+
+      document.querySelectorAll('[data-action="restore"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const r = Number(btn.dataset.row);
+          const row = getRow(u, d, r);
+          row.deleted = false;
+          row.pending = true;
+          render();
+          setTimeout(() => {
+            row.pending = false;
+            render();
+            toast('Row restored (mock).');
+          }, 350);
+        };
+      });
+
+      document.querySelectorAll('[data-action="add-missed"]').forEach((btn) => {
+        btn.onclick = () => {
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          state.manualTarget = { email: state.entries[u].email, dayLabel: state.entries[u].days[d].label };
+          document.getElementById('manualTargetInfo').textContent = 'Target: ' + state.entries[u].label + ' | ' + state.entries[u].days[d].label;
+          openModal('manualEntryModal');
+        };
+      });
+
+      document.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+        let timer = null;
+        const cancel = () => {
+          btn.classList.remove('holding');
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+        };
+
+        btn.addEventListener('pointerdown', () => {
+          btn.classList.add('holding');
+          const u = Number(btn.dataset.user);
+          const d = Number(btn.dataset.day);
+          const r = Number(btn.dataset.row);
+          timer = setTimeout(() => {
+            const row = getRow(u, d, r);
+            row.deleted = true;
+            row.pending = true;
+            cancel();
+            render();
+            setTimeout(() => {
+              row.pending = false;
+              render();
+              toast('Row deleted (mock).');
+            }, 350);
+          }, 3000);
+        });
+
+        btn.addEventListener('pointerup', cancel);
+        btn.addEventListener('pointerleave', cancel);
+        btn.addEventListener('pointercancel', cancel);
+      });
+    }
+
+    document.querySelectorAll('[data-close]').forEach((btn) => {
+      btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      el.msg.textContent = 'Loading...';
+      setTimeout(() => {
+        el.msg.textContent = 'Loaded ' + countVisibleRows() + ' entries.';
+        toast('Entries refreshed (mock).');
+      }, 420);
+    });
+
+    document.getElementById('btnPayroll').addEventListener('click', () => openModal('payrollModal'));
+    document.getElementById('btnSchedule').addEventListener('click', () => openModal('scheduleModal'));
+    document.getElementById('btnReports').addEventListener('click', () => openModal('reportsModal'));
+
+    el.showRaw.addEventListener('change', () => {
+      state.showRawTimes = el.showRaw.checked;
+      render();
+    });
+
+    el.showDeleted.addEventListener('change', () => {
+      state.showDeleted = el.showDeleted.checked;
+      render();
+    });
+
+    el.showActiveOnly.addEventListener('change', () => {
+      state.showOnlyActive = el.showActiveOnly.checked;
+      render();
+    });
+
+    el.autoCollapse.addEventListener('change', () => {
+      state.autoCollapse = el.autoCollapse.checked;
+      if (!state.autoCollapse) {
+        state.entries.forEach((u) => u.days.forEach((d) => { d.collapsed = false; }));
+      }
+      render();
+      toast(state.autoCollapse ? 'Auto-collapse verified days enabled.' : 'Auto-collapse verified days disabled.');
+    });
+
+    document.getElementById('manualSubmit').addEventListener('click', () => {
+      closeModal('manualEntryModal');
+      toast('Missed time submitted for ' + state.manualTarget.email + ' (mock).');
+    });
+
+    document.getElementById('editApply').addEventListener('click', () => {
+      if (!state.editTarget) return;
+      const row = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
+      row.clockIn = document.getElementById('editClockIn').value || row.clockIn;
+      row.clockOut = document.getElementById('editClockOut').value || row.clockOut;
+      row.pending = true;
+      closeModal('adminTimeEditModal');
+      render();
+      setTimeout(() => {
+        row.pending = false;
+        if (row.notes.length === 1 && row.notes[0] === 'No notes') row.notes = [];
+        row.notes.push('Admin edit timestamp note (mock).');
+        render();
+        toast('Time edits applied (mock).');
+      }, 380);
+    });
+
+    const payrollTableBody = document.querySelector('#payrollTable tbody');
+    document.getElementById('generatePayroll').addEventListener('click', () => {
+      payrollTableBody.innerHTML = [
+        '<tr><td>alex@shop.com</td><td>35.00</td><td>2.00</td><td>0.00</td><td>34.00</td><td>1.50</td><td>0.00</td><td>0.00</td><td>8.00</td><td>0.00</td><td>0.00</td><td>69.00</td><td>3.50</td><td>0.00</td><td><input type="text" value="" placeholder="Preview note"></td><td>AWS Off</td></tr>',
+        '<tr><td>jordan@shop.com</td><td>30.00</td><td>4.00</td><td>0.50</td><td>32.00</td><td>3.00</td><td>1.25</td><td>0.00</td><td>10.00</td><td>0.00</td><td>2.00</td><td>62.00</td><td>7.00</td><td>1.75</td><td><input type="text" value="Auto-clockout on Fri" placeholder="Preview note"></td><td>AWS On</td></tr>'
+      ].join('');
+      state.payrollReady = true;
+      document.getElementById('exportPayroll').disabled = false;
+      document.getElementById('payrollMsg').textContent = 'Preview generated. Unverified entries: 1 (mock).';
+      toast('Payroll preview generated (mock).');
+    });
+
+    document.getElementById('exportPayroll').addEventListener('click', () => {
+      if (!state.payrollReady) return;
+      toast('Payroll exported and archived (mock).');
+      closeModal('payrollModal');
+    });
+
+    function seedAwsModal() {
+      const list = document.getElementById('awsList');
+      list.innerHTML = [
+        '<label class="aws-row"><strong>alex@shop.com</strong><span><input type="checkbox"> AWS enabled</span><span>Effective date <input type="date" value="2026-08-17"></span></label>',
+        '<label class="aws-row"><strong>jordan@shop.com</strong><span><input type="checkbox" checked> AWS enabled</span><span>Effective date <input type="date" value="2026-08-01"></span></label>',
+        '<label class="aws-row"><strong>maria@shop.com</strong><span><input type="checkbox" checked> AWS enabled</span><span>Effective date <input type="date" value="2026-07-15"></span></label>'
+      ].join('');
+    }
+
+    function seedHolidayModal() {
+      const grid = document.getElementById('holidayGrid');
+      grid.innerHTML = [
+        '<div class="holiday-row"><strong>alex@shop.com</strong><label><input type="checkbox" checked> Labor Day (09/07)</label><label><input type="checkbox"> Independence Day (07/04)</label></div>',
+        '<div class="holiday-row"><strong>jordan@shop.com</strong><label><input type="checkbox" checked> Labor Day (09/07)</label><label><input type="checkbox" checked> Independence Day (07/04)</label></div>'
+      ].join('');
+    }
+
+    document.getElementById('awsSettingsBtn').addEventListener('click', () => {
+      seedAwsModal();
+      openModal('awsModal');
+    });
+
+    document.getElementById('holidayPayBtn').addEventListener('click', () => {
+      seedHolidayModal();
+      openModal('holidayModal');
+    });
+
+    document.getElementById('saveAwsBtn').addEventListener('click', () => {
+      closeModal('awsModal');
+      toast('AWS settings saved (mock).');
+    });
+
+    document.getElementById('applyHolidayBtn').addEventListener('click', () => {
+      closeModal('holidayModal');
+      toast('Holiday pay applied (mock).');
+    });
+
+    render();
+  </script>
+</body>
+</html>
