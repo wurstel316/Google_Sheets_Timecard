@@ -6,6 +6,63 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Fixed
+- Summary: Improved 15-minute idle auto-refresh reliability by preventing passive preview/dayboard fetches from blocking refresh and by guarding idle-trigger unsaved-check errors.
+- Why: Idle time could continue increasing past the soft-refresh threshold when non-critical background loads were still marked in flight or when unsaved-work checks threw at trigger time.
+- Files: src/UserInterface.js
+- Validation: Updated `hasUiWorkInFlight(...)` to only treat passive loads as blocking when explicitly requested and wrapped `triggerIdleSafeRefresh(...)` unsaved-work evaluation in a safe error guard.
+
+- Summary: Restored reliable 10-minute idle warning visibility on the main employee page by making idle-banner rendering and unsaved-draft checks fault-tolerant.
+- Why: A runtime issue in draft-state evaluation could suppress the idle warning update path, and banner rendering should not depend on optional control lookup.
+- Files: src/UserInterface.js
+- Validation: Updated `setIdleRefreshBanner(...)` to render when bar/message nodes exist and guard button access, and wrapped idle unsaved-work evaluation in error-safe handling so warning state still updates.
+
+- Summary: Fixed a false "refresh is waiting for current actions to finish" idle message on the main employee page when no action was actually running.
+- Why: The top-level Processing indicator was visible on first load, and the idle in-flight guard treated that as active work, which blocked the 15-minute quiet refresh path.
+- Files: src/UserInterface.js
+- Validation: Hid the top-level loading indicator by default and switched the in-flight loading check to computed visibility so idle refresh only waits when the Processing indicator is truly visible.
+
+- Summary: Standardized idle-session handling across interactive HTML surfaces by introducing a shared idle policy profile and reusable guard behavior in the main app, Schedule Tool, More Reports iframe, and Set Pay Period dialog.
+- Why: Keeps stale-data protection consistent project-wide and makes idle behavior easier to tune/reuse from one policy shape instead of per-page ad hoc timings.
+- Files: src/Code.js, src/UserInterface.js, src/ScheduleHTML.html
+- Validation: Added `getStandardIdlePolicy_()` for shared timing defaults, switched main app and Schedule Tool to policy-driven constants, and added idle banner/lock flows with dirty-safe refresh controls to report/pay-period generated HTML.
+
+- Summary: Added Schedule Tool idle-session refresh management with an inline idle banner and edit-safe refresh behavior that pauses automatic refresh when unsaved schedule edits exist.
+- Why: Keeps schedule roster data fresher during long idle sessions while preventing silent overwrites of in-progress schedule edits.
+- Files: src/ScheduleHTML.html
+- Validation: Added schedule idle timers/activity tracking, in-flight guard flags for save/load/check/refresh operations, manual idle refresh button, and server refresh hydration that applies only when no unsaved local changes are pending.
+
+- Summary: Stopped page scrolling from dismissing the idle refresh sidebar so users can review long sections without clearing the idle refresh prompt.
+- Why: Scroll movement was being counted as activity, which hid the idle sidebar too aggressively during read-only navigation.
+- Files: src/UserInterface.js
+- Validation: Removed `scroll` from idle activity listeners while keeping click/keyboard/touch activity listeners intact.
+
+- Summary: Added a blocking idle-session overlay that requires a full refresh after extended inactivity, with a guarded "Return to editing" path when unsaved drafts are present.
+- Why: Prevents stale, long-idle sessions from continuing silently while still protecting users from unexpectedly losing in-progress edits.
+- Files: src/UserInterface.js
+- Validation: Added idle lock threshold handling, overlay UI state, online-aware refresh button behavior, and full reload unlock flow; confirmed unsaved-draft lock mode offers a non-destructive return option.
+
+- Summary: Added a client-side idle refresh manager with a gray idle banner, a manual "Refresh now" action, and unsaved-edit detection that pauses automatic refresh while users are actively editing notes/time entries.
+- Why: Keeps dayboard/status/entry data from going stale during long idle sessions without silently discarding in-progress edits.
+- Files: src/UserInterface.js
+- Validation: Added idle timers, activity listeners, and a safe refresh path that updates status/recent entries/schedule preview/dayboard only when no dirty drafts are present; manual refresh now prompts before proceeding if unsaved draft state exists.
+
+- Summary: Added a cooldown-guarded global stale punch sweep on admin data loads so open entries older than the 14-hour cap are auto-closed even when the affected employee has not opened the app recently.
+- Why: Previously stale auto-close was reliably triggered per-user in status checks, but long-open punches could remain until that specific employee returned; admin/dayboard workflows now quietly reconcile these stale entries.
+- Files: src/Code.js
+- Validation: Added `maybeAutoCloseStaleEntriesForAdminPath_()` with script lock + script-property cooldown and invoked it from `getAllEntriesForAdminView(...)`, which is used by admin/dayboard fetch paths; verified syntax and completed test deploy via `npm run push:test`.
+
+- Summary: Moved the admin dayboard from inside Admin View to the main page under the signed-in user schedule preview, and now load/render it only for users with admin-view permissions.
+- Why: The intended UX is an at-a-glance dashboard on the primary page for admins; non-admin users should not request or render this panel.
+- Files: src/UserInterface.js
+- Validation: Relocated dayboard markup below the employee schedule cards, removed admin-modal embedding and load triggers, added admin-gated bootstrap/refresh calls on the main page, and confirmed diagnostics are clean.
+
+### Changed
+- Summary: Added an admin-only punch-aware dayboard under the Admin View controls that shows who is in now, who clocked in today, today’s schedule chips, and multiple punch sessions adjacent to the expected schedule pills.
+- Why: Matches the chosen A1 design direction and gives admins a fast at-a-glance view of current coverage and punch history without leaving the admin modal.
+- Files: src/Code.js, src/UserInterface.js
+- Validation: Added the new dayboard payload endpoint, client normalization/render/load helpers, admin modal markup and styling, and confirmed both touched files pass `node --check` plus language-server diagnostics with no errors.
+
 ### Changed
 - Summary: Restyled the A1 punch-paired mockup to better match the Schedule Tool's dark slate theme, compact cards, and status accent colors, and updated the unscheduled example so it only appears as a punch-driven case.
 - Why: The mockup now reads closer to the production schedule UI and better reflects the real rule that unscheduled employees surface only when they have punches.

@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.82 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.93 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -23,6 +23,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
   const canExportPayrollReport = normalizedPermissionFlags.canExport;
   const canManageAwsConfig = normalizedPermissionFlags.canPayroll;
   const canManageScheduleTool = canManageEntries && canRunPayrollPreview;
+  const standardIdlePolicy = (typeof getStandardIdlePolicy_ === 'function' && getStandardIdlePolicy_()) || {
+    warningMs: 10 * 60 * 1000,
+    softRefreshMs: 15 * 60 * 1000,
+    lockMs: 30 * 60 * 1000,
+    heartbeatMs: 30 * 1000
+  };
     let entriesHtml = '';
     const preloadedManualRange = manualAllowedRange && manualAllowedRange.minDateISO && manualAllowedRange.maxDateISO
         ? {
@@ -734,6 +740,233 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             border-radius: 0.5rem;
             padding: 0.6rem;
             background: #f8fbff;
+          }
+          .admin-dayboard-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-top: 0.65rem;
+          }
+          .admin-dayboard-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+          }
+          .admin-dayboard-title {
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: #203040;
+          }
+          .admin-dayboard-subtitle {
+            margin-top: 0.15rem;
+            color: #5d6c80;
+            font-size: 0.78rem;
+          }
+          .admin-dayboard-summary {
+            display: flex;
+            align-items: stretch;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+          }
+          .admin-dayboard-stat {
+            min-width: 5.8rem;
+            border: 1px solid #d9e2f1;
+            border-radius: 0.55rem;
+            background: #fff;
+            padding: 0.42rem 0.55rem;
+          }
+          .admin-dayboard-stat-label {
+            font-size: 0.64rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #5b6a7a;
+            font-weight: 700;
+          }
+          .admin-dayboard-stat-value {
+            margin-top: 0.12rem;
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: #203040;
+          }
+          .admin-dayboard-board-wrap {
+            overflow: auto;
+            max-height: min(52vh, 36rem);
+            border: 1px solid #d9e2f1;
+            border-radius: 0.55rem;
+            background: #fff;
+          }
+          .admin-dayboard-board {
+            min-width: 48rem;
+            display: grid;
+            grid-template-columns: 4.6rem minmax(0, 1fr);
+          }
+          .admin-dayboard-hour-col {
+            background: #f7faff;
+            border-right: 1px solid #d9e2f1;
+          }
+          .admin-dayboard-hour {
+            height: 2.625rem;
+            border-bottom: 1px solid #e7edf6;
+            padding: 0.2rem 0.45rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            font-size: 0.69rem;
+            color: #627486;
+            line-height: 1.1;
+          }
+          .admin-dayboard-hour.current-hour {
+            background: rgba(26, 115, 232, 0.12);
+            color: #184f92;
+            font-weight: 800;
+            box-shadow: inset 0 0 0 1px #1a73e8;
+          }
+          .admin-dayboard-lanes {
+            display: flex;
+            flex-direction: column;
+          }
+          .admin-dayboard-lane {
+            display: grid;
+            grid-template-columns: 13rem minmax(0, 1fr);
+            min-height: 7rem;
+            border-bottom: 1px solid #e7edf6;
+          }
+          .admin-dayboard-lane:last-child {
+            border-bottom: 0;
+          }
+          .admin-dayboard-lane-meta {
+            background: #fbfdff;
+            border-right: 1px solid #e7edf6;
+            padding: 0.65rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.3rem;
+          }
+          .admin-dayboard-name {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-weight: 800;
+            color: #203040;
+            line-height: 1.15;
+          }
+          .admin-dayboard-dot {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 999px;
+            background: #94a3b8;
+            flex: 0 0 auto;
+          }
+          .admin-dayboard-dot.is-in {
+            background: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
+          }
+          .admin-dayboard-dot.is-today {
+            background: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+          }
+          .admin-dayboard-status-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.28rem;
+          }
+          .admin-dayboard-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.18rem 0.45rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+          }
+          .admin-dayboard-badge.in-now {
+            background: #e6f7ef;
+            color: #17633a;
+            border-color: #bfe6d0;
+          }
+          .admin-dayboard-badge.today {
+            background: #e8f0fe;
+            color: #1a5fb4;
+            border-color: #c6dafc;
+          }
+          .admin-dayboard-badge.unscheduled {
+            background: #f3f6fb;
+            color: #5d6c80;
+            border-color: #d9e2f1;
+          }
+          .admin-dayboard-lane-body {
+            padding: 0.6rem;
+            display: grid;
+            gap: 0.48rem;
+            align-content: center;
+          }
+          .admin-dayboard-track {
+            display: grid;
+            gap: 0.28rem;
+          }
+          .admin-dayboard-track-label {
+            font-size: 0.64rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #5b6a7a;
+            font-weight: 700;
+          }
+          .admin-dayboard-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.28rem;
+          }
+          .admin-dayboard-empty {
+            color: #5d6c80;
+            font-size: 0.78rem;
+            font-style: italic;
+          }
+          .admin-dayboard-session-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            border: 1px solid #d7e1ee;
+            border-radius: 0.55rem;
+            padding: 0.3rem 0.45rem;
+            background: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+          }
+          .admin-dayboard-session-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.14rem 0.38rem;
+            border-radius: 999px;
+            font-size: 0.69rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+          }
+          .admin-dayboard-session-pill.in {
+            background: #e6f7ef;
+            color: #17633a;
+            border-color: #bfe6d0;
+          }
+          .admin-dayboard-session-pill.out {
+            background: #edf3fb;
+            color: #33567b;
+            border-color: #cad9ea;
+          }
+          .admin-dayboard-session-arrow {
+            color: #8595ab;
+          }
+          @media (max-width: 900px) {
+            .admin-dayboard-board {
+              min-width: 42rem;
+            }
+            .admin-dayboard-lane {
+              grid-template-columns: 10rem minmax(0, 1fr);
+            }
           }
           .admin-preview-grid {
             width: 100%;
@@ -1721,6 +1954,112 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
             box-sizing: border-box;
           }
+          #idleRefreshBar {
+            display: none;
+            background-color: #e5e7eb;
+            color: #1f2937;
+            padding: clamp(0.7rem, 2.4vw, 0.95rem);
+            text-align: left;
+            font-size: clamp(0.92rem, 2.5vw, 1.02rem);
+            font-weight: 600;
+            width: 100%;
+            margin-bottom: 1rem;
+            border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
+            box-sizing: border-box;
+            border: 1px solid #cbd5e1;
+          }
+          .idle-refresh-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+          }
+          .idle-refresh-message {
+            color: #374151;
+            font-weight: 600;
+          }
+          .idle-refresh-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+          }
+          .idle-refresh-btn {
+            border: 1px solid #9ca3af;
+            background: #f8fafc;
+            color: #1f2937;
+            border-radius: 0.45rem;
+            padding: 0.42rem 0.68rem;
+            font-size: clamp(0.82rem, 2.3vw, 0.92rem);
+            font-weight: 600;
+            cursor: pointer;
+          }
+          .idle-refresh-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+          }
+          body.idle-lock-active {
+            overflow: hidden;
+            overscroll-behavior: none;
+          }
+          #idleLockOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 4000;
+            background: rgba(75, 85, 99, 0.64);
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(1px);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+          }
+          .idle-lock-card {
+            width: min(32rem, 95vw);
+            background: #f3f4f6;
+            border: 1px solid #9ca3af;
+            border-radius: 0.85rem;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.24);
+            padding: 1rem 1rem 0.9rem;
+            color: #111827;
+            display: flex;
+            flex-direction: column;
+            gap: 0.7rem;
+          }
+          .idle-lock-title {
+            font-size: clamp(1rem, 2.8vw, 1.18rem);
+            font-weight: 700;
+          }
+          .idle-lock-message {
+            font-size: clamp(0.9rem, 2.5vw, 1rem);
+            line-height: 1.38;
+            color: #374151;
+          }
+          .idle-lock-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+          }
+          .idle-lock-btn {
+            border-radius: 0.5rem;
+            padding: 0.46rem 0.78rem;
+            font-size: clamp(0.84rem, 2.3vw, 0.92rem);
+            font-weight: 700;
+            border: 1px solid #9ca3af;
+            background: #ffffff;
+            color: #111827;
+            cursor: pointer;
+          }
+          .idle-lock-btn.primary {
+            background: #374151;
+            color: #f9fafb;
+            border-color: #374151;
+          }
+          .idle-lock-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+          }
           .modal {
             position: fixed;
             inset: 0;
@@ -2369,6 +2708,24 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
       </head>
       <body>
         <div id="offlineBar">⚠️ You are offline. Clock actions are disabled until your connection returns.</div>
+        <div id="idleLockOverlay" aria-live="assertive" aria-modal="true" role="dialog">
+          <div class="idle-lock-card">
+            <div id="idleLockTitle" class="idle-lock-title">Idle session lock</div>
+            <div id="idleLockMessage" class="idle-lock-message">Session idle too long. Refresh is required.</div>
+            <div class="idle-lock-actions">
+              <button id="idleLockResumeBtn" type="button" class="idle-lock-btn" style="display:none;" onclick="resumeFromIdleLock()">Return to editing</button>
+              <button id="idleLockRefreshBtn" type="button" class="idle-lock-btn primary" onclick="triggerIdleHardRefresh(true)">Refresh now</button>
+            </div>
+          </div>
+        </div>
+        <div id="idleRefreshBar" aria-live="polite">
+          <div class="idle-refresh-row">
+            <span id="idleRefreshMessage" class="idle-refresh-message">Session idle.</span>
+            <span class="idle-refresh-actions">
+              <button id="idleRefreshBtn" type="button" class="idle-refresh-btn" onclick="triggerIdleSafeRefresh(true)">Refresh now</button>
+            </span>
+          </div>
+        </div>
         <div class="container">
           <img src="data:image/png;base64,${LOGO_BASE64}" alt="Logo" style="height: 200px; width: auto; margin-bottom: 1rem;">
           <button id="uiScaleMenuBtn" class="menu-top-btn" type="button" onclick="toggleUiScaleControls()" aria-controls="uiScaleControls" aria-expanded="false">Display Menu</button>
@@ -2382,7 +2739,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           </div>
           <p id="message" class="message" style="display: none;"></p>
           <p id="error" class="error" style="display: none;"></p>
-          <p id="loading" class="loading">Processing...</p>
+          <p id="loading" class="loading" style="display: none;">Processing...</p>
           
           <input type="text" id="notes" placeholder="Clock in note" maxlength="150">
           <p id="clockNoteHint" class="clock-note-hint"></p>
@@ -2401,6 +2758,25 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <span id="scheduleTomorrowSummary" class="schedule-pill-body"><span class="schedule-pill-empty">Loading schedule...</span></span>
             </button>
           </div>
+
+          ${canAccessAdminView ? `
+          <div id="adminDayboardPanel" class="admin-workflow-box admin-dayboard-panel" aria-live="polite">
+            <div class="admin-dayboard-head">
+              <div>
+                <div class="admin-dayboard-title">Today at a glance</div>
+                <div id="adminDayboardMeta" class="admin-dayboard-subtitle">Loading dayboard...</div>
+              </div>
+              <div class="admin-dayboard-summary">
+                <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">In Now</div><div id="adminDayboardInNowCount" class="admin-dayboard-stat-value">--</div></div>
+                <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">Clocked In Today</div><div id="adminDayboardTodayCount" class="admin-dayboard-stat-value">--</div></div>
+                <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">Scheduled</div><div id="adminDayboardScheduledCount" class="admin-dayboard-stat-value">--</div></div>
+              </div>
+            </div>
+            <div id="adminDayboardBoardWrap" class="admin-dayboard-board-wrap">
+              <div id="adminDayboardBoard" class="admin-dayboard-board"></div>
+            </div>
+          </div>
+          ` : ''}
 
           <button id="manualEntryBtn" type="button" onclick="showManualEntryForm(event)">
             ➕ Add Time Entry
@@ -2742,6 +3118,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let adminVerifyQueueOrder = [];
           let adminVerifyQueueTimer = null;
           let adminVerifyQueueInFlight = false;
+          let adminDayboardData = null;
+          let adminDayboardLoadInFlight = false;
           const ADMIN_HOLD_ACTION_MS = 3000;
           const adminHoldActionStateByKey = {};
           let adminShowRawTimes = false;
@@ -2772,8 +3150,20 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let latestStatusTextRaw = ${JSON.stringify(statusObj && statusObj.status ? statusObj.status : '')};
           let employeeSchedulePreview = null;
           let employeeSchedulePreviewInFlight = false;
+          const IDLE_POLICY = ${JSON.stringify(standardIdlePolicy)};
           const CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS = 15 * 60 * 1000;
           const CLOCK_OUT_NOTE_THRESHOLD_MS = 5 * 60 * 60 * 1000;
+          const IDLE_WARNING_MS = Number(IDLE_POLICY.warningMs || (10 * 60 * 1000));
+          const IDLE_SOFT_REFRESH_MS = Number(IDLE_POLICY.softRefreshMs || (15 * 60 * 1000));
+          const IDLE_LOCK_MS = Number(IDLE_POLICY.lockMs || (30 * 60 * 1000));
+          const IDLE_HEARTBEAT_MS = Number(IDLE_POLICY.heartbeatMs || (30 * 1000));
+
+          let lastUserActivityAtMs = Date.now();
+          let idleSoftRefreshDoneForCycle = false;
+          let idleSoftRefreshInFlight = false;
+          let idleHardRefreshInFlight = false;
+          let idleLockActive = false;
+          let idleLockMode = '';
 
           function getScheduleDayNamesClient() {
             return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -2911,6 +3301,210 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             weekList.innerHTML = rows.join('');
             meta.innerText = employeeSchedulePreview.updatedAt ? 'Updated ' + employeeSchedulePreview.updatedAt : 'Current week schedule';
+          }
+
+          function getDefaultAdminDayboardData() {
+            return {
+              success: false,
+              updatedAt: '',
+              todayKey: '',
+              todayIndex: 0,
+              currentHour: new Date().getHours(),
+              currentHourLabel: '--:--',
+              summary: { inNowCount: 0, clockedInTodayCount: 0, scheduledCount: 0 },
+              employees: []
+            };
+          }
+
+          function normalizeAdminDayboardSessionClient(session) {
+            const source = session && typeof session === 'object' ? session : {};
+            return {
+              entryId: String(source.entryId || '').trim(),
+              clockIn: String(source.clockIn || '').trim(),
+              clockOut: String(source.clockOut || '').trim(),
+              isOpen: source.isOpen === true,
+              clockInKey: String(source.clockInKey || '').trim(),
+              clockOutKey: String(source.clockOutKey || '').trim()
+            };
+          }
+
+          function normalizeAdminDayboardEmployeeClient(employee) {
+            const source = employee && typeof employee === 'object' ? employee : {};
+            const scheduleSource = source.schedule && typeof source.schedule === 'object' ? source.schedule : null;
+            const schedule = normalizeScheduleDayClient(scheduleSource, '', 'Not scheduled today');
+            const sessionsToday = Array.isArray(source.sessionsToday)
+              ? source.sessionsToday.map((session) => normalizeAdminDayboardSessionClient(session)).filter((session) => !!session.clockIn)
+              : [];
+            const currentPunch = source.currentPunch && typeof source.currentPunch === 'object'
+              ? normalizeAdminDayboardSessionClient(source.currentPunch)
+              : null;
+            return {
+              email: String(source.email || '').trim().toLowerCase(),
+              displayLabel: String(source.displayLabel || '').trim() || 'Unknown',
+              schedule: schedule,
+              isInNow: source.isInNow === true,
+              clockedInToday: source.clockedInToday === true,
+              currentPunch: currentPunch && currentPunch.clockIn ? currentPunch : null,
+              sessionsToday: sessionsToday,
+              sessionCount: Number(source.sessionCount || sessionsToday.length),
+              allSessionCount: Number(source.allSessionCount || sessionsToday.length)
+            };
+          }
+
+          function normalizeAdminDayboardClient(payload) {
+            const source = payload && typeof payload === 'object' ? payload : {};
+            const summarySource = source.summary && typeof source.summary === 'object' ? source.summary : {};
+            const employees = Array.isArray(source.employees) ? source.employees.map((employee) => normalizeAdminDayboardEmployeeClient(employee)) : [];
+            return {
+              success: source.success === true,
+              updatedAt: String(source.updatedAt || ''),
+              todayKey: String(source.todayKey || ''),
+              todayIndex: Number.isFinite(Number(source.todayIndex)) ? Number(source.todayIndex) : 0,
+              currentHour: Number.isFinite(Number(source.currentHour)) ? Number(source.currentHour) : new Date().getHours(),
+              currentHourLabel: String(source.currentHourLabel || ''),
+              summary: {
+                inNowCount: Number(summarySource.inNowCount || 0),
+                clockedInTodayCount: Number(summarySource.clockedInTodayCount || 0),
+                scheduledCount: Number(summarySource.scheduledCount || 0)
+              },
+              employees: employees
+            };
+          }
+
+          function formatAdminDayboardHourLabel(hour24) {
+            const hourNumber = Number(hour24);
+            if (!isFinite(hourNumber)) return '--:--';
+            return String(((hourNumber % 24) + 24) % 24).padStart(2, '0') + ':00';
+          }
+
+          function buildAdminDayboardSessionChipHtml(session) {
+            const source = session && typeof session === 'object' ? session : {};
+            const clockInText = formatDisplayTime(source.clockIn) || '--:--';
+            const clockOutText = source.clockOut ? (formatDisplayTime(source.clockOut) || '--:--') : 'Now';
+            const isOpen = source.isOpen === true || !source.clockOut;
+            return '<span class="admin-dayboard-session-chip">' +
+              '<span class="admin-dayboard-session-pill in">In ' + escapeHtml(clockInText) + '</span>' +
+              '<span class="admin-dayboard-session-arrow" aria-hidden="true">→</span>' +
+              '<span class="admin-dayboard-session-pill out' + (isOpen ? ' is-open' : '') + '">' + escapeHtml((isOpen ? 'Out Now' : 'Out ' + clockOutText)) + '</span>' +
+            '</span>';
+          }
+
+          function renderAdminDayboard() {
+            const board = document.getElementById('adminDayboardBoard');
+            const meta = document.getElementById('adminDayboardMeta');
+            const inNowEl = document.getElementById('adminDayboardInNowCount');
+            const todayEl = document.getElementById('adminDayboardTodayCount');
+            const scheduledEl = document.getElementById('adminDayboardScheduledCount');
+            if (!board || !meta || !inNowEl || !todayEl || !scheduledEl) return;
+
+            const data = adminDayboardData || getDefaultAdminDayboardData();
+            const summary = data.summary || { inNowCount: 0, clockedInTodayCount: 0, scheduledCount: 0 };
+            inNowEl.innerText = String(summary.inNowCount || 0);
+            todayEl.innerText = String(summary.clockedInTodayCount || 0);
+            scheduledEl.innerText = String(summary.scheduledCount || 0);
+            meta.innerText = data.updatedAt ? ('Updated ' + formatDisplayDate(data.updatedAt)) : 'Waiting for dayboard data...';
+
+            const hoursHtml = [];
+            for (let hour = 0; hour < 24; hour++) {
+              const hourLabel = formatAdminDayboardHourLabel(hour);
+              const isCurrentHour = Number(data.currentHour) === hour;
+              hoursHtml.push('<div class="admin-dayboard-hour' + (isCurrentHour ? ' current-hour' : '') + '">' + escapeHtml(hourLabel) + '</div>');
+            }
+
+            const employees = Array.isArray(data.employees) ? data.employees : [];
+            const lanesHtml = employees.length > 0
+              ? employees.map((employee) => {
+                  const schedule = employee.schedule || { hasSchedule: false, summaryText: 'Not scheduled today', segments: [] };
+                  const sessionsToday = Array.isArray(employee.sessionsToday) ? employee.sessionsToday.slice() : [];
+                  const sessionById = {};
+                  sessionsToday.forEach((session) => {
+                    const key = String(session && session.entryId || '').trim();
+                    if (key) sessionById[key] = true;
+                  });
+                  const extraCurrentPunch = employee.currentPunch && !sessionById[String(employee.currentPunch.entryId || '').trim()] ? [employee.currentPunch] : [];
+                  const actualSessions = sessionsToday.concat(extraCurrentPunch);
+                  const expectedHtml = schedule.hasSchedule
+                    ? buildScheduleSegmentsHtml(schedule.segments)
+                    : '<span class="admin-dayboard-empty">Not scheduled today</span>';
+                  const actualHtml = actualSessions.length > 0
+                    ? actualSessions.map((session) => buildAdminDayboardSessionChipHtml(session)).join('')
+                    : '<span class="admin-dayboard-empty">No punches today</span>';
+                  const statusBadges = [];
+                  if (employee.isInNow) {
+                    const inNowSince = employee.currentPunch && employee.currentPunch.clockIn ? formatDisplayTime(employee.currentPunch.clockIn) : '';
+                    statusBadges.push('<span class="admin-dayboard-badge in-now">In now' + (inNowSince ? ' · ' + escapeHtml(inNowSince) : '') + '</span>');
+                  }
+                  if (employee.clockedInToday) {
+                    statusBadges.push('<span class="admin-dayboard-badge today">Clocked in today</span>');
+                  }
+                  if (!employee.isInNow && !employee.clockedInToday && !schedule.hasSchedule) {
+                    statusBadges.push('<span class="admin-dayboard-badge unscheduled">No schedule today</span>');
+                  }
+                  return '<article class="admin-dayboard-lane">' +
+                    '<div class="admin-dayboard-lane-meta">' +
+                      '<div class="admin-dayboard-name"><span class="admin-dayboard-dot' + (employee.isInNow ? ' is-in' : (employee.clockedInToday ? ' is-today' : '')) + '"></span><span>' + escapeHtml(employee.displayLabel || employee.email || 'Unknown') + '</span></div>' +
+                      '<div class="admin-dayboard-status-line">' + statusBadges.join('') + '</div>' +
+                    '</div>' +
+                    '<div class="admin-dayboard-lane-body">' +
+                      '<div class="admin-dayboard-track">' +
+                        '<div class="admin-dayboard-track-label">Expected schedule</div>' +
+                        '<div class="admin-dayboard-chip-row">' + expectedHtml + '</div>' +
+                      '</div>' +
+                      '<div class="admin-dayboard-track">' +
+                        '<div class="admin-dayboard-track-label">Actual punches</div>' +
+                        '<div class="admin-dayboard-chip-row">' + actualHtml + '</div>' +
+                      '</div>' +
+                    '</div>' +
+                  '</article>';
+                }).join('')
+              : '<div style="padding:0.75rem; color:#5d6c80; font-style:italic;">No employee rows available for today.</div>';
+
+            board.innerHTML = '<div class="admin-dayboard-hour-col">' + hoursHtml.join('') + '</div>' +
+              '<div class="admin-dayboard-lanes">' + lanesHtml + '</div>';
+          }
+
+          function loadAdminDayboard(onComplete) {
+            if (adminPermissions.canAccessAdminView !== true) {
+              if (typeof onComplete === 'function') {
+                onComplete();
+              }
+              return;
+            }
+            const panel = document.getElementById('adminDayboardPanel');
+            if (!panel) {
+              if (typeof onComplete === 'function') {
+                onComplete();
+              }
+              return;
+            }
+            if (adminDayboardLoadInFlight) return;
+            adminDayboardLoadInFlight = true;
+            const meta = document.getElementById('adminDayboardMeta');
+            if (meta) {
+              meta.innerText = 'Loading dayboard...';
+            }
+            google.script.run
+              .withSuccessHandler((payload) => {
+                adminDayboardLoadInFlight = false;
+                adminDayboardData = normalizeAdminDayboardClient(payload);
+                renderAdminDayboard();
+                if (typeof onComplete === 'function') {
+                  onComplete(null, adminDayboardData);
+                }
+              })
+              .withFailureHandler((error) => {
+                adminDayboardLoadInFlight = false;
+                adminDayboardData = getDefaultAdminDayboardData();
+                const metaEl = document.getElementById('adminDayboardMeta');
+                if (metaEl) {
+                  metaEl.innerText = (error && error.message) ? error.message : 'Unable to load dayboard.';
+                }
+                renderAdminDayboard();
+                if (typeof onComplete === 'function') {
+                  onComplete(error);
+                }
+              })
+              .getAdminDayboardPayload();
           }
 
           function loadEmployeeSchedulePreview() {
@@ -3480,6 +4074,323 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
+          function setIdleRefreshBanner(isVisible, message) {
+            const bar = document.getElementById('idleRefreshBar');
+            const label = document.getElementById('idleRefreshMessage');
+            const btn = document.getElementById('idleRefreshBtn');
+            if (!bar || !label) return;
+            if (!isVisible) {
+              bar.style.display = 'none';
+              return;
+            }
+            label.innerText = String(message || 'Session idle.');
+            if (btn) {
+              btn.disabled = !navigator.onLine || idleSoftRefreshInFlight;
+            }
+            bar.style.display = 'block';
+          }
+
+          function markUserActivity() {
+            if (idleLockActive) {
+              return;
+            }
+            lastUserActivityAtMs = Date.now();
+            idleSoftRefreshDoneForCycle = false;
+            setIdleRefreshBanner(false, '');
+          }
+
+          function updateIdleLockRefreshButtonState() {
+            const refreshBtn = document.getElementById('idleLockRefreshBtn');
+            if (!refreshBtn) return;
+            refreshBtn.disabled = idleHardRefreshInFlight || !navigator.onLine;
+          }
+
+          function setIdleLockOverlay(visible, mode, titleText, messageText) {
+            const overlay = document.getElementById('idleLockOverlay');
+            const title = document.getElementById('idleLockTitle');
+            const message = document.getElementById('idleLockMessage');
+            const resumeBtn = document.getElementById('idleLockResumeBtn');
+            if (!overlay || !title || !message || !resumeBtn) return;
+
+            if (!visible) {
+              overlay.style.display = 'none';
+              document.body.classList.remove('idle-lock-active');
+              idleLockActive = false;
+              idleLockMode = '';
+              idleHardRefreshInFlight = false;
+              updateIdleLockRefreshButtonState();
+              return;
+            }
+
+            idleLockActive = true;
+            idleLockMode = String(mode || 'locked');
+            title.innerText = String(titleText || 'Idle session lock');
+            message.innerText = String(messageText || 'Session idle too long. Refresh is required.');
+            resumeBtn.style.display = idleLockMode === 'dirty' ? 'inline-flex' : 'none';
+            overlay.style.display = 'flex';
+            document.body.classList.add('idle-lock-active');
+            updateIdleLockRefreshButtonState();
+            setIdleRefreshBanner(false, '');
+          }
+
+          function resumeFromIdleLock() {
+            if (idleLockMode !== 'dirty' || idleHardRefreshInFlight) {
+              return;
+            }
+            setIdleLockOverlay(false);
+            lastUserActivityAtMs = Date.now();
+            idleSoftRefreshDoneForCycle = false;
+          }
+
+          function hasUnsavedRecentNoteDrafts() {
+            const selectors = [
+              '[id^="pendingNoteComposer_"] textarea',
+              '[id^="adminNoteComposer_"] textarea'
+            ];
+            for (let s = 0; s < selectors.length; s++) {
+              const nodes = document.querySelectorAll(selectors[s]);
+              for (let i = 0; i < nodes.length; i++) {
+                const value = String(nodes[i].value || '').trim();
+                if (value.length > 0) {
+                  return true;
+                }
+              }
+            }
+            return false;
+          }
+
+          function hasUnsavedManualEntryDraft() {
+            if (!isManualEntryModalVisible()) return false;
+            const clockIn = document.getElementById('manualClockIn');
+            const clockOut = document.getElementById('manualClockOut');
+            const notes = document.getElementById('manualNotes');
+            const hasClockIn = !!(clockIn && String(clockIn.value || '').trim());
+            const hasClockOut = !!(clockOut && String(clockOut.value || '').trim());
+            const hasNotes = !!(notes && String(notes.value || '').trim());
+            return hasClockIn || hasClockOut || hasNotes;
+          }
+
+          function hasUnsavedAdminDrafts() {
+            if (adminEditingRowIndex) {
+              return true;
+            }
+            const rowIndices = Object.keys(adminDraftByRow || {});
+            for (let i = 0; i < rowIndices.length; i++) {
+              const rowIndex = Number(rowIndices[i]);
+              if (computeAdminRowDirty(rowIndex)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          function hasUnsavedTopLevelNoteDraft() {
+            const notesInput = document.getElementById('notes');
+            return !!(notesInput && String(notesInput.value || '').trim());
+          }
+
+          function hasUiWorkInFlight(includePassiveLoads) {
+            const includePassive = includePassiveLoads === true;
+            if (pendingClockAction || pendingRefreshStatus || adminVerifyQueueInFlight || idleSoftRefreshInFlight) {
+              return true;
+            }
+            if (includePassive && (employeeSchedulePreviewInFlight || adminDayboardLoadInFlight)) {
+              return true;
+            }
+            if (Object.values(uiPendingActionsByKey || {}).some((value) => value === true)) {
+              return true;
+            }
+            const loading = document.getElementById('loading');
+            return !!(loading && getComputedStyle(loading).display !== 'none' && getComputedStyle(loading).visibility !== 'hidden');
+          }
+
+          function hasAnyUnsavedClientWork() {
+            return hasUnsavedTopLevelNoteDraft() ||
+              hasUnsavedManualEntryDraft() ||
+              hasUnsavedRecentNoteDrafts() ||
+              hasUnsavedAdminDrafts();
+          }
+
+          function refreshStatusQuietly(onComplete) {
+            if (!navigator.onLine || pendingRefreshStatus) {
+              if (typeof onComplete === 'function') onComplete();
+              return;
+            }
+            pendingRefreshStatus = true;
+            setRefreshStatusBusy(true);
+            google.script.run
+              .withSuccessHandler((result) => {
+                pendingRefreshStatus = false;
+                setRefreshStatusBusy(false);
+                latestStatusTextRaw = String((result && result.status) || latestStatusTextRaw || '');
+                if (result && result.status) {
+                  setStatusText(result.status);
+                }
+                if (typeof result.isClockedIn === 'boolean') {
+                  isClockedIn = result.isClockedIn;
+                }
+                const ct = document.getElementById('clockToggle');
+                if (ct) {
+                  ct.innerText = isClockedIn ? '🔴 Clock Out' : '🟢 Clock In';
+                }
+                updateClockNotePlaceholder();
+                if (typeof onComplete === 'function') onComplete();
+              })
+              .withFailureHandler(() => {
+                pendingRefreshStatus = false;
+                setRefreshStatusBusy(false);
+                if (typeof onComplete === 'function') onComplete();
+              })
+              .refreshCurrentStatus();
+          }
+
+          function triggerIdleSafeRefresh(isManualTrigger) {
+            const manual = isManualTrigger === true;
+            if (idleLockActive) {
+              return;
+            }
+            if (!navigator.onLine || idleSoftRefreshInFlight) return;
+
+            let hasUnsaved = false;
+            try {
+              hasUnsaved = hasAnyUnsavedClientWork();
+            } catch (error) {
+              debugClientError('idle_trigger_unsaved_check_failed', { message: error && error.message ? error.message : String(error || '') });
+            }
+            if (!manual && hasUnsaved) {
+              setIdleRefreshBanner(true, 'You have been idle. Auto-refresh is paused because unsaved edits were detected.');
+              return;
+            }
+            if (manual && hasUnsaved) {
+              const proceed = confirm('Unsaved edits were detected. Refreshing may discard visible draft text in open editors. Continue refresh?');
+              if (!proceed) {
+                setIdleRefreshBanner(true, 'Refresh skipped. Continue editing, then refresh when ready.');
+                return;
+              }
+            }
+            if (hasUiWorkInFlight()) {
+              setIdleRefreshBanner(true, 'Refresh is waiting for current actions to finish.');
+              return;
+            }
+
+            idleSoftRefreshInFlight = true;
+            setIdleRefreshBanner(true, manual ? 'Refreshing now...' : 'Refreshing after idle...');
+
+            refreshStatusQuietly(() => {
+              refreshRecentEntries(() => {
+                loadEmployeeSchedulePreview();
+                if (adminPermissions.canAccessAdminView === true) {
+                  loadAdminDayboard();
+                }
+                idleSoftRefreshInFlight = false;
+                idleSoftRefreshDoneForCycle = true;
+                setIdleRefreshBanner(true, 'Data refreshed.');
+              });
+            });
+          }
+
+          function triggerIdleHardRefresh(forceDiscard) {
+            const discardConfirmed = forceDiscard === true;
+            if (idleHardRefreshInFlight) return;
+
+            if (!discardConfirmed && hasAnyUnsavedClientWork()) {
+              const proceed = confirm('Unsaved edits were detected. Continue with a full refresh and discard local drafts?');
+              if (!proceed) {
+                return;
+              }
+            }
+
+            if (!navigator.onLine) {
+              setIdleLockOverlay(true, idleLockMode || 'locked', 'Idle session lock', 'Still offline. Reconnect, then refresh to unlock the page.');
+              return;
+            }
+
+            if (hasUiWorkInFlight()) {
+              const waitingMsg = idleLockMode === 'dirty'
+                ? 'Waiting for active actions to finish. Return to editing or try refresh again in a moment.'
+                : 'Waiting for active actions to finish before refresh.';
+              setIdleLockOverlay(true, idleLockMode || 'locked', 'Idle session lock', waitingMsg);
+              return;
+            }
+
+            idleHardRefreshInFlight = true;
+            updateIdleLockRefreshButtonState();
+            setIdleLockOverlay(true, idleLockMode || 'locked', 'Refreshing session', 'Refreshing now. Please wait...');
+            window.location.reload();
+          }
+
+          function updateIdleRefreshState() {
+            if (idleLockActive) {
+              updateIdleLockRefreshButtonState();
+              return;
+            }
+
+            const nowMs = Date.now();
+            const idleMs = nowMs - lastUserActivityAtMs;
+            const idleMinutes = Math.max(1, Math.floor(idleMs / (60 * 1000)));
+
+            if (idleMs >= IDLE_LOCK_MS) {
+              if (hasAnyUnsavedClientWork()) {
+                setIdleLockOverlay(
+                  true,
+                  'dirty',
+                  'Idle session protection',
+                  'You were idle for ' + idleMinutes + ' min and unsaved edits were detected. Return to editing to keep your drafts, or refresh now to reload the latest data.'
+                );
+                return;
+              }
+
+              const lockMessage = navigator.onLine
+                ? 'You were idle for ' + idleMinutes + ' min. Refresh is required before continuing.'
+                : 'You were idle for ' + idleMinutes + ' min while offline. Reconnect, then refresh to continue.';
+              setIdleLockOverlay(true, 'locked', 'Idle session lock', lockMessage);
+              return;
+            }
+
+            if (idleMs < IDLE_WARNING_MS) {
+              setIdleRefreshBanner(false, '');
+              return;
+            }
+
+            if (!navigator.onLine) {
+              setIdleRefreshBanner(true, 'Idle for ' + idleMinutes + ' min. Reconnect to refresh.');
+              return;
+            }
+
+            let hasUnsavedWork = false;
+            try {
+              hasUnsavedWork = hasAnyUnsavedClientWork();
+            } catch (error) {
+              debugClientError('idle_unsaved_check_failed', { message: error && error.message ? error.message : String(error || '') });
+            }
+
+            if (hasUnsavedWork) {
+              setIdleRefreshBanner(true, 'Idle for ' + idleMinutes + ' min. Unsaved edits detected, auto-refresh paused.');
+              return;
+            }
+
+            if (!idleSoftRefreshDoneForCycle && idleMs >= IDLE_SOFT_REFRESH_MS) {
+              triggerIdleSafeRefresh(false);
+              return;
+            }
+
+            setIdleRefreshBanner(true, 'Idle for ' + idleMinutes + ' min. Refresh recommended.');
+          }
+
+          function initializeIdleRefreshManager() {
+            const activityEvents = ['mousedown', 'keydown', 'touchstart', 'pointerdown'];
+            for (let i = 0; i < activityEvents.length; i++) {
+              window.addEventListener(activityEvents[i], markUserActivity, { passive: true });
+            }
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') {
+                markUserActivity();
+              }
+            });
+            setInterval(updateIdleRefreshState, IDLE_HEARTBEAT_MS);
+            updateIdleRefreshState();
+          }
+
            // Initialize offline state
            function initializeOfflineDetection() {
              const updateOfflineBar = () => {
@@ -3511,6 +4422,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                  }
                  updateClockNotePlaceholder();
                }
+               updateIdleLockRefreshButtonState();
              };
              
              window.addEventListener('online', updateOfflineBar);
@@ -3520,6 +4432,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
            }
           
           initializeOfflineDetection();
+          initializeIdleRefreshManager();
           initializeUiScaleMenu();
           initializeUiScale();
           setStatusText(document.getElementById('status') ? document.getElementById('status').innerText : '');
@@ -3531,6 +4444,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           renderEmployeeSchedulePreview();
           loadEmployeeSchedulePreview();
           refreshRecentEntries();
+          if (adminPermissions.canAccessAdminView === true) {
+            loadAdminDayboard();
+          }
 
           function formatDisplayDate(value) {
             if (!value) return '';
@@ -3857,6 +4773,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 recentEntriesLastUpdated = Date.now();
                 renderEntriesTable(recentEntries);
                 updateClockNotePlaceholder();
+                if (adminPermissions.canAccessAdminView === true) {
+                  loadAdminDayboard();
+                }
                 if (isManualEntryModalVisible() && !adminManualEntryTargetEmail) {
                   refreshManualDateTimePickers(true);
                 }

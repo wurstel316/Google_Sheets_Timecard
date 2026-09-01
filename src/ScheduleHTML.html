@@ -196,6 +196,41 @@
       min-width: 0;
       line-height: 1.25;
     }
+    .schedule-idle-bar {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.38rem 0.45rem;
+      background: rgba(148, 163, 184, 0.12);
+      color: var(--text);
+      font-size: 0.7rem;
+      line-height: 1.25;
+      gap: 0.35rem;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .schedule-idle-bar.show {
+      display: flex;
+    }
+    .schedule-idle-message {
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .schedule-idle-refresh-btn {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.2rem 0.45rem;
+      background: #0f1419;
+      color: var(--text);
+      font-size: 0.68rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .schedule-idle-refresh-btn:disabled {
+      opacity: 0.62;
+      cursor: not-allowed;
+    }
 
     .location-filter {
       display: flex;
@@ -1048,6 +1083,10 @@
             <span class="timer-count" id="save-countdown">60</span>
           </div>
           <span class="save-timer-label" id="save-timer-label">Auto-save in 60s</span>
+        </div>
+        <div class="schedule-idle-bar" id="schedule-idle-bar" aria-live="polite">
+          <span class="schedule-idle-message" id="schedule-idle-message">Idle session.</span>
+          <button type="button" class="schedule-idle-refresh-btn" id="schedule-idle-refresh-btn" onclick="triggerScheduleIdleRefresh(true)">Refresh now</button>
         </div>
         <div class="schedule-status" id="schedule-status"></div>
       </div>
@@ -2775,6 +2814,154 @@
   let autoSaveRemaining = AUTO_SAVE_INTERVAL_SEC;
   let autoSaveCountdownId = null;
   let hasUnsavedChanges = false;
+  let scheduleSaveInFlight = false;
+  let scheduleRefreshInFlight = false;
+  let scheduleCheckEmployeesInFlight = false;
+  let scheduleLoadInFlight = false;
+
+  const IDLE_POLICY = {
+    warningMs: 10 * 60 * 1000,
+    softRefreshMs: 15 * 60 * 1000,
+    lockMs: 30 * 60 * 1000,
+    heartbeatMs: 30 * 1000
+  };
+  const SCHEDULE_IDLE_WARNING_MS = Number(IDLE_POLICY.warningMs);
+  const SCHEDULE_IDLE_SOFT_REFRESH_MS = Number(IDLE_POLICY.softRefreshMs);
+  const SCHEDULE_IDLE_HEARTBEAT_MS = Number(IDLE_POLICY.heartbeatMs);
+  let scheduleLastActivityAtMs = Date.now();
+  let scheduleIdleRefreshDoneForCycle = false;
+
+  function setScheduleIdleBar(visible, message) {
+    const bar = document.getElementById("schedule-idle-bar");
+    const messageEl = document.getElementById("schedule-idle-message");
+    const refreshBtn = document.getElementById("schedule-idle-refresh-btn");
+    if (!bar || !messageEl || !refreshBtn) return;
+    refreshBtn.disabled = scheduleSaveInFlight || scheduleRefreshInFlight || scheduleCheckEmployeesInFlight || scheduleLoadInFlight || !(window.google && google.script && google.script.run);
+    if (!visible) {
+      bar.classList.remove("show");
+      return;
+    }
+    messageEl.textContent = String(message || "Idle session.");
+    bar.classList.add("show");
+  }
+
+  function markScheduleActivity() {
+    scheduleLastActivityAtMs = Date.now();
+    scheduleIdleRefreshDoneForCycle = false;
+    setScheduleIdleBar(false, "");
+  }
+
+  function scheduleHasNetworkWorkInFlight() {
+    return scheduleSaveInFlight || scheduleRefreshInFlight || scheduleCheckEmployeesInFlight || scheduleLoadInFlight;
+  }
+
+  function triggerScheduleIdleRefresh(isManual) {
+    const manual = isManual === true;
+    if (scheduleRefreshInFlight || scheduleHasNetworkWorkInFlight()) {
+      setScheduleIdleBar(true, "Refresh is waiting for current actions to finish.");
+      return;
+    }
+    if (!(window.google && google.script && google.script.run)) {
+      setScheduleIdleBar(true, "Apps Script bridge unavailable. Refresh manually.");
+      return;
+    }
+    if (!manual && hasUnsavedChanges) {
+      setScheduleIdleBar(true, "Unsaved schedule changes detected. Auto-refresh paused.");
+      return;
+    }
+    if (manual && hasUnsavedChanges) {
+      const proceed = confirm("Unsaved changes are waiting to be saved. Refreshing now may replace local edits. Continue?");
+      if (!proceed) {
+        setScheduleIdleBar(true, "Refresh skipped. Save changes, then refresh when ready.");
+        return;
+      }
+    }
+
+    scheduleRefreshInFlight = true;
+    setScheduleIdleBar(true, manual ? "Refreshing now..." : "Refreshing after idle...");
+    setScheduleStatus("Refreshing schedule...", false);
+
+    google.script.run
+      .withSuccessHandler(function (result) {
+        scheduleRefreshInFlight = false;
+        if (!result) {
+          setScheduleIdleBar(true, "Refresh returned no data.");
+          return;
+        }
+        if (hasUnsavedChanges) {
+          setScheduleIdleBar(true, "Refresh completed but local unsaved changes are present, so live data was not applied.");
+          return;
+        }
+
+        const payload = result && result.state && typeof result.state === "object"
+          ? result.state
+          : (result && Array.isArray(result.schedule)
+            ? { Employee_data: result.schedule }
+            : (Array.isArray(result)
+              ? { Employee_data: result }
+              : { Employee_data: [] }));
+
+        hydrateScheduleState(payload);
+        if (result && result.deletedDataIncluded === true) {
+          hasLoadedDeletedEmployees = true;
+        }
+        syncKnownLocationsFromData();
+        syncKnownEmployeeTypesFromData();
+        renderSchedule();
+        scheduleIdleRefreshDoneForCycle = true;
+        setScheduleIdleBar(true, "Schedule refreshed.");
+        setScheduleStatus("Schedule refreshed.", false);
+      })
+      .withFailureHandler(function (err) {
+        scheduleRefreshInFlight = false;
+        const message = (err && err.message) ? err.message : "Failed to refresh schedule.";
+        setScheduleIdleBar(true, message);
+        setScheduleStatus(message, true);
+      })
+      .fetchScheduleToolData();
+  }
+
+  function updateScheduleIdleState() {
+    if (scheduleRefreshInFlight) {
+      setScheduleIdleBar(true, "Refreshing schedule...");
+      return;
+    }
+
+    const idleMs = Date.now() - scheduleLastActivityAtMs;
+    if (idleMs < SCHEDULE_IDLE_WARNING_MS) {
+      setScheduleIdleBar(false, "");
+      return;
+    }
+
+    const idleMinutes = Math.max(1, Math.floor(idleMs / (60 * 1000)));
+    if (hasUnsavedChanges) {
+      setScheduleIdleBar(true, "Idle for " + idleMinutes + " min. Unsaved changes detected, auto-refresh paused.");
+      return;
+    }
+    if (scheduleHasNetworkWorkInFlight()) {
+      setScheduleIdleBar(true, "Idle for " + idleMinutes + " min. Waiting for active requests.");
+      return;
+    }
+    if (!scheduleIdleRefreshDoneForCycle && idleMs >= SCHEDULE_IDLE_SOFT_REFRESH_MS) {
+      triggerScheduleIdleRefresh(false);
+      return;
+    }
+    setScheduleIdleBar(true, "Idle for " + idleMinutes + " min. Refresh recommended.");
+  }
+
+  function initializeScheduleIdleManager() {
+    const activityEvents = ["mousedown", "keydown", "touchstart", "pointerdown"];
+    activityEvents.forEach(function (eventName) {
+      window.addEventListener(eventName, markScheduleActivity, { passive: true });
+    });
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") {
+        markScheduleActivity();
+      }
+    });
+    setInterval(updateScheduleIdleState, SCHEDULE_IDLE_HEARTBEAT_MS);
+    updateScheduleIdleState();
+  }
 
   function setSaveButtonState() {
     const btn = document.getElementById("save-btn");
@@ -2787,6 +2974,7 @@
       autoSaveRemaining = AUTO_SAVE_INTERVAL_SEC;
     }
     hasUnsavedChanges = true;
+    markScheduleActivity();
     setSaveButtonState();
     updateAutoSaveUI();
   }
@@ -2886,10 +3074,17 @@
     const btn = document.getElementById("save-btn");
     const ringWrap = document.getElementById("timer-ring-wrap");
 
+    if (scheduleSaveInFlight) {
+      return;
+    }
+
     if (!hasUnsavedChanges) {
       setScheduleStatus("No changes to save.", false);
       return;
     }
+
+    scheduleSaveInFlight = true;
+    setScheduleIdleBar(false, "");
 
     // Visual feedback while "saving"
     if (btn) {
@@ -2900,6 +3095,7 @@
     if (ringWrap) ringWrap.classList.add("is-saving");
 
     if (!(window.google && google.script && google.script.run)) {
+      scheduleSaveInFlight = false;
       if (btn) {
         btn.classList.remove("is-saving");
         btn.textContent = "Save";
@@ -2914,6 +3110,7 @@
 
     google.script.run
       .withSuccessHandler(function (result) {
+        scheduleSaveInFlight = false;
         if (!result || result.success !== true) {
           if (btn) {
             btn.classList.remove("is-saving");
@@ -2942,6 +3139,8 @@
       setScheduleStatus((result && result.message) ? result.message : "Schedule saved.", false);
 
       hasUnsavedChanges = false;
+      scheduleIdleRefreshDoneForCycle = false;
+      markScheduleActivity();
       resetAutoSaveCountdown();
       setSaveButtonState();
 
@@ -2954,6 +3153,7 @@
       }, 900);
       })
       .withFailureHandler(function (err) {
+        scheduleSaveInFlight = false;
         if (btn) {
           btn.classList.remove("is-saving");
           btn.textContent = "Save";
@@ -2968,11 +3168,16 @@
 
   function checkForNewEmployees() {
     const btn = document.getElementById("check-new-employees-btn");
+    if (scheduleCheckEmployeesInFlight) {
+      return;
+    }
     if (!(window.google && google.script && google.script.run)) {
       setScheduleStatus("Unable to check for new employees: Apps Script bridge is not available.", true);
       alert("Unable to check for new employees: Apps Script bridge is not available.");
       return;
     }
+    scheduleCheckEmployeesInFlight = true;
+    setScheduleIdleBar(false, "");
     if (btn) {
       btn.disabled = true;
       btn.dataset.originalLabel = btn.textContent;
@@ -2982,6 +3187,7 @@
 
     google.script.run
       .withSuccessHandler(function (result) {
+        scheduleCheckEmployeesInFlight = false;
         if (btn) {
           btn.disabled = false;
           btn.textContent = btn.dataset.originalLabel || "Check for new employees";
@@ -3000,10 +3206,12 @@
         }
         syncKnownLocationsFromData();
         renderSchedule();
+        markScheduleActivity();
         const message = (result && result.message) ? result.message : "No new employees found.";
         setScheduleStatus(message, false);
       })
       .withFailureHandler(function (err) {
+        scheduleCheckEmployeesInFlight = false;
         if (btn) {
           btn.disabled = false;
           btn.textContent = btn.dataset.originalLabel || "Check for new employees";
@@ -3051,8 +3259,11 @@
       return;
     }
 
+    scheduleLoadInFlight = true;
+
     google.script.run
       .withSuccessHandler(function (result) {
+        scheduleLoadInFlight = false;
         const payload = result && result.state && typeof result.state === "object"
           ? result.state
           : (result && Array.isArray(result.schedule)
@@ -3066,17 +3277,21 @@
         }
         syncKnownLocationsFromData();
         renderSchedule();
+        markScheduleActivity();
       })
       .withFailureHandler(function () {
+        scheduleLoadInFlight = false;
         EmployeeSchedule = [];
         DeletedEmployeeSchedule = [];
         hasLoadedDeletedEmployees = false;
         renderSchedule();
+        markScheduleActivity();
       })
       .fetchScheduleToolData();
   }
 
   // Run on HTML load (script is at end of body, so DOM is ready)
+  initializeScheduleIdleManager();
   populateLiveSchedule();
 
     // =====================================================================

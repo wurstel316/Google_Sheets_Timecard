@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.82 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.101 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -830,11 +830,13 @@ function isCurrentUserAdmin() {
 }
 // ==================== CONSTANTS ====================
 const MAX_DIFF_HOURS = 14; // Auto clock-out after this many hours
+const STALE_AUTO_CLOSE_COOLDOWN_MS = 5 * 60 * 1000;
+const STALE_AUTO_CLOSE_LAST_RUN_KEY = 'stale_auto_close_last_run_ms';
 const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.82';
+const SCRIPT_VERSION = '2.2.2-push.101';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -859,6 +861,15 @@ const DEBUG_PAYROLL_CALCULATIONS = true;
 const DEBUG_LOG_PREFIX = '[AWS-DEBUG] ';
 function getScriptVersion() {
     return SCRIPT_VERSION;
+}
+
+function getStandardIdlePolicy_() {
+    return {
+        warningMs: 10 * 60 * 1000,
+        softRefreshMs: 5 * 60 * 1000,
+        lockMs: 30 * 60 * 1000,
+        heartbeatMs: 30 * 1000
+    };
 }
 /**
  * Log debug messages for payroll calculations
@@ -1652,6 +1663,207 @@ function buildEmployeeSchedulePreviewFromRecord_(employeeRecord, updatedAt) {
     };
 }
 
+function formatAdminDayboardDisplayLabel_(email) {
+    const normalizedEmail = normalizeScheduleEmail_(email);
+    if (!normalizedEmail) {
+        return 'Unknown';
+    }
+    const localPart = normalizedEmail.split('@')[0] || normalizedEmail;
+    return localPart || 'Unknown';
+}
+
+function getAdminDayboardTodayIndex_(dateValue) {
+    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return 0;
+    }
+    return (date.getDay() + 6) % 7;
+}
+
+function getAdminDayboardDateKey_(dateValue) {
+    const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+        return '';
+    }
+    return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+}
+
+function buildAdminDayboardScheduleSummary_(employeeRecord, todayIndex) {
+    const normalizedDays = normalizeScheduleDays_(employeeRecord && employeeRecord.days ? employeeRecord.days : []);
+    const dayRecord = normalizedDays[todayIndex] || { dayName: '', shifts: [] };
+    const summary = buildEmployeeScheduleDaySummary_(dayRecord);
+    return {
+        dayName: summary.dayName || '',
+        hasSchedule: !!summary.hasSchedule,
+        summaryText: summary.summaryText || 'Not scheduled',
+        segments: Array.isArray(summary.segments) ? summary.segments : []
+    };
+}
+
+function getAdminDayboardPayload() {
+    if (!canAccessAdminView()) {
+        throw new Error('Admin access required.');
+    }
+    const startMs = Date.now();
+    const now = new Date();
+    const tz = Session.getScriptTimeZone();
+    const todayKey = getAdminDayboardDateKey_(now);
+    const todayIndex = getAdminDayboardTodayIndex_(now);
+    const currentHour = now.getHours();
+    const currentHourLabel = formatScheduleHourLabel_(currentHour);
+    const currentUserEmail = String(Session.getActiveUser().getEmail() || '').trim().toLowerCase();
+    const state = ensureScheduleEmployeeRosterLoaded_(currentUserEmail);
+    const roster = Array.isArray(state.Employee_data) ? state.Employee_data : [];
+    const rosterMap = new Map();
+    roster.forEach((record, index) => {
+        const normalizedEmail = normalizeScheduleEmail_(record && (record.EmployeeEmail || record.EmployeeName));
+        if (!normalizedEmail) {
+            return;
+        }
+        rosterMap.set(normalizedEmail, { record: record, rosterIndex: index });
+    });
+
+    const entries = getAllEntriesForAdminView(false);
+    const employeeMap = new Map();
+
+    function ensureEmployeeState(email) {
+        const normalizedEmail = normalizeScheduleEmail_(email);
+        if (!normalizedEmail) {
+            return null;
+        }
+        if (!employeeMap.has(normalizedEmail)) {
+            const rosterEntry = rosterMap.get(normalizedEmail) || null;
+            employeeMap.set(normalizedEmail, {
+                email: normalizedEmail,
+                displayLabel: formatAdminDayboardDisplayLabel_(normalizedEmail),
+                rosterIndex: rosterEntry ? rosterEntry.rosterIndex : Number.MAX_SAFE_INTEGER,
+                schedule: buildAdminDayboardScheduleSummary_(rosterEntry ? rosterEntry.record : null, todayIndex),
+                isInNow: false,
+                clockedInToday: false,
+                currentPunch: null,
+                sessionsToday: [],
+                allSessions: []
+            });
+        }
+        return employeeMap.get(normalizedEmail);
+    }
+
+    for (let i = 0; i < entries.length; i++) {
+        const entry = entries[i] || {};
+        const normalizedEmail = normalizeScheduleEmail_(entry.email);
+        if (!normalizedEmail) {
+            continue;
+        }
+        const clockInIso = String(entry.effectiveClockIn || '').trim();
+        const clockOutIso = String(entry.effectiveClockOut || '').trim();
+        const clockInDate = clockInIso ? new Date(clockInIso) : null;
+        const clockOutDate = clockOutIso ? new Date(clockOutIso) : null;
+        if (!(clockInDate instanceof Date) || isNaN(clockInDate.getTime())) {
+            continue;
+        }
+
+        const employeeState = ensureEmployeeState(normalizedEmail);
+        if (!employeeState) {
+            continue;
+        }
+
+        const clockInKey = getAdminDayboardDateKey_(clockInDate);
+        const clockOutKey = clockOutDate instanceof Date && !isNaN(clockOutDate.getTime()) ? getAdminDayboardDateKey_(clockOutDate) : '';
+        const session = {
+            entryId: entry.entryId || '',
+            clockIn: clockInDate.toISOString(),
+            clockOut: clockOutDate instanceof Date && !isNaN(clockOutDate.getTime()) ? clockOutDate.toISOString() : '',
+            isOpen: !(clockOutDate instanceof Date && !isNaN(clockOutDate.getTime())),
+            clockInKey: clockInKey,
+            clockOutKey: clockOutKey
+        };
+
+        employeeState.allSessions.push(session);
+        if (clockInKey === todayKey) {
+            employeeState.sessionsToday.push(session);
+            employeeState.clockedInToday = true;
+        }
+        if (session.isOpen) {
+            employeeState.isInNow = true;
+            employeeState.currentPunch = session;
+        }
+        else if (!employeeState.isInNow && !employeeState.currentPunch && clockOutKey === todayKey) {
+            employeeState.currentPunch = session;
+        }
+    }
+
+    roster.forEach((record) => {
+        const normalizedEmail = normalizeScheduleEmail_(record && (record.EmployeeEmail || record.EmployeeName));
+        if (!normalizedEmail) {
+            return;
+        }
+        const scheduleSummary = buildAdminDayboardScheduleSummary_(record, todayIndex);
+        if (!scheduleSummary.hasSchedule) {
+            return;
+        }
+        const employeeState = ensureEmployeeState(normalizedEmail);
+        if (!employeeState) {
+            return;
+        }
+        employeeState.schedule = scheduleSummary;
+    });
+
+    const employees = Array.from(employeeMap.values()).filter((employee) => {
+        const hasScheduleToday = !!(employee.schedule && employee.schedule.hasSchedule);
+        const hasPunchActivity = !!employee.clockedInToday || !!employee.isInNow;
+        return hasScheduleToday || hasPunchActivity;
+    }).sort((a, b) => {
+        if (a.isInNow !== b.isInNow) return a.isInNow ? -1 : 1;
+        if (a.clockedInToday !== b.clockedInToday) return a.clockedInToday ? -1 : 1;
+        if (a.rosterIndex !== b.rosterIndex) return a.rosterIndex - b.rosterIndex;
+        if (a.displayLabel !== b.displayLabel) return a.displayLabel.localeCompare(b.displayLabel);
+        return a.email.localeCompare(b.email);
+    }).map((employee) => {
+        const sessionsToday = employee.sessionsToday.slice().sort((left, right) => {
+            const leftMs = left.clockIn ? new Date(left.clockIn).getTime() : 0;
+            const rightMs = right.clockIn ? new Date(right.clockIn).getTime() : 0;
+            return leftMs - rightMs;
+        });
+        return {
+            email: employee.email,
+            displayLabel: employee.displayLabel,
+            schedule: employee.schedule,
+            isInNow: !!employee.isInNow,
+            clockedInToday: !!employee.clockedInToday,
+            currentPunch: employee.currentPunch || null,
+            sessionsToday: sessionsToday,
+            sessionCount: sessionsToday.length,
+            allSessionCount: employee.allSessions.length,
+            rosterIndex: employee.rosterIndex
+        };
+    });
+
+    const summary = {
+        inNowCount: employees.filter(employee => employee.isInNow).length,
+        clockedInTodayCount: employees.filter(employee => employee.clockedInToday).length,
+        scheduledCount: employees.filter(employee => employee.schedule && employee.schedule.hasSchedule).length
+    };
+
+    debugLog('getAdminDayboardPayload complete', {
+        durationMs: Date.now() - startMs,
+        inNowCount: summary.inNowCount,
+        clockedInTodayCount: summary.clockedInTodayCount,
+        scheduledCount: summary.scheduledCount,
+        employeeCount: employees.length
+    });
+
+    return {
+        success: true,
+        updatedAt: now.toISOString(),
+        todayKey: todayKey,
+        todayIndex: todayIndex,
+        currentHour: currentHour,
+        currentHourLabel: currentHourLabel,
+        summary: summary,
+        employees: employees
+    };
+}
+
 function buildEntryScheduleSnapshot_(employeeEmail, targetDate) {
     const normalizedEmail = normalizeScheduleEmail_(employeeEmail);
     if (!normalizedEmail) {
@@ -2245,6 +2457,7 @@ function getAllEntriesForAdminView(includeDeleted) {
     if (!dataEntry || dataEntry.getLastRow() <= 1)
         return [];
     ensureDataEntrySchema(dataEntry);
+    maybeAutoCloseStaleEntriesForAdminPath_(dataEntry, 'getAllEntriesForAdminView');
     const includeDeletedRows = includeDeleted === true;
     const rows = dataEntry.getRange(2, 1, dataEntry.getLastRow() - 1, DATA_COL_COUNT).getValues();
     const tz = Session.getScriptTimeZone();
@@ -3193,6 +3406,64 @@ function autoCloseStaleEntries(dataEntry) {
     });
     return autoClosedCount;
 }
+
+/**
+ * Run stale-entry auto-close at most once per cooldown window across admin data flows.
+ * @param dataEntry Reference to DataEntry sheet
+ * @param sourceLabel Text label for logs (caller/source)
+ * @returns Object describing execution outcome
+ */
+function maybeAutoCloseStaleEntriesForAdminPath_(dataEntry, sourceLabel) {
+    const startMs = Date.now();
+    const source = String(sourceLabel || 'admin_path');
+    let lock = null;
+    try {
+        lock = LockService.getScriptLock();
+        if (!lock.tryLock(500)) {
+            debugLog('maybeAutoCloseStaleEntriesForAdminPath skipped (lock busy)', { source: source });
+            return { ran: false, reason: 'lock_busy', closedCount: 0 };
+        }
+
+        const props = PropertiesService.getScriptProperties();
+        const nowMs = Date.now();
+        const lastRunRaw = props.getProperty(STALE_AUTO_CLOSE_LAST_RUN_KEY);
+        const lastRunMs = Number(lastRunRaw || 0);
+        const elapsedMs = nowMs - lastRunMs;
+
+        if (isFinite(lastRunMs) && lastRunMs > 0 && elapsedMs < STALE_AUTO_CLOSE_COOLDOWN_MS) {
+            debugLog('maybeAutoCloseStaleEntriesForAdminPath skipped (cooldown)', {
+                source: source,
+                elapsedMs: elapsedMs,
+                cooldownMs: STALE_AUTO_CLOSE_COOLDOWN_MS
+            });
+            return { ran: false, reason: 'cooldown', closedCount: 0 };
+        }
+
+        // Set last-run before scanning to prevent back-to-back duplicate sweeps.
+        props.setProperty(STALE_AUTO_CLOSE_LAST_RUN_KEY, String(nowMs));
+        const closedCount = autoCloseStaleEntries(dataEntry);
+        debugLog('maybeAutoCloseStaleEntriesForAdminPath ran', {
+            source: source,
+            closedCount: closedCount,
+            durationMs: Date.now() - startMs
+        });
+        return { ran: true, reason: 'ran', closedCount: closedCount };
+    }
+    catch (e) {
+        Logger.log('maybeAutoCloseStaleEntriesForAdminPath_: error=%s', e.toString());
+        return { ran: false, reason: 'error', closedCount: 0 };
+    }
+    finally {
+        if (lock) {
+            try {
+                lock.releaseLock();
+            }
+            catch (_e) {
+                // Best effort lock cleanup.
+            }
+        }
+    }
+}
 // ==================== DATA VALIDATION ====================
 /**
  * Fetch current AWS config for display in preview dialog
@@ -3999,9 +4270,33 @@ function openSetCurrentPayPeriodDialog() {
           .preview { background: #f8f9fa; border-left: 4px solid #1a73e8; padding: 10px; margin-top: 10px; }
           .preview-title { font-weight: bold; margin-bottom: 4px; }
           #submitBtn:disabled { background: #ccc; cursor: not-allowed; }
+                    .idle-bar { display: none; margin-bottom: 12px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 12px; }
+                    .idle-bar.show { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+                    .idle-bar button { padding: 5px 9px; font-size: 12px; border: 1px solid #9ca3af; border-radius: 5px; background: #fff; cursor: pointer; }
+                    .idle-lock-overlay { position: fixed; inset: 0; background: rgba(75, 85, 99, 0.6); display: none; align-items: center; justify-content: center; z-index: 20; padding: 12px; }
+                    .idle-lock-card { width: min(400px, 95vw); background: #f9fafb; border: 1px solid #9ca3af; border-radius: 8px; padding: 12px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22); }
+                    .idle-lock-title { font-weight: 700; margin-bottom: 6px; color: #111827; }
+                    .idle-lock-message { color: #374151; font-size: 12px; line-height: 1.35; margin-bottom: 10px; }
+                    .idle-lock-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+                    .idle-lock-actions button { padding: 7px 11px; border-radius: 5px; border: 1px solid #9ca3af; background: #fff; cursor: pointer; }
+                    .idle-lock-actions .primary { background: #374151; border-color: #374151; color: #fff; }
         </style>
       </head>
       <body>
+                <div id="payPeriodIdleBar" class="idle-bar" aria-live="polite">
+                    <span id="payPeriodIdleMessage">Idle session.</span>
+                    <button id="payPeriodIdleBarRefreshBtn" type="button" onclick="triggerPayPeriodIdleRefresh(true)">Refresh now</button>
+                </div>
+                <div id="payPeriodIdleLock" class="idle-lock-overlay" aria-modal="true" role="dialog">
+                    <div class="idle-lock-card">
+                        <div id="payPeriodIdleLockTitle" class="idle-lock-title">Idle session lock</div>
+                        <div id="payPeriodIdleLockMessage" class="idle-lock-message">Refresh required.</div>
+                        <div class="idle-lock-actions">
+                            <button id="payPeriodIdleResumeBtn" type="button" style="display:none;" onclick="resumePayPeriodIdleLock()">Return to editing</button>
+                            <button id="payPeriodIdleRefreshBtn" type="button" class="primary" onclick="triggerPayPeriodIdleHardRefresh()">Refresh now</button>
+                        </div>
+                    </div>
+                </div>
         <form id="payPeriodForm">
           <div class="form-group">
             <label for="startDate">Pay Period Start Date *</label>
@@ -4024,11 +4319,148 @@ function openSetCurrentPayPeriodDialog() {
         </form>
 
         <script>
+                    const IDLE_POLICY = ${JSON.stringify(getStandardIdlePolicy_())};
+                    let payPeriodIdleLastActivityMs = Date.now();
+                    let payPeriodIdleSoftRefreshDone = false;
+                    let payPeriodIdleLockActive = false;
+                    let payPeriodIdleLockMode = '';
+                    let payPeriodIdleHardRefreshInFlight = false;
+
           const startDateInput = document.getElementById('startDate');
           const startDisplay = document.getElementById('startDisplay');
           const endDisplay = document.getElementById('endDisplay');
           const errorMsg = document.getElementById('errorMsg');
           const submitBtn = document.getElementById('submitBtn');
+                    const initialStartDateIso = String(startDateInput ? startDateInput.value : '');
+
+                    function setPayPeriodIdleBar(visible, message) {
+                        const bar = document.getElementById('payPeriodIdleBar');
+                        const msg = document.getElementById('payPeriodIdleMessage');
+                        const btn = document.getElementById('payPeriodIdleBarRefreshBtn');
+                        if (!bar || !msg || !btn) return;
+                        btn.disabled = payPeriodIdleHardRefreshInFlight;
+                        if (!visible) {
+                            bar.classList.remove('show');
+                            return;
+                        }
+                        msg.textContent = String(message || 'Idle session.');
+                        bar.classList.add('show');
+                    }
+
+                    function hasDirtyPayPeriodSelection() {
+                        return String(startDateInput ? startDateInput.value : '') !== initialStartDateIso;
+                    }
+
+                    function markPayPeriodIdleActivity() {
+                        if (payPeriodIdleLockActive) return;
+                        payPeriodIdleLastActivityMs = Date.now();
+                        payPeriodIdleSoftRefreshDone = false;
+                        setPayPeriodIdleBar(false, '');
+                    }
+
+                    function setPayPeriodIdleLock(visible, mode, title, message) {
+                        const overlay = document.getElementById('payPeriodIdleLock');
+                        const titleEl = document.getElementById('payPeriodIdleLockTitle');
+                        const msgEl = document.getElementById('payPeriodIdleLockMessage');
+                        const resumeBtn = document.getElementById('payPeriodIdleResumeBtn');
+                        const refreshBtn = document.getElementById('payPeriodIdleRefreshBtn');
+                        if (!overlay || !titleEl || !msgEl || !resumeBtn || !refreshBtn) return;
+                        if (!visible) {
+                            overlay.style.display = 'none';
+                            payPeriodIdleLockActive = false;
+                            payPeriodIdleLockMode = '';
+                            payPeriodIdleHardRefreshInFlight = false;
+                            return;
+                        }
+                        payPeriodIdleLockActive = true;
+                        payPeriodIdleLockMode = String(mode || 'locked');
+                        titleEl.textContent = String(title || 'Idle session lock');
+                        msgEl.textContent = String(message || 'Refresh required.');
+                        resumeBtn.style.display = payPeriodIdleLockMode === 'dirty' ? 'inline-block' : 'none';
+                        refreshBtn.disabled = payPeriodIdleHardRefreshInFlight;
+                        overlay.style.display = 'flex';
+                        setPayPeriodIdleBar(false, '');
+                    }
+
+                    function resumePayPeriodIdleLock() {
+                        if (payPeriodIdleLockMode !== 'dirty' || payPeriodIdleHardRefreshInFlight) return;
+                        setPayPeriodIdleLock(false);
+                        payPeriodIdleLastActivityMs = Date.now();
+                        payPeriodIdleSoftRefreshDone = false;
+                    }
+
+                    function triggerPayPeriodIdleHardRefresh() {
+                        if (payPeriodIdleHardRefreshInFlight) return;
+                        payPeriodIdleHardRefreshInFlight = true;
+                        setPayPeriodIdleLock(true, payPeriodIdleLockMode || 'locked', 'Refreshing dialog', 'Refreshing now...');
+                        window.location.reload();
+                    }
+
+                    function triggerPayPeriodIdleRefresh(manual) {
+                        const isManual = manual === true;
+                        if (payPeriodIdleLockActive) return;
+                        if (!isManual && hasDirtyPayPeriodSelection()) {
+                            setPayPeriodIdleBar(true, 'Unsaved selection detected. Auto-refresh paused.');
+                            return;
+                        }
+                        if (isManual && hasDirtyPayPeriodSelection()) {
+                            const proceed = window.confirm('Unsaved date selection detected. Refreshing will reset this dialog. Continue?');
+                            if (!proceed) {
+                                setPayPeriodIdleBar(true, 'Refresh skipped.');
+                                return;
+                            }
+                        }
+                        window.location.reload();
+                    }
+
+                    function updatePayPeriodIdleState() {
+                        if (payPeriodIdleLockActive) return;
+                        const idleMs = Date.now() - payPeriodIdleLastActivityMs;
+                        const idleMinutes = Math.max(1, Math.floor(idleMs / (60 * 1000)));
+                        const warningMs = Number(IDLE_POLICY.warningMs || (10 * 60 * 1000));
+                        const softMs = Number(IDLE_POLICY.softRefreshMs || (15 * 60 * 1000));
+                        const lockMs = Number(IDLE_POLICY.lockMs || (30 * 60 * 1000));
+
+                        if (idleMs >= lockMs) {
+                            if (hasDirtyPayPeriodSelection()) {
+                                setPayPeriodIdleLock(true, 'dirty', 'Idle session protection', 'Idle for ' + idleMinutes + ' min with unsaved date edits. Return to editing or refresh now.');
+                            } else {
+                                setPayPeriodIdleLock(true, 'locked', 'Idle session lock', 'Idle for ' + idleMinutes + ' min. Refresh required.');
+                            }
+                            return;
+                        }
+
+                        if (idleMs < warningMs) {
+                            setPayPeriodIdleBar(false, '');
+                            return;
+                        }
+
+                        if (hasDirtyPayPeriodSelection()) {
+                            setPayPeriodIdleBar(true, 'Idle for ' + idleMinutes + ' min. Unsaved date edits detected, auto-refresh paused.');
+                            return;
+                        }
+
+                        if (!payPeriodIdleSoftRefreshDone && idleMs >= softMs) {
+                            payPeriodIdleSoftRefreshDone = true;
+                            triggerPayPeriodIdleRefresh(false);
+                            return;
+                        }
+
+                        setPayPeriodIdleBar(true, 'Idle for ' + idleMinutes + ' min. Refresh recommended.');
+                    }
+
+                    function initializePayPeriodIdleManager() {
+                        ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach((eventName) => {
+                            window.addEventListener(eventName, markPayPeriodIdleActivity, { passive: true });
+                        });
+                        document.addEventListener('visibilitychange', () => {
+                            if (document.visibilityState === 'visible') {
+                                markPayPeriodIdleActivity();
+                            }
+                        });
+                        setInterval(updatePayPeriodIdleState, Number(IDLE_POLICY.heartbeatMs || (30 * 1000)));
+                        updatePayPeriodIdleState();
+                    }
 
           function parseLocalDate(isoDate) {
             const parts = String(isoDate || '').split('-');
@@ -4123,7 +4555,10 @@ function openSetCurrentPayPeriodDialog() {
 
           submitBtn.addEventListener('click', submitPayPeriod);
           startDateInput.addEventListener('change', updatePreview);
-          window.addEventListener('load', updatePreview);
+                    window.addEventListener('load', () => {
+                        initializePayPeriodIdleManager();
+                        updatePreview();
+                    });
         </script>
       </body>
     </html>
@@ -5056,9 +5491,35 @@ function getCreateReportDialogHtml() {
 
           .action-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
           .sticky-top { position: sticky; top: 0; background: #fff; z-index: 1; padding: 6px 0; border-bottom: 1px solid #e0e0e0; }
+                    .idle-bar { display: none; margin-bottom: 10px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 12px; }
+                    .idle-bar.show { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+                    .idle-bar .idle-btn { padding: 5px 9px; font-size: 12px; border: 1px solid #9ca3af; border-radius: 5px; background: #fff; color: #1f2937; cursor: pointer; }
+                    .idle-bar .idle-btn:disabled { opacity: 0.65; cursor: not-allowed; }
+                    .idle-lock-overlay { position: fixed; inset: 0; background: rgba(75, 85, 99, 0.6); display: none; align-items: center; justify-content: center; z-index: 20; padding: 12px; }
+                    .idle-lock-card { width: min(420px, 95vw); background: #f9fafb; border: 1px solid #9ca3af; border-radius: 8px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22); padding: 12px; }
+                    .idle-lock-title { font-weight: 700; margin-bottom: 6px; color: #111827; }
+                    .idle-lock-msg { color: #374151; font-size: 12px; line-height: 1.35; margin-bottom: 10px; }
+                    .idle-lock-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+                    .idle-lock-actions button { padding: 7px 11px; border-radius: 5px; border: 1px solid #9ca3af; background: #fff; color: #111827; font-size: 12px; cursor: pointer; }
+                    .idle-lock-actions .primary-lock { background: #374151; border-color: #374151; color: #fff; }
+                    .idle-lock-actions button:disabled { opacity: 0.65; cursor: not-allowed; }
         </style>
       </head>
       <body>
+                <div id="reportIdleBar" class="idle-bar" aria-live="polite">
+                    <span id="reportIdleMessage">Idle session.</span>
+                    <button id="reportIdleRefreshBtn" class="idle-btn" type="button" onclick="triggerReportIdleRefresh(true)">Refresh now</button>
+                </div>
+                <div id="reportIdleLock" class="idle-lock-overlay" aria-modal="true" role="dialog">
+                    <div class="idle-lock-card">
+                        <div id="reportIdleLockTitle" class="idle-lock-title">Idle session lock</div>
+                        <div id="reportIdleLockMessage" class="idle-lock-msg">Refresh required.</div>
+                        <div class="idle-lock-actions">
+                            <button id="reportIdleResumeBtn" type="button" style="display:none;" onclick="resumeReportIdleLock()">Return to editing</button>
+                            <button id="reportIdleLockRefreshBtn" type="button" class="primary-lock" onclick="triggerReportIdleHardRefresh()">Refresh now</button>
+                        </div>
+                    </div>
+                </div>
         <div id="loadingView" class="loading">Loading report data...</div>
 
         <!-- ===== SELECTION VIEW ===== -->
@@ -5126,23 +5587,200 @@ function getCreateReportDialogHtml() {
         </div>
 
         <script>
+                    var IDLE_POLICY = ${JSON.stringify(getStandardIdlePolicy_())};
           var cachedRecords = [];
           var cachedMinDate = '';
           var cachedMaxDate = '';
           var lastReportResult = null;
+                    var reportIdleLastActivityMs = Date.now();
+                    var reportIdleSoftRefreshDone = false;
+                    var reportIdleLockActive = false;
+                    var reportIdleLockMode = '';
+                    var reportIdleBusy = false;
+                    var reportIdleHardRefreshInFlight = false;
+                    var reportIdleBaseline = { reportType: '', startDate: '', endDate: '', employee: '' };
+
+                    function setReportIdleBar(visible, message) {
+                        var bar = document.getElementById('reportIdleBar');
+                        var msg = document.getElementById('reportIdleMessage');
+                        var btn = document.getElementById('reportIdleRefreshBtn');
+                        if (!bar || !msg || !btn) return;
+                        btn.disabled = reportIdleBusy || reportIdleHardRefreshInFlight || !(window.google && google.script && google.script.run);
+                        if (!visible) {
+                            bar.classList.remove('show');
+                            return;
+                        }
+                        msg.textContent = String(message || 'Idle session.');
+                        bar.classList.add('show');
+                    }
+
+                    function setReportIdleLock(visible, mode, title, message) {
+                        var overlay = document.getElementById('reportIdleLock');
+                        var titleEl = document.getElementById('reportIdleLockTitle');
+                        var msgEl = document.getElementById('reportIdleLockMessage');
+                        var resumeBtn = document.getElementById('reportIdleResumeBtn');
+                        var refreshBtn = document.getElementById('reportIdleLockRefreshBtn');
+                        if (!overlay || !titleEl || !msgEl || !resumeBtn || !refreshBtn) return;
+                        if (!visible) {
+                            overlay.style.display = 'none';
+                            reportIdleLockActive = false;
+                            reportIdleLockMode = '';
+                            reportIdleHardRefreshInFlight = false;
+                            return;
+                        }
+                        reportIdleLockActive = true;
+                        reportIdleLockMode = String(mode || 'locked');
+                        titleEl.textContent = String(title || 'Idle session lock');
+                        msgEl.textContent = String(message || 'Refresh required.');
+                        resumeBtn.style.display = reportIdleLockMode === 'dirty' ? 'inline-block' : 'none';
+                        refreshBtn.disabled = reportIdleHardRefreshInFlight;
+                        overlay.style.display = 'flex';
+                        setReportIdleBar(false, '');
+                    }
+
+                    function resumeReportIdleLock() {
+                        if (reportIdleLockMode !== 'dirty' || reportIdleHardRefreshInFlight) return;
+                        setReportIdleLock(false);
+                        reportIdleLastActivityMs = Date.now();
+                        reportIdleSoftRefreshDone = false;
+                    }
+
+                    function markReportIdleActivity() {
+                        if (reportIdleLockActive) return;
+                        reportIdleLastActivityMs = Date.now();
+                        reportIdleSoftRefreshDone = false;
+                        setReportIdleBar(false, '');
+                    }
+
+                    function getReportCurrentView() {
+                        var loading = document.getElementById('loadingView');
+                        var report = document.getElementById('reportView');
+                        if (loading && loading.style.display !== 'none') return 'loading';
+                        if (report && report.style.display !== 'none') return 'report';
+                        return 'selection';
+                    }
+
+                    function hasDirtyReportSelection() {
+                        if (getReportCurrentView() !== 'selection') return false;
+                        var reportType = document.getElementById('reportType');
+                        var startDate = document.getElementById('startDate');
+                        var endDate = document.getElementById('endDate');
+                        var employee = document.getElementById('employee');
+                        return (reportType && reportType.value !== reportIdleBaseline.reportType) ||
+                            (startDate && startDate.value !== reportIdleBaseline.startDate) ||
+                            (endDate && endDate.value !== reportIdleBaseline.endDate) ||
+                            (employee && employee.value !== reportIdleBaseline.employee);
+                    }
+
+                    function snapshotReportSelectionBaseline() {
+                        var reportType = document.getElementById('reportType');
+                        var startDate = document.getElementById('startDate');
+                        var endDate = document.getElementById('endDate');
+                        var employee = document.getElementById('employee');
+                        reportIdleBaseline = {
+                            reportType: reportType ? String(reportType.value || '') : '',
+                            startDate: startDate ? String(startDate.value || '') : '',
+                            endDate: endDate ? String(endDate.value || '') : '',
+                            employee: employee ? String(employee.value || '') : ''
+                        };
+                    }
+
+                    function triggerReportIdleHardRefresh() {
+                        if (reportIdleHardRefreshInFlight) return;
+                        if (reportIdleBusy) {
+                            setReportIdleLock(true, reportIdleLockMode || 'locked', 'Idle session lock', 'Waiting for active requests to finish.');
+                            return;
+                        }
+                        reportIdleHardRefreshInFlight = true;
+                        setReportIdleLock(true, reportIdleLockMode || 'locked', 'Refreshing session', 'Refreshing now...');
+                        window.location.reload();
+                    }
+
+                    function triggerReportIdleRefresh(manual) {
+                        var isManual = manual === true;
+                        if (reportIdleLockActive || reportIdleBusy) return;
+                        var dirty = hasDirtyReportSelection();
+                        if (!isManual && dirty) {
+                            setReportIdleBar(true, 'Unsaved selections detected. Auto-refresh paused.');
+                            return;
+                        }
+                        if (isManual && dirty) {
+                            var proceed = window.confirm('Unsaved selections were detected. Refreshing will reset current selections. Continue?');
+                            if (!proceed) {
+                                setReportIdleBar(true, 'Refresh skipped.');
+                                return;
+                            }
+                        }
+                        loadBootstrapData(true);
+                    }
+
+                    function updateReportIdleState() {
+                        if (reportIdleLockActive || reportIdleBusy) {
+                            return;
+                        }
+                        var idleMs = Date.now() - reportIdleLastActivityMs;
+                        var idleMinutes = Math.max(1, Math.floor(idleMs / (60 * 1000)));
+                        var warningMs = Number(IDLE_POLICY.warningMs || (10 * 60 * 1000));
+                        var softMs = Number(IDLE_POLICY.softRefreshMs || (15 * 60 * 1000));
+                        var lockMs = Number(IDLE_POLICY.lockMs || (30 * 60 * 1000));
+
+                        if (idleMs >= lockMs) {
+                            if (hasDirtyReportSelection()) {
+                                setReportIdleLock(true, 'dirty', 'Idle session protection', 'Idle for ' + idleMinutes + ' min with unsaved selections. Return to editing or refresh now.');
+                            } else {
+                                setReportIdleLock(true, 'locked', 'Idle session lock', 'Idle for ' + idleMinutes + ' min. Refresh required to continue.');
+                            }
+                            return;
+                        }
+
+                        if (idleMs < warningMs) {
+                            setReportIdleBar(false, '');
+                            return;
+                        }
+
+                        if (hasDirtyReportSelection()) {
+                            setReportIdleBar(true, 'Idle for ' + idleMinutes + ' min. Unsaved selections detected, auto-refresh paused.');
+                            return;
+                        }
+
+                        if (!reportIdleSoftRefreshDone && idleMs >= softMs && getReportCurrentView() === 'selection') {
+                            triggerReportIdleRefresh(false);
+                            return;
+                        }
+
+                        setReportIdleBar(true, 'Idle for ' + idleMinutes + ' min. Refresh recommended.');
+                    }
+
+                    function initializeReportIdleManager() {
+                        ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach(function (eventName) {
+                            window.addEventListener(eventName, markReportIdleActivity, { passive: true });
+                        });
+                        document.addEventListener('visibilitychange', function () {
+                            if (document.visibilityState === 'visible') {
+                                markReportIdleActivity();
+                            }
+                        });
+                        var heartbeat = Number(IDLE_POLICY.heartbeatMs || (30 * 1000));
+                        setInterval(updateReportIdleState, heartbeat);
+                        updateReportIdleState();
+                    }
 
           // ---- Initialization ----
           window.addEventListener('load', function() {
+                        initializeReportIdleManager();
             loadBootstrapData();
           });
 
-          function loadBootstrapData() {
+                    function loadBootstrapData(isIdleRefresh) {
+                        reportIdleBusy = true;
             showView('loading');
             google.script.run
               .withSuccessHandler(function(data) {
+                                reportIdleBusy = false;
                 if (!data || !data.success) {
                   showSelectionError(data ? data.message : 'Failed to load data.');
                   showView('selection');
+                                    setReportIdleBar(true, 'Refresh failed. Please try again.');
                   return;
                 }
                 cachedRecords = data.records || [];
@@ -5153,11 +5791,16 @@ function getCreateReportDialogHtml() {
                 applyDateConstraints();
                 buildDatePresets();
                 updateEmployeeList();
+                                snapshotReportSelectionBaseline();
+                                reportIdleSoftRefreshDone = isIdleRefresh === true;
                 showView('selection');
+                                setReportIdleBar(isIdleRefresh === true, isIdleRefresh === true ? 'Data refreshed.' : '');
               })
               .withFailureHandler(function(err) {
+                                reportIdleBusy = false;
                 showSelectionError('Failed to load data: ' + (err.message || err));
                 showView('selection');
+                                setReportIdleBar(true, 'Refresh failed. Please try again.');
               })
               .getReportBootstrapData();
           }
@@ -5348,9 +5991,11 @@ function getCreateReportDialogHtml() {
 
             document.getElementById('runBtn').disabled = true;
             document.getElementById('runBtn').textContent = 'Running...';
+                        reportIdleBusy = true;
 
             google.script.run
               .withSuccessHandler(function(result) {
+                                reportIdleBusy = false;
                 document.getElementById('runBtn').disabled = false;
                 document.getElementById('runBtn').textContent = 'Run Report';
                 if (!result || !result.success) {
@@ -5362,6 +6007,7 @@ function getCreateReportDialogHtml() {
                 showView('report');
               })
               .withFailureHandler(function(err) {
+                                reportIdleBusy = false;
                 document.getElementById('runBtn').disabled = false;
                 document.getElementById('runBtn').textContent = 'Run Report';
                 showSelectionError('Error: ' + (err.message || err));
@@ -5478,6 +6124,7 @@ function getCreateReportDialogHtml() {
           // ---- Export PDF ----
           function handleExportPdf() {
             if (!lastReportResult) return;
+                        reportIdleBusy = true;
             document.getElementById('exportTopBtn').disabled = true;
             document.getElementById('exportBottomBtn').disabled = true;
             document.getElementById('exportTopMsg').textContent = 'Exporting...';
@@ -5491,6 +6138,7 @@ function getCreateReportDialogHtml() {
 
             google.script.run
               .withSuccessHandler(function(res) {
+                                reportIdleBusy = false;
                 document.getElementById('exportTopBtn').disabled = false;
                 document.getElementById('exportBottomBtn').disabled = false;
                 if (res && res.success) {
@@ -5501,6 +6149,7 @@ function getCreateReportDialogHtml() {
                 }
               })
               .withFailureHandler(function(err) {
+                                reportIdleBusy = false;
                 document.getElementById('exportTopBtn').disabled = false;
                 document.getElementById('exportBottomBtn').disabled = false;
                 showExportSuccess('Export error: ' + (err.message || err), true);

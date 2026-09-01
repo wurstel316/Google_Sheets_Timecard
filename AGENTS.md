@@ -1,5 +1,12 @@
 # Development Guide
 
+## Quick Start for Agents
+1. **Always read the target file first** before making edits — use precise search/replace on actual content.
+2. **For deployments**: Use only `npm run push:test` (test env) — never run live release commands.
+3. **For non-trivial changes**: Update `CHANGELOG.md` under `Unreleased` section before finishing.
+4. **For permission-gated features**: Check [AdminUsers sheet pattern](#permission-model) and use `hasPermission()` server-side + client-side gating.
+5. **For UI changes**: Validate against [optimistic UI patterns](#optimistic-ui--pending-state-actions) and [modal rules](#modal-and-ui-best-practices).
+
 ## Project Overview
 This project is a Google Apps Script time-tracking and payroll system built around a Google Sheet-backed data model. The app supports employee clock-in/out flows, admin review and editing, payroll preview/export, and a Schedule Tool for roster and AWS work-week configuration.
 
@@ -148,7 +155,30 @@ Current code continues to implement California rules with AWS-specific adjustmen
 - Use the current modal patterns instead of adding ad hoc navigation/reload flows.
 - When the payroll export completion path is involved, follow the existing admin preview modal clean-up flow and refresh the active admin data after closing the preview.
 
+## Common Pitfalls and Troubleshooting
+
+### When editing entries or rows
+- **Issue**: Changes don't persist to the correct row.
+- **Solution**: Prefer `Entry ID` lookups over direct row indexes. Use `findEntryByID(ss, entryId)` pattern rather than `getRange(row, ...)`.
+
+### When implementing schedule changes
+- **Issue**: Schedule state not syncing back to the sheet.
+- **Solution**: Always call `saveScheduleToolData()` after modifying `schedule_state_json`, not just local Script Properties.
+
+### When adding admin actions
+- **Issue**: User sees the action but it fails silently.
+- **Solution**: Implement optimistic UI first, then await the server response. Store rollback state before sending the request. Use `hasPermission()` server-side as final gate.
+
+### When working with idle/refresh
+- **Issue**: Users report stale data or idle warnings not showing.
+- **Solution**: The idle policy is now centralized in `getStandardIdlePolicy_()`. Update that one function to tune timings project-wide. Check that unsaved-work guards are fault-tolerant (wrapped in try/catch).
+
+### When debugging
+- **Issue**: Not seeing debug output.
+- **Solution**: Use menu item to enable debug logging via `toggleDebugLogging()`, then use `debugLog(message, data)` in code. Check that `isDebugEnabled()` is true.
+
 ## Current Operational Notes
 - The project is currently in a schedule/AWS modernization phase; agent guidance should assume schedule-backed roster logic is the source of truth.
 - The changelog is the best record of recent feature intent and should be treated as the current implementation ledger.
 - If a behavior is unclear, check `src/Code.js`, `src/UserInterface.js`, and `src/ScheduleHTML.html` before changing rules or permission assumptions.
+- Recent work has focused on idle-session management and status visibility; validate idle changes against [scheduleHTML.html](src/ScheduleHTML.html) and [UserInterface.js](src/UserInterface.js) idle patterns.
