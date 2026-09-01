@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.93 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.106 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -211,23 +211,28 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             position: relative;
             box-sizing: border-box;
           }
-          .admin-top-btn {
+          .top-left-controls {
             position: absolute;
             top: 0.75rem;
-            right: 0.75rem;
-            width: auto;
-            max-width: none;
+            left: 0.75rem;
+            width: clamp(9.8rem, 28vw, 11.4rem);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.35rem;
+            z-index: 8;
+          }
+          .admin-top-btn {
+            position: static;
+            width: 100%;
             padding: 0.45rem 0.75rem;
             font-size: clamp(0.7rem, 2.2vw, 0.9rem);
             margin: 0;
             background: #0f9d58;
           }
           .menu-top-btn {
-            position: absolute;
-            top: 0.75rem;
-            left: 0.75rem;
-            width: auto;
-            max-width: none;
+            position: static;
+            width: 100%;
             padding: 0.45rem 0.75rem;
             font-size: clamp(0.7rem, 2.2vw, 0.9rem);
             margin: 0;
@@ -800,29 +805,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-dayboard-board {
             min-width: 48rem;
-            display: grid;
-            grid-template-columns: 4.6rem minmax(0, 1fr);
-          }
-          .admin-dayboard-hour-col {
-            background: #f7faff;
-            border-right: 1px solid #d9e2f1;
-          }
-          .admin-dayboard-hour {
-            height: 2.625rem;
-            border-bottom: 1px solid #e7edf6;
-            padding: 0.2rem 0.45rem;
-            display: flex;
-            align-items: flex-start;
-            justify-content: flex-end;
-            font-size: 0.69rem;
-            color: #627486;
-            line-height: 1.1;
-          }
-          .admin-dayboard-hour.current-hour {
-            background: rgba(26, 115, 232, 0.12);
-            color: #184f92;
-            font-weight: 800;
-            box-shadow: inset 0 0 0 1px #1a73e8;
+            display: block;
           }
           .admin-dayboard-lanes {
             display: flex;
@@ -1956,47 +1939,49 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           #idleRefreshBar {
             display: none;
-            background-color: #e5e7eb;
+            position: relative;
+            background-color: #f8fafc;
             color: #1f2937;
-            padding: clamp(0.7rem, 2.4vw, 0.95rem);
+            padding: 0.34rem 0.55rem;
             text-align: left;
-            font-size: clamp(0.92rem, 2.5vw, 1.02rem);
+            font-size: 0.72rem;
             font-weight: 600;
             width: 100%;
-            margin-bottom: 1rem;
-            border-radius: clamp(0.5rem, 1.5vw, 0.75rem);
+            max-width: none;
+            border-radius: 0.8rem;
             box-sizing: border-box;
             border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.1);
+            margin: 0;
+            z-index: 1;
           }
           .idle-refresh-row {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.75rem;
-            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 0.1rem;
+            flex-direction: column;
+            line-height: 1.2;
           }
-          .idle-refresh-message {
+          .idle-refresh-line {
             color: #374151;
             font-weight: 600;
+            white-space: nowrap;
           }
-          .idle-refresh-actions {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          }
-          .idle-refresh-btn {
-            border: 1px solid #9ca3af;
-            background: #f8fafc;
-            color: #1f2937;
-            border-radius: 0.45rem;
-            padding: 0.42rem 0.68rem;
-            font-size: clamp(0.82rem, 2.3vw, 0.92rem);
-            font-weight: 600;
-            cursor: pointer;
-          }
-          .idle-refresh-btn:disabled {
-            cursor: not-allowed;
-            opacity: 0.65;
+          @media (max-width: 768px) {
+            .top-left-controls {
+              top: 0.55rem;
+              left: 0.55rem;
+              width: clamp(9.2rem, 44vw, 10.8rem);
+              gap: 0.3rem;
+            }
+            #idleRefreshBar {
+              border-radius: 0.8rem;
+              padding: 0.32rem 0.5rem;
+            }
+            .idle-refresh-row {
+              gap: 0.08rem;
+            }
           }
           body.idle-lock-active {
             overflow: hidden;
@@ -2718,18 +2703,18 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             </div>
           </div>
         </div>
-        <div id="idleRefreshBar" aria-live="polite">
-          <div class="idle-refresh-row">
-            <span id="idleRefreshMessage" class="idle-refresh-message">Session idle.</span>
-            <span class="idle-refresh-actions">
-              <button id="idleRefreshBtn" type="button" class="idle-refresh-btn" onclick="triggerIdleSafeRefresh(true)">Refresh now</button>
-            </span>
-          </div>
-        </div>
         <div class="container">
           <img src="data:image/png;base64,${LOGO_BASE64}" alt="Logo" style="height: 200px; width: auto; margin-bottom: 1rem;">
-          <button id="uiScaleMenuBtn" class="menu-top-btn" type="button" onclick="toggleUiScaleControls()" aria-controls="uiScaleControls" aria-expanded="false">Display Menu</button>
-          ${canAccessAdminView ? '<button class="admin-top-btn" onclick="showAdminView()">Admin View</button>' : ''}
+          <div class="top-left-controls">
+            <button id="uiScaleMenuBtn" class="menu-top-btn" type="button" onclick="toggleUiScaleControls()" aria-controls="uiScaleControls" aria-expanded="false">Display Menu</button>
+            <div id="idleRefreshBar" aria-live="polite">
+              <div class="idle-refresh-row">
+                <span id="idleRefreshAuto" class="idle-refresh-line">Auto Refresh -- min</span>
+                <span id="idleRefreshLock" class="idle-refresh-line">Lock -- min</span>
+              </div>
+            </div>
+            ${canAccessAdminView ? '<button class="admin-top-btn" onclick="showAdminView()">Admin View</button>' : ''}
+          </div>
           <h1>Welcome ${email}!</h1>
           <div class="status-row">
             <p id="status">${statusObj.status}</p>
@@ -3153,9 +3138,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           const IDLE_POLICY = ${JSON.stringify(standardIdlePolicy)};
           const CLOCK_IN_SCHEDULE_NOTE_TOLERANCE_MS = 15 * 60 * 1000;
           const CLOCK_OUT_NOTE_THRESHOLD_MS = 5 * 60 * 60 * 1000;
-          const IDLE_WARNING_MS = Number(IDLE_POLICY.warningMs || (10 * 60 * 1000));
-          const IDLE_SOFT_REFRESH_MS = Number(IDLE_POLICY.softRefreshMs || (15 * 60 * 1000));
-          const IDLE_LOCK_MS = Number(IDLE_POLICY.lockMs || (30 * 60 * 1000));
+          const IDLE_SOFT_REFRESH_MS = 5 * 60 * 1000;
+          const IDLE_LOCK_MS = 30 * 60 * 1000;
           const IDLE_HEARTBEAT_MS = Number(IDLE_POLICY.heartbeatMs || (30 * 1000));
 
           let lastUserActivityAtMs = Date.now();
@@ -3371,12 +3355,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             };
           }
 
-          function formatAdminDayboardHourLabel(hour24) {
-            const hourNumber = Number(hour24);
-            if (!isFinite(hourNumber)) return '--:--';
-            return String(((hourNumber % 24) + 24) % 24).padStart(2, '0') + ':00';
-          }
-
           function buildAdminDayboardSessionChipHtml(session) {
             const source = session && typeof session === 'object' ? session : {};
             const clockInText = formatDisplayTime(source.clockIn) || '--:--';
@@ -3403,13 +3381,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             todayEl.innerText = String(summary.clockedInTodayCount || 0);
             scheduledEl.innerText = String(summary.scheduledCount || 0);
             meta.innerText = data.updatedAt ? ('Updated ' + formatDisplayDate(data.updatedAt)) : 'Waiting for dayboard data...';
-
-            const hoursHtml = [];
-            for (let hour = 0; hour < 24; hour++) {
-              const hourLabel = formatAdminDayboardHourLabel(hour);
-              const isCurrentHour = Number(data.currentHour) === hour;
-              hoursHtml.push('<div class="admin-dayboard-hour' + (isCurrentHour ? ' current-hour' : '') + '">' + escapeHtml(hourLabel) + '</div>');
-            }
 
             const employees = Array.isArray(data.employees) ? data.employees : [];
             const lanesHtml = employees.length > 0
@@ -3459,8 +3430,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 }).join('')
               : '<div style="padding:0.75rem; color:#5d6c80; font-style:italic;">No employee rows available for today.</div>';
 
-            board.innerHTML = '<div class="admin-dayboard-hour-col">' + hoursHtml.join('') + '</div>' +
-              '<div class="admin-dayboard-lanes">' + lanesHtml + '</div>';
+            board.innerHTML = '<div class="admin-dayboard-lanes">' + lanesHtml + '</div>';
           }
 
           function loadAdminDayboard(onComplete) {
@@ -4074,19 +4044,17 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
-          function setIdleRefreshBanner(isVisible, message) {
+          function setIdleRefreshBanner(isVisible, autoLine, lockLine) {
             const bar = document.getElementById('idleRefreshBar');
-            const label = document.getElementById('idleRefreshMessage');
-            const btn = document.getElementById('idleRefreshBtn');
-            if (!bar || !label) return;
+            const autoLabel = document.getElementById('idleRefreshAuto');
+            const lockLabel = document.getElementById('idleRefreshLock');
+            if (!bar || !autoLabel || !lockLabel) return;
             if (!isVisible) {
               bar.style.display = 'none';
               return;
             }
-            label.innerText = String(message || 'Session idle.');
-            if (btn) {
-              btn.disabled = !navigator.onLine || idleSoftRefreshInFlight;
-            }
+            autoLabel.innerText = String(autoLine || 'Auto Refresh -- min');
+            lockLabel.innerText = String(lockLine || 'Lock -- min');
             bar.style.display = 'block';
           }
 
@@ -4096,7 +4064,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             lastUserActivityAtMs = Date.now();
             idleSoftRefreshDoneForCycle = false;
-            setIdleRefreshBanner(false, '');
+            updateIdleRefreshState();
+          }
+
+          function formatIdleRemainingText(msRemaining) {
+            const minutes = Math.max(0, Math.ceil(Number(msRemaining || 0) / (60 * 1000)));
+            return String(minutes) + ' min';
           }
 
           function updateIdleLockRefreshButtonState() {
@@ -4246,6 +4219,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           function triggerIdleSafeRefresh(isManualTrigger) {
             const manual = isManualTrigger === true;
+            const getLockCountdownLine = () => {
+              const lockRemainingNow = Math.max(0, IDLE_LOCK_MS - (Date.now() - lastUserActivityAtMs));
+              return 'Lock ' + formatIdleRemainingText(lockRemainingNow);
+            };
             if (idleLockActive) {
               return;
             }
@@ -4258,23 +4235,23 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               debugClientError('idle_trigger_unsaved_check_failed', { message: error && error.message ? error.message : String(error || '') });
             }
             if (!manual && hasUnsaved) {
-              setIdleRefreshBanner(true, 'You have been idle. Auto-refresh is paused because unsaved edits were detected.');
+              setIdleRefreshBanner(true, 'Auto Refresh 0 min', getLockCountdownLine());
               return;
             }
             if (manual && hasUnsaved) {
               const proceed = confirm('Unsaved edits were detected. Refreshing may discard visible draft text in open editors. Continue refresh?');
               if (!proceed) {
-                setIdleRefreshBanner(true, 'Refresh skipped. Continue editing, then refresh when ready.');
+                setIdleRefreshBanner(true, 'Auto Refresh 0 min', getLockCountdownLine());
                 return;
               }
             }
             if (hasUiWorkInFlight()) {
-              setIdleRefreshBanner(true, 'Refresh is waiting for current actions to finish.');
+              setIdleRefreshBanner(true, 'Auto Refresh 0 min', getLockCountdownLine());
               return;
             }
 
             idleSoftRefreshInFlight = true;
-            setIdleRefreshBanner(true, manual ? 'Refreshing now...' : 'Refreshing after idle...');
+            setIdleRefreshBanner(true, 'Auto Refresh 0 min', getLockCountdownLine());
 
             refreshStatusQuietly(() => {
               refreshRecentEntries(() => {
@@ -4283,8 +4260,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                   loadAdminDayboard();
                 }
                 idleSoftRefreshInFlight = false;
-                idleSoftRefreshDoneForCycle = true;
-                setIdleRefreshBanner(true, 'Data refreshed.');
+                idleSoftRefreshDoneForCycle = false;
+                lastUserActivityAtMs = Date.now();
+                updateIdleRefreshState();
               });
             });
           }
@@ -4328,6 +4306,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const nowMs = Date.now();
             const idleMs = nowMs - lastUserActivityAtMs;
             const idleMinutes = Math.max(1, Math.floor(idleMs / (60 * 1000)));
+            const softRefreshRemaining = Math.max(0, IDLE_SOFT_REFRESH_MS - idleMs);
+            const lockRemaining = Math.max(0, IDLE_LOCK_MS - idleMs);
 
             if (idleMs >= IDLE_LOCK_MS) {
               if (hasAnyUnsavedClientWork()) {
@@ -4347,13 +4327,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return;
             }
 
-            if (idleMs < IDLE_WARNING_MS) {
-              setIdleRefreshBanner(false, '');
+            if (idleMs < IDLE_SOFT_REFRESH_MS) {
+              setIdleRefreshBanner(true, 'Auto Refresh ' + formatIdleRemainingText(softRefreshRemaining), 'Lock ' + formatIdleRemainingText(lockRemaining));
               return;
             }
 
             if (!navigator.onLine) {
-              setIdleRefreshBanner(true, 'Idle for ' + idleMinutes + ' min. Reconnect to refresh.');
+              setIdleRefreshBanner(true, 'Auto Refresh 0 min', 'Lock ' + formatIdleRemainingText(lockRemaining));
               return;
             }
 
@@ -4365,7 +4345,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
 
             if (hasUnsavedWork) {
-              setIdleRefreshBanner(true, 'Idle for ' + idleMinutes + ' min. Unsaved edits detected, auto-refresh paused.');
+              setIdleRefreshBanner(true, 'Auto Refresh 0 min', 'Lock ' + formatIdleRemainingText(lockRemaining));
               return;
             }
 
@@ -4374,7 +4354,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return;
             }
 
-            setIdleRefreshBanner(true, 'Idle for ' + idleMinutes + ' min. Refresh recommended.');
+            setIdleRefreshBanner(true, 'Auto Refresh 0 min', 'Lock ' + formatIdleRemainingText(lockRemaining));
           }
 
           function initializeIdleRefreshManager() {

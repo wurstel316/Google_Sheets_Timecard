@@ -6,6 +6,42 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Changed
+- Summary: Aligned the top control pills into a single left-edge stack by placing Display Menu, idle timer pill, and Admin View together with matching widths.
+- Why: Ensures consistent edge alignment and equal visual sizing for the requested top-of-page controls.
+- Files: src/UserInterface.js
+- Validation: Added a shared top-left controls container, removed split left/right absolute button placement, and confirmed diagnostics report no file errors.
+
+- Summary: Repositioned the idle timer into a small inline pill directly below the Display Menu control, removed the manual refresh button, and limited copy to two countdown lines: Auto Refresh and Lock.
+- Why: Restores the intended compact pill presentation and keeps timer status consistent and unobtrusive during testing.
+- Files: src/UserInterface.js
+- Validation: Updated idle timer markup/CSS to inline pill geometry, removed refresh-action elements, normalized countdown copy format, and confirmed diagnostics report no file errors.
+
+- Summary: Restored the top idle timer to a compact floating pill style instead of a full-width banner while keeping always-visible countdown behavior.
+- Why: Prevents regression from the expected small pill presentation used during testing.
+- Files: src/UserInterface.js
+- Validation: Updated idle timer container/button styling to pill geometry, kept always-visible state messaging, and verified diagnostics report no file errors.
+
+- Summary: Made the top idle timer pill always visible on the main page by showing live auto-refresh and lock countdown states instead of hiding the pill before the idle refresh threshold.
+- Why: In testing, the timer needed to remain visible at all times so admins can confirm refresh/lock timing behavior without waiting for warning gates.
+- Files: src/UserInterface.js
+- Validation: Replaced idle hide paths with countdown/status messaging for pre-refresh, paused, offline, and post-refresh states; confirmed diagnostics report no file errors.
+
+- Summary: Simplified main-page idle refresh behavior to auto-refresh every 5 minutes of inactivity and lock the session at 30 minutes, removing separate warning-threshold gating.
+- Why: Matches the requested behavior so refresh happens on a strict idle cadence without waiting for an earlier warning-only phase.
+- Files: src/UserInterface.js
+- Validation: Set fixed idle soft-refresh and lock thresholds in client logic, replaced warning-gate check with soft-refresh gating, and confirmed diagnostics report no file errors.
+
+- Summary: Removed the admin dayboard hour sidebar in the main app and kept employee name/status metadata in a fixed left column beside expected and actual punch tracks across viewport sizes.
+- Why: Aligns production UI with the approved A1 review direction for cleaner scan flow while preserving side-by-side lane readability.
+- Files: src/UserInterface.js
+- Validation: Removed hour-rail markup generation and CSS selectors, kept two-column lane layout at desktop and mobile breakpoints, and verified diagnostics show no file errors.
+
+- Summary: Updated the A1 dayboard mockup to match the current production-style light layout while removing the left hour sidebar, and consolidated mockup review scope to A1 only.
+- Why: Supports the requested UI direction review (no hour rail) before applying changes to live project files and removes stale alternative mockups.
+- Files: mockups/option-a1-punch-paired.html, mockups/index.html, mockups/option-a-timeline-board.html, mockups/option-a2-punch-timeline.html, mockups/option-a3-dual-track.html, mockups/option-b-split-focus.html, mockups/option-c-dense-grid.html
+- Validation: Verified mockups directory now contains only index + A1, updated index links to A1 only, and confirmed edited files applied cleanly.
+
 ### Fixed
 - Summary: Improved 15-minute idle auto-refresh reliability by preventing passive preview/dayboard fetches from blocking refresh and by guarding idle-trigger unsaved-check errors.
 - Why: Idle time could continue increasing past the soft-refresh threshold when non-critical background loads were still marked in flight or when unsaved-work checks threw at trigger time.

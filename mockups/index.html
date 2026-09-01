@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dayboard Mockups</title>
+  <title>Admin Dayboard Mockup Review</title>
   <style>
     :root {
       --bg: #f3f7fb;
@@ -15,10 +15,6 @@
       --blue-soft: #e9f2ff;
       --green: #1f7a44;
       --green-soft: #e6f6ed;
-      --amber: #8a5b00;
-      --amber-soft: #fff6dc;
-      --purple: #5c45a8;
-      --purple-soft: #efe9ff;
       --radius: 14px;
     }
 
@@ -85,10 +81,7 @@
       letter-spacing: 0.02em;
     }
 
-    .tag.a { background: var(--blue-soft); color: #214d82; }
     .tag.a-plus { background: #e8f0ff; color: #2b4d86; }
-    .tag.b { background: var(--green-soft); color: #235c3c; }
-    .tag.c { background: var(--purple-soft); color: #4f3d93; }
 
     h2 {
       margin: 0;
@@ -135,74 +128,22 @@
 <body>
   <main class="wrap">
     <section class="header">
-      <h1>Admin Dayboard Mockups</h1>
-      <p class="sub">Three standalone mockups for the new admin "who is in + today schedule" panel. These files are design-only and do not modify application code.</p>
-    </section>
-
-    <section class="grid">
-      <article class="card">
-        <span class="tag a">Option 1</span>
-        <h2>Timeline Board</h2>
-        <p>One-day vertical schedule lanes by employee, with a current-hour highlight bar and clear in-now badges.</p>
-        <div class="actions">
-          <a class="btn primary" href="./option-a-timeline-board.html">Open Mockup</a>
-        </div>
-      </article>
-
-      <article class="card">
-        <span class="tag b">Option 2</span>
-        <h2>Split Focus</h2>
-        <p>Left roster for who is in now, right compact hourly staffing coverage chart with scheduled versus active counts.</p>
-        <div class="actions">
-          <a class="btn primary" href="./option-b-split-focus.html">Open Mockup</a>
-        </div>
-      </article>
-
-      <article class="card">
-        <span class="tag c">Option 3</span>
-        <h2>Dense Mini-Grid</h2>
-        <p>High-density employee-by-hour matrix for power users, includes marker chips and highlighted current hour column.</p>
-        <div class="actions">
-          <a class="btn primary" href="./option-c-dense-grid.html">Open Mockup</a>
-        </div>
-      </article>
-    </section>
-
-    <section class="header" style="margin-top: 16px;">
-      <h1>Option A Variants</h1>
-      <p class="sub">Focused mockups for multiple punches in one day, with actual punches visually aligned adjacent to expected schedule pills.</p>
+      <h1>Admin Dayboard Mockup Review</h1>
+      <p class="sub">Single mockup for review before implementation. This version reflects the current app style and removes the left hour sidebar.</p>
     </section>
 
     <section class="grid">
       <article class="card">
         <span class="tag a-plus">A1</span>
         <h2>Paired Expected + Actual Chips</h2>
-        <p>Each employee row has a schedule chip track and a second punch chip track immediately below for multiple in/out sessions.</p>
+        <p>Expected schedule chips and actual in/out punch chips stay paired per employee lane with no hour-side rail.</p>
         <div class="actions">
           <a class="btn primary" href="./option-a1-punch-paired.html">Open A1</a>
         </div>
       </article>
-
-      <article class="card">
-        <span class="tag a-plus">A2</span>
-        <h2>Expected Chips + Punch Rail</h2>
-        <p>Expected schedule chips stay left while actual punch windows appear as mini bars and in/out dots on an adjacent timeline rail.</p>
-        <div class="actions">
-          <a class="btn primary" href="./option-a2-punch-timeline.html">Open A2</a>
-        </div>
-      </article>
-
-      <article class="card">
-        <span class="tag a-plus">A3</span>
-        <h2>Dual-Track Comparison</h2>
-        <p>Expected row and actual-session row are paired for quick variance checking on punch-heavy days.</p>
-        <div class="actions">
-          <a class="btn primary" href="./option-a3-dual-track.html">Open A3</a>
-        </div>
-      </article>
     </section>
 
-    <p class="note">Tip: open all three in separate tabs and compare scan speed on desktop and mobile widths.</p>
+    <p class="note">Current review scope: A1 only.</p>
   </main>
 </body>
 </html>
