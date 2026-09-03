@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes Containment V3 - Hybrid Grid</title>
+  <style>
+    :root {
+      --bg: #172538;
+      --panel: #24374f;
+      --line: #4f6a8b;
+      --ink: #deebfc;
+      --muted: #9fb4d0;
+      --note: #2d4360;
+      --note-line: #607b9e;
+      --add-bg: #315f72;
+      --add-line: #6999b5;
+      --add-ink: #ebf9ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 15% -10%, #2a4467 0%, transparent 60%), var(--bg);
+      color: var(--ink);
+    }
+
+    .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 14px; }
+
+    .head {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    h1 { margin: 0; font-size: 1.2rem; }
+    .sub { margin: 5px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+    .notes-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 8px;
+    }
+
+    .note-tile {
+      border: 1px solid var(--note-line);
+      background: var(--note);
+      border-radius: 8px;
+      padding: 7px 8px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      min-height: 38px;
+    }
+
+    .note-tile.composer {
+      border-style: dashed;
+      background: #29425f;
+    }
+
+    .note-text {
+      font-size: 0.82rem;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note-text.long {
+      white-space: normal;
+    }
+
+    .note-input {
+      width: 100%;
+      border: 1px solid var(--note-line);
+      border-radius: 7px;
+      background: #20354d;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.82rem;
+      line-height: 1.25;
+      padding: 6px 8px;
+      min-height: 36px;
+      resize: vertical;
+    }
+
+    .note-input::placeholder {
+      color: var(--muted);
+    }
+
+    .add-btn {
+      width: 1.65rem;
+      height: 1.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--add-line);
+      background: var(--add-bg);
+      color: var(--add-ink);
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .tile-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .mini-btn {
+      border: 1px solid var(--add-line);
+      background: #355b72;
+      color: var(--add-ink);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1.1;
+    }
+
+    .foot {
+      color: var(--muted);
+      font-size: 0.82rem;
+      padding-left: 2px;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="head">
+      <h1>V3: Hybrid Grid</h1>
+      <p class="sub">One large day box with compact two-column note tiles; long notes span naturally.</p>
+    </section>
+
+    <section class="notes-box" aria-label="Day notes hybrid grid">
+      <div class="note-grid" id="noteGrid">
+        <div class="note-tile"><div class="note-text">Verified by sam at 13:30 09/01/2026</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
+        <div class="note-tile"><div class="note-text">Time edited by sam at 16:43 09/01/2026</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
+        <div class="note-tile"><div class="note-text long">Customer changed lunch timing due to field call. Vendor gate delay added 12 minutes at end of route.</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
+        <div class="note-tile"><div class="note-text">No notes</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
+      </div>
+    </section>
+
+    <div class="foot">Density profile: balanced compactness and readability, strongest desktop/mobile adaptability.</div>
+  </main>
+
+  <script>
+    (function setupInlineComposer() {
+      const grid = document.getElementById('noteGrid');
+      if (!grid) return;
+
+      function bindAddButtons(scope) {
+        const root = scope || grid;
+        root.querySelectorAll('.add-btn').forEach((btn) => {
+          if (btn.dataset.bound === '1') return;
+          btn.dataset.bound = '1';
+          btn.addEventListener('click', () => openComposerAfter(btn.closest('.note-tile')));
+        });
+      }
+
+      function closeComposer(tile) {
+        if (tile && tile.parentNode) tile.parentNode.removeChild(tile);
+      }
+
+      function saveComposer(tile, input) {
+        const text = String(input.value || '').trim();
+        if (!text) {
+          closeComposer(tile);
+          return;
+        }
+        const noteTile = document.createElement('div');
+        noteTile.className = 'note-tile';
+        const textEl = document.createElement('div');
+        textEl.className = 'note-text' + (text.length > 90 ? ' long' : '');
+        textEl.textContent = text;
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-btn';
+        addBtn.type = 'button';
+        addBtn.title = 'Add inline note';
+        addBtn.textContent = '+';
+        noteTile.appendChild(textEl);
+        noteTile.appendChild(addBtn);
+        tile.parentNode.insertBefore(noteTile, tile.nextSibling);
+        bindAddButtons(noteTile);
+        closeComposer(tile);
+      }
+
+      function openComposerAfter(anchorTile) {
+        if (!anchorTile || !anchorTile.parentNode) return;
+        const existing = grid.querySelector('.note-tile.composer');
+        if (existing) closeComposer(existing);
+
+        const composer = document.createElement('div');
+        composer.className = 'note-tile composer';
+
+        const input = document.createElement('textarea');
+        input.className = 'note-input';
+        input.placeholder = 'Type note...';
+
+        const actions = document.createElement('div');
+        actions.className = 'tile-actions';
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'mini-btn';
+        saveBtn.type = 'button';
+        saveBtn.textContent = 'Save';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'mini-btn';
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+
+        actions.appendChild(saveBtn);
+        actions.appendChild(cancelBtn);
+        composer.appendChild(input);
+        composer.appendChild(actions);
+
+        anchorTile.parentNode.insertBefore(composer, anchorTile.nextSibling);
+        input.focus();
+
+        saveBtn.addEventListener('click', () => saveComposer(composer, input));
+        cancelBtn.addEventListener('click', () => closeComposer(composer));
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            saveComposer(composer, input);
+            return;
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            closeComposer(composer);
+          }
+        });
+      }
+
+      bindAddButtons();
+    })();
+  </script>
+</body>
+</html>

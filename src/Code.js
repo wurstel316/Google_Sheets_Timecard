@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.113 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.159 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -830,13 +830,19 @@ function isCurrentUserAdmin() {
 }
 // ==================== CONSTANTS ====================
 const MAX_DIFF_HOURS = 14; // Auto clock-out after this many hours
+const ADD_MISSED_TIME_RANGE_MODE_PAY_PERIOD_ONLY = 'pay_period_only';
+const ADD_MISSED_TIME_RANGE_MODE_PAY_PERIOD_TO_NOW = 'pay_period_to_now';
+const ADD_MISSED_TIME_RANGE_MODE_ALLOW_ALL = 'allow_all';
+// Server-side source of truth for manual-entry allowed date range behavior.
+// Keep aligned with client constants used by Add Missed Time UI flows.
+const ADD_MISSED_TIME_ALLOWED_RANGE_MODE = ADD_MISSED_TIME_RANGE_MODE_PAY_PERIOD_TO_NOW;
 const STALE_AUTO_CLOSE_COOLDOWN_MS = 5 * 60 * 1000;
 const STALE_AUTO_CLOSE_LAST_RUN_KEY = 'stale_auto_close_last_run_ms';
 const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.113';
+const SCRIPT_VERSION = '2.2.2-push.159';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -1280,7 +1286,7 @@ function validateManualTimeEntry(clockInDate, clockOutDate) {
         debugLog('validateManualTimeEntry failed max span', { diffHours: diffMs / (1000 * 60 * 60) });
         return { valid: false, error: 'Entries are limited to 14 hours. Please adjust the times or split into multiple entries with a note explaining the extended shift.' };
     }
-    // Validate dates are within allowed range (day after last pay period end through today)
+    // Validate dates are within the configured allowed range mode.
     const allowedRange = getAllowedDateRange();
     if (clockInDate < allowedRange.minDate || clockInDate > allowedRange.maxDate) {
         Logger.log('validateManualTimeEntry: clockIn outside allowed range');
@@ -2524,6 +2530,7 @@ function getAllEntriesForAdminView(includeDeleted) {
         hours: Number(row[DATA_COLUMNS.HOURS] || 0),
         verified: isSheetBooleanTrue(row[DATA_COLUMNS.VERIFIED]),
         notes: row[DATA_COLUMNS.NOTES] || '',
+        scheduleSnapshot: getRowScheduleSnapshot(row),
         entryType: getRowEntryType(row),
         deleted: isDeletedDataRow(row)
     }));
@@ -3396,26 +3403,81 @@ function getActivePayPeriod() {
 }
 /**
  * Get the allowed date range for manual entries
- * Range: active pay period start through today (inclusive)
+ * Range is controlled by ADD_MISSED_TIME_ALLOWED_RANGE_MODE.
  * @returns Object with minDate and maxDate as Date objects, plus formatted strings
  */
 function getAllowedDateRange() {
     const active = getActivePayPeriod();
+    const tz = Session.getScriptTimeZone();
+    const now = new Date();
+
+    const normalizeAllowedRangeMode = (value) => {
+        const mode = String(value || '').trim().toLowerCase();
+        if (mode === ADD_MISSED_TIME_RANGE_MODE_PAY_PERIOD_ONLY
+            || mode === ADD_MISSED_TIME_RANGE_MODE_PAY_PERIOD_TO_NOW
+            || mode === ADD_MISSED_TIME_RANGE_MODE_ALLOW_ALL) {
+            return mode;
+        }
+        return ADD_MISSED_TIME_RANGE_MODE_PAY_PERIOD_TO_NOW;
+    };
+
+    const allowedRangeMode = normalizeAllowedRangeMode(ADD_MISSED_TIME_ALLOWED_RANGE_MODE);
+
+    let minDate;
+    let maxDate;
+
+    if (allowedRangeMode === ADD_MISSED_TIME_RANGE_MODE_ALLOW_ALL) {
+        minDate = new Date(1970, 0, 1, 0, 0, 0, 0);
+        maxDate = new Date(now);
+        maxDate.setHours(23, 59, 59, 999);
+    }
+    else {
+        const startBase = (active && active.startDate instanceof Date && !isNaN(active.startDate.getTime()))
+            ? new Date(active.startDate)
+            : new Date(now);
+        startBase.setHours(0, 0, 0, 0);
+        minDate = startBase;
+
+        if (allowedRangeMode === ADD_MISSED_TIME_RANGE_MODE_PAY_PERIOD_ONLY) {
+            const endBase = (active && active.endDate instanceof Date && !isNaN(active.endDate.getTime()))
+                ? new Date(active.endDate)
+                : new Date(now);
+            endBase.setHours(23, 59, 59, 999);
+            maxDate = endBase;
+        }
+        else {
+            maxDate = new Date(now);
+            maxDate.setHours(23, 59, 59, 999);
+        }
+    }
+
+    if (maxDate.getTime() < minDate.getTime()) {
+        maxDate = new Date(minDate);
+        maxDate.setHours(23, 59, 59, 999);
+    }
+
+    const minDateStr = Utilities.formatDate(minDate, tz, 'MM/dd/yyyy');
+    const maxDateStr = Utilities.formatDate(maxDate, tz, 'MM/dd/yyyy');
+    const minDateISO = Utilities.formatDate(minDate, tz, 'yyyy-MM-dd');
+    const maxDateISO = Utilities.formatDate(maxDate, tz, 'yyyy-MM-dd');
+
     Logger.log('getAllowedDateRange: computed date range');
     debugLog('getAllowedDateRange complete', {
+        mode: allowedRangeMode,
         source: active.source,
-        minDateISO: active.minDateISO,
-        maxDateISO: active.maxDateISO,
+        minDateISO: minDateISO,
+        maxDateISO: maxDateISO,
         activeStartDateISO: active.startDateISO,
         activeEndDateISO: active.endDateISO
     });
     return {
-        minDate: active.minDate,
-        maxDate: active.maxDate,
-        minDateStr: active.minDateStr,
-        maxDateStr: active.maxDateStr,
-        minDateISO: active.minDateISO,
-        maxDateISO: active.maxDateISO
+        minDate: minDate,
+        maxDate: maxDate,
+        minDateStr: minDateStr,
+        maxDateStr: maxDateStr,
+        minDateISO: minDateISO,
+        maxDateISO: maxDateISO,
+        mode: allowedRangeMode
     };
 }
 // ==================== AUTO-CLOCK-OUT HELPER ====================
@@ -3526,6 +3588,18 @@ function getScheduleToolDialogHtml(preferredThemeMode) {
         return '<div style="font-family:Arial,sans-serif;padding:16px;color:#b91c1c;">Payroll and edit permissions are required.</div>';
     }
     return injectThemeModeIntoHtml_(HtmlService.createHtmlOutputFromFile('ScheduleHTML').getContent(), preferredThemeMode);
+}
+function getAdminModalDialogHtml(preferredThemeMode) {
+    if (!canAccessAdminView()) {
+        return '<div style="font-family:Arial,sans-serif;padding:16px;color:#b91c1c;">Admin access required.</div>';
+    }
+    return injectThemeModeIntoHtml_(HtmlService.createHtmlOutputFromFile('AdminModalHTML').getContent(), preferredThemeMode);
+}
+function getDateTimePickerDialogHtml(preferredThemeMode) {
+    return injectThemeModeIntoHtml_(HtmlService.createHtmlOutputFromFile('DateTimePickerModal').getContent(), preferredThemeMode);
+}
+function getAddMissedTimeModalDialogHtml(preferredThemeMode) {
+    return injectThemeModeIntoHtml_(HtmlService.createHtmlOutputFromFile('AddMissedTimeModalHTML').getContent(), preferredThemeMode);
 }
 function getStoredScheduleToolData_() {
     return getStoredScheduleState_();

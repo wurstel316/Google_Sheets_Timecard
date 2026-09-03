@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Missed Time Modal</title>
+  <style>
+    :root {
+      --modal-scale: 1;
+      --modal-font-scale: 1;
+      --bg: var(--tc-page-bg, #131821);
+      --panel: var(--tc-modal-bg, #262b35);
+      --panel-2: var(--tc-surface-muted, #2f3542);
+      --line: var(--tc-border, #525d71);
+      --ink: var(--tc-text, #ecf2ff);
+      --muted: var(--tc-text-muted, #b8c4db);
+      --accent: var(--tc-primary, #4a8dff);
+      --accent-soft: rgba(74, 141, 255, 0.2);
+      --bad: var(--tc-danger, #ff9db2);
+      --ok: var(--tc-success, #78dba9);
+    }
+
+    html {
+      font-size: calc(16px * var(--modal-font-scale));
+    }
+
+    :root[data-theme="light"] {
+      --bg: var(--tc-page-bg, #edf3fb);
+      --panel: var(--tc-modal-bg, #f8fbff);
+      --panel-2: var(--tc-surface-muted, #ffffff);
+      --line: var(--tc-border, #c7d4e4);
+      --ink: var(--tc-text, #1b2b42);
+      --muted: var(--tc-text-muted, #52667f);
+      --accent: var(--tc-primary, #2e6fd6);
+      --accent-soft: rgba(46, 111, 214, 0.16);
+      --bad: var(--tc-danger, #b3213b);
+      --ok: var(--tc-success, #1f7a4d);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      background: transparent;
+      padding: 8px;
+    }
+
+    .modal-shell {
+      width: min(calc(600px * var(--modal-scale)), 100%);
+      max-width: 100%;
+      min-height: 0;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .modal-head {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 90%, #30394a 10%);
+      display: grid;
+      gap: 6px;
+    }
+
+    .head-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .target {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-2) 88%, var(--accent) 12%);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .allowed-range {
+      border: 1px solid color-mix(in srgb, var(--line) 86%, var(--accent) 14%);
+      background: color-mix(in srgb, var(--panel-2) 96%, var(--accent) 4%);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      font-weight: 650;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .status {
+      display: none;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .status.has-text {
+      display: block;
+    }
+
+    .status.error { color: var(--bad); }
+    .status.ok { color: var(--ok); }
+
+    .modal-body {
+      overflow: auto;
+      padding: 10px 12px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: minmax(180px, 230px) minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+    }
+
+    .field-note .textarea {
+      min-height: 80px;
+    }
+
+    .field-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .input-with-trigger {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      color: var(--ink);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px 10px;
+      outline: none;
+    }
+
+    .textarea {
+      min-height: 80px;
+      resize: vertical;
+      line-height: 1.35;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: color-mix(in srgb, var(--accent) 72%, #ffffff 28%);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 55%, #ffffff 45%) inset;
+    }
+
+    .input.invalid,
+    .select.invalid,
+    .textarea.invalid {
+      border-color: color-mix(in srgb, var(--bad) 72%, #ffffff 28%);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--bad) 58%, #ffffff 42%) inset;
+    }
+
+    .modal-shell.html-picker-available input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+      opacity: 0;
+      pointer-events: none;
+      width: 0;
+      margin: 0;
+    }
+
+    .modal-shell.html-picker-available input[type="datetime-local"]::-webkit-inner-spin-button,
+    .modal-shell.html-picker-available input[type="datetime-local"]::-webkit-clear-button {
+      display: none;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .icon-btn:hover {
+      background: color-mix(in srgb, var(--panel-2) 72%, var(--accent) 28%);
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .error-block {
+      border: 1px solid color-mix(in srgb, var(--bad) 52%, var(--line) 48%);
+      background: color-mix(in srgb, var(--panel-2) 86%, var(--bad) 14%);
+      color: var(--bad);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: none;
+      white-space: pre-line;
+    }
+
+    .error-block.active {
+      display: block;
+    }
+
+    .modal-foot {
+      padding: 8px 12px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--panel-2);
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-2) 78%, var(--accent) 22%);
+      color: var(--ink);
+      border-radius: 9px;
+      padding: 7px 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      border-color: color-mix(in srgb, var(--accent) 72%, #ffffff 28%);
+      background: var(--accent);
+      color: #f7fbff;
+    }
+
+    .btn:disabled {
+      opacity: 0.52;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 800px) {
+      body {
+        min-height: 100vh;
+        padding: 0;
+      }
+
+      .modal-shell {
+        width: 100%;
+        min-height: 100vh;
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        border: 0;
+      }
+
+      .modal-body {
+        gap: 8px;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="modal-shell" aria-label="Add missed time modal">
+    <header class="modal-head">
+      <div class="head-top">
+        <h1 class="title">Add Missed Time</h1>
+        <div class="target" id="targetInfo">Target: Current User</div>
+      </div>
+      <div class="allowed-range" id="allowedRangeInfo">Allowed range: -</div>
+      <div class="status" id="status"></div>
+    </header>
+
+    <section class="modal-body">
+      <label class="field" for="clockInInput">
+        <span class="field-label">Clock In</span>
+        <span class="input-with-trigger">
+          <input id="clockInInput" class="input" type="datetime-local" step="300" />
+          <button id="clockInPickerBtn" class="icon-btn" type="button" aria-label="Pick clock in date and time" title="Pick clock in date and time">&#128197;</button>
+        </span>
+      </label>
+
+      <label class="field" for="clockOutInput">
+        <span class="field-label">Clock Out</span>
+        <span class="input-with-trigger">
+          <input id="clockOutInput" class="input" type="datetime-local" step="300" />
+          <button id="clockOutPickerBtn" class="icon-btn" type="button" aria-label="Pick clock out date and time" title="Pick clock out date and time">&#128197;</button>
+        </span>
+      </label>
+
+      <div class="detail-grid">
+        <label class="field field-work-type" for="workTypeInput">
+          <span class="field-label">Work Type</span>
+          <select id="workTypeInput" class="select">
+            <option value="worked">Worked</option>
+            <option value="vacation">Vacation</option>
+            <option value="sick">Sick</option>
+          </select>
+        </label>
+
+        <label class="field field-note" for="noteInput">
+          <span class="field-label">Note</span>
+          <textarea id="noteInput" class="textarea" maxlength="150" placeholder="Explain why this missed entry is being added."></textarea>
+        </label>
+      </div>
+
+      <div class="error-block" id="errorBlock"></div>
+    </section>
+
+    <footer class="modal-foot">
+      <button id="cancelBtn" class="btn" type="button">Cancel</button>
+      <button id="submitBtn" class="btn primary" type="button">Use Entry</button>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      // Shared modal host contract (current integration behavior):
+      // 1) Host loads this HTML in an iframe and calls window.AddMissedTimeModal.open(options).
+      // 2) The returned Promise resolves with canonical payload:
+      //    {
+      //      clockInDateTime: 'YYYY-MM-DD HH:MM:SS',
+      //      clockOutDateTime: 'YYYY-MM-DD HH:MM:SS',
+      //      workType: 'worked'|'vacation'|'sick',
+      //      note: string,
+      //      targetEmail: string,
+      //      isoClockIn: ISO,
+      //      isoClockOut: ISO
+      //    }
+      // 3) For fast conflict feedback, host passes context in options:
+      //    - targetEmail
+      //    - openEntryStartIso/openEntryStartMs
+      //    - conflictIntervals: [{ startMs|startIso, endMs|endIso }]
+      //    - refreshConflictContext (optional function)
+      // 4) Host supplies date bounds as picker keys:
+      //    - minDate / maxDate must be 'YYYY-MM-DD' (for picker/input bounds only).
+      //    - rangeLabel is display text and should be preformatted by host
+      //      (currently expected in U.S. format like 'MM/DD/YYYY').
+      // 5) Host owns allowed-range policy and should pass resolved bounds at open time
+      //    (no extra range RPC from this modal).
+      // 6) For warm picker UX, host may expose AddMissedTimeModalHost.preloadDateTimePickerModal(),
+      //    or callers can invoke window.AddMissedTimeModal.preloadDateTimePicker().
+
+      const VALID_WORK_TYPES = {
+        worked: true,
+        vacation: true,
+        sick: true
+      };
+      const STYLE_TOKEN_MAP = {
+        pageBg: '--tc-page-bg',
+        modalBg: '--tc-modal-bg',
+        surfaceMuted: '--tc-surface-muted',
+        border: '--tc-border',
+        text: '--tc-text',
+        textMuted: '--tc-text-muted',
+        primary: '--tc-primary',
+        danger: '--tc-danger',
+        success: '--tc-success'
+      };
+
+      const state = {
+        resolver: null,
+        rejecter: null,
+        pickerInFlight: false,
+        pickerAvailable: false,
+        pickerReady: false,
+        pickerPreloadInFlight: false,
+        pickerPreloadPromise: null,
+        preloadDateTimePicker: true,
+        minDate: null,
+        maxDate: null,
+        minDateKey: '',
+        maxDateKey: '',
+        maxSpanMs: 14 * 60 * 60 * 1000,
+        requireNote: true,
+        closeHostOnCancel: false,
+        closeHostOnSubmit: false,
+        targetEmail: '',
+        targetLabelBase: 'Current User',
+        openEntryStartMs: NaN,
+        conflictIntervals: [],
+        refreshConflictContext: null,
+        currentThemeMode: '',
+        currentScalePercent: 100,
+        styleTokens: {},
+        hostBridge: null
+      };
+
+      const el = {
+        shell: document.querySelector('.modal-shell'),
+        targetInfo: document.getElementById('targetInfo'),
+        status: document.getElementById('status'),
+        clockInInput: document.getElementById('clockInInput'),
+        clockOutInput: document.getElementById('clockOutInput'),
+        workTypeInput: document.getElementById('workTypeInput'),
+        noteInput: document.getElementById('noteInput'),
+        allowedRangeInfo: document.getElementById('allowedRangeInfo'),
+        errorBlock: document.getElementById('errorBlock'),
+        clockInPickerBtn: document.getElementById('clockInPickerBtn'),
+        clockOutPickerBtn: document.getElementById('clockOutPickerBtn'),
+        cancelBtn: document.getElementById('cancelBtn'),
+        submitBtn: document.getElementById('submitBtn')
+      };
+
+      function pad(n) {
+        return String(n).padStart(2, '0');
+      }
+
+      function formatUsDate(dateValue) {
+        const d = dateValue instanceof Date ? dateValue : null;
+        if (!d || Number.isNaN(d.getTime())) return '';
+        return pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + '/' + d.getFullYear();
+      }
+
+      function normalizeThemeMode(value) {
+        const normalized = String(value || '').trim().toLowerCase();
+        return normalized === 'light' || normalized === 'dark' ? normalized : '';
+      }
+
+      function applyThemeMode(mode) {
+        const resolved = normalizeThemeMode(mode) || 'dark';
+        state.currentThemeMode = resolved;
+        document.documentElement.setAttribute('data-theme', resolved);
+        return resolved;
+      }
+
+      function clampScalePercent(value) {
+        const numeric = Number(value);
+        if (!isFinite(numeric)) return 100;
+        return Math.min(155, Math.max(85, Math.round(numeric)));
+      }
+
+      function mapUiScaleToModalScalePercent(uiScalePercent) {
+        const value = Number(uiScalePercent);
+        if (!isFinite(value)) return 100;
+
+        if (value >= 100) {
+          // Grow more slowly than global UI scale so modal footprint stays balanced.
+          return 100 + ((value - 100) * 0.45);
+        }
+
+        // Shrink more gently below 100% to preserve tap/typing comfort.
+        return 100 - ((100 - value) * 0.65);
+      }
+
+      function applyScalePercent(value) {
+        const uiScalePercent = clampScalePercent(value);
+        const tunedModalPercent = Math.min(125, Math.max(90, Math.round(mapUiScaleToModalScalePercent(uiScalePercent))));
+        const tunedFontPercent = Math.min(155, Math.max(90, Math.round(uiScalePercent)));
+        state.currentScalePercent = uiScalePercent;
+        document.documentElement.style.setProperty('--modal-scale', (tunedModalPercent / 100).toFixed(3));
+        document.documentElement.style.setProperty('--modal-font-scale', (tunedFontPercent / 100).toFixed(3));
+        return uiScalePercent;
+      }
+
+      function setStatus(message, mode) {
+        const text = String(message || '');
+        el.status.textContent = text;
+        el.status.classList.toggle('has-text', !!text);
+        el.status.classList.toggle('error', mode === 'error');
+        el.status.classList.toggle('ok', mode === 'ok');
+      }
+
+      function setError(message) {
+        const text = String(message || '').trim();
+        if (!text) {
+          el.errorBlock.textContent = '';
+          el.errorBlock.classList.remove('active');
+          return;
+        }
+        el.errorBlock.textContent = text;
+        el.errorBlock.classList.add('active');
+      }
+
+      function parseDateKey(raw) {
+        const match = String(raw || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return null;
+        const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 0, 0, 0, 0);
+        if (Number.isNaN(d.getTime())) return null;
+        if (d.getFullYear() !== Number(match[1]) || d.getMonth() !== Number(match[2]) - 1 || d.getDate() !== Number(match[3])) return null;
+        return d;
+      }
+
+      function parseDateTimeInputValue(value) {
+        const text = String(value || '').trim();
+        if (!text) return null;
+        const localMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (!localMatch) return null;
+
+        const year = Number(localMatch[1]);
+        const month = Number(localMatch[2]) - 1;
+        const day = Number(localMatch[3]);
+        const hour = Number(localMatch[4]);
+        const minute = Number(localMatch[5]);
+        const second = Number(localMatch[6] || 0);
+
+        const localDate = new Date(year, month, day, hour, minute, second, 0);
+        if (
+          Number.isNaN(localDate.getTime()) ||
+          localDate.getFullYear() !== year ||
+          localDate.getMonth() !== month ||
+          localDate.getDate() !== day ||
+          localDate.getHours() !== hour ||
+          localDate.getMinutes() !== minute
+        ) {
+          return null;
+        }
+
+        return localDate;
+      }
+
+      function parseMsValue(value) {
+        if (typeof value === 'number' && isFinite(value)) return value;
+        const text = String(value || '').trim();
+        if (!text) return NaN;
+        const parsed = new Date(text).getTime();
+        return isNaN(parsed) ? NaN : parsed;
+      }
+
+      function parseFlexibleDateTime(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return null;
+
+        const parsedLocal = parseDateTimeInputValue(raw);
+        if (parsedLocal) return parsedLocal;
+
+        const pickerMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (pickerMatch) {
+          return parseDateTimeInputValue(
+            pickerMatch[1] + '-' + pickerMatch[2] + '-' + pickerMatch[3] + 'T' + pickerMatch[4] + ':' + pickerMatch[5] + ':' + (pickerMatch[6] || '00')
+          );
+        }
+
+        // Transitional compatibility fallback for legacy host-provided datetime strings.
+        // Keep this while older cached host/picker bridges may still return broader shapes.
+        // Reevaluate after all environments confirm strict contract outputs.
+        const parsed = new Date(raw);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      function formatForInput(dateObj) {
+        return dateObj.getFullYear() + '-' + pad(dateObj.getMonth() + 1) + '-' + pad(dateObj.getDate()) + 'T' + pad(dateObj.getHours()) + ':' + pad(dateObj.getMinutes());
+      }
+
+      function formatDateTimeString(dateObj) {
+        return dateObj.getFullYear() + '-' + pad(dateObj.getMonth() + 1) + '-' + pad(dateObj.getDate()) + ' ' + pad(dateObj.getHours()) + ':' + pad(dateObj.getMinutes()) + ':00';
+      }
+
+      function formatDateTimeForMessage(ms) {
+        const dateObj = new Date(ms);
+        if (isNaN(dateObj.getTime())) return 'Invalid';
+        let h = dateObj.getHours();
+        const mm = pad(dateObj.getMinutes());
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return pad(h) + ':' + mm + ' ' + suffix;
+      }
+
+      function formatTargetDayLabel(dateObj) {
+        if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return '';
+        const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()];
+        return pad(dateObj.getMonth() + 1) + '-' + pad(dateObj.getDate()) + '-' + dateObj.getFullYear() + ' (' + weekday + ')';
+      }
+
+      function extractTargetLabelBase(rawLabel) {
+        const text = String(rawLabel || '').trim();
+        if (!text) return 'Current User';
+        const pieces = text.split('|');
+        const base = String(pieces[0] || '').trim();
+        return base || text;
+      }
+
+      function updateTargetLabelFromInputs() {
+        const inDate = parseDateTimeInputValue(el.clockInInput.value);
+        const outDate = parseDateTimeInputValue(el.clockOutInput.value);
+        const basis = inDate || outDate;
+        const dayLabel = basis ? formatTargetDayLabel(basis) : '';
+        el.targetInfo.textContent = dayLabel
+          ? ('Target: ' + state.targetLabelBase + ' | ' + dayLabel)
+          : ('Target: ' + state.targetLabelBase);
+      }
+
+      function floorToFiveMinuteStep(dateObj) {
+        const ms = dateObj.getTime();
+        const snapped = Math.floor(ms / 300000) * 300000;
+        return new Date(snapped);
+      }
+
+      function getEndOfDay(dateObj) {
+        return new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 23, 59, 59, 999);
+      }
+
+      function updateInputBounds() {
+        if (state.minDate) {
+          const minValue = formatForInput(state.minDate);
+          el.clockInInput.min = minValue;
+          el.clockOutInput.min = minValue;
+        } else {
+          el.clockInInput.removeAttribute('min');
+          el.clockOutInput.removeAttribute('min');
+        }
+
+        if (state.maxDate) {
+          const maxValue = formatForInput(getEndOfDay(state.maxDate));
+          el.clockInInput.max = maxValue;
+          el.clockOutInput.max = maxValue;
+        } else {
+          el.clockInInput.removeAttribute('max');
+          el.clockOutInput.removeAttribute('max');
+        }
+      }
+
+      function normalizeWorkType(value) {
+        const raw = String(value || '').trim().toLowerCase();
+        return VALID_WORK_TYPES[raw] ? raw : 'worked';
+      }
+
+      function normalizeConflictIntervals(intervals) {
+        const source = Array.isArray(intervals) ? intervals : [];
+        const normalized = [];
+
+        for (let i = 0; i < source.length; i++) {
+          const item = source[i] || {};
+          const startMs = parseMsValue(item.startMs != null ? item.startMs : item.startIso);
+          const endMs = parseMsValue(item.endMs != null ? item.endMs : item.endIso);
+          if (!isFinite(startMs) || !isFinite(endMs)) continue;
+          if (endMs <= startMs) continue;
+          normalized.push({ startMs: startMs, endMs: endMs });
+        }
+
+        normalized.sort(function (a, b) { return a.startMs - b.startMs; });
+        const merged = [];
+        for (let i = 0; i < normalized.length; i++) {
+          const current = normalized[i];
+          const last = merged.length > 0 ? merged[merged.length - 1] : null;
+          if (!last || current.startMs > last.endMs) {
+            merged.push({ startMs: current.startMs, endMs: current.endMs });
+          } else {
+            last.endMs = Math.max(last.endMs, current.endMs);
+          }
+        }
+        return merged;
+      }
+
+      function findOverlapInterval(startMs, endMs, intervals) {
+        const list = Array.isArray(intervals) ? intervals : [];
+        for (let i = 0; i < list.length; i++) {
+          const item = list[i];
+          if (startMs < item.endMs && endMs > item.startMs) {
+            return item;
+          }
+        }
+        return null;
+      }
+
+      function applyConflictContext(context) {
+        const raw = (context && typeof context === 'object') ? context : {};
+        const openMs = parseMsValue(raw.openEntryStartMs != null ? raw.openEntryStartMs : raw.openEntryStartIso);
+        state.openEntryStartMs = isFinite(openMs) ? openMs : NaN;
+        state.conflictIntervals = normalizeConflictIntervals(raw.conflictIntervals);
+      }
+
+      function isWithinBounds(dateObj) {
+        if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) return false;
+        const ms = dateObj.getTime();
+        if (state.minDate && ms < state.minDate.getTime()) return false;
+        if (state.maxDate && ms > getEndOfDay(state.maxDate).getTime()) return false;
+        return true;
+      }
+
+      function setInvalidClass(element, invalid) {
+        if (!element || !element.classList) return;
+        element.classList.toggle('invalid', invalid === true);
+      }
+
+      function getValidationState() {
+        const inDate = parseDateTimeInputValue(el.clockInInput.value);
+        const outDate = parseDateTimeInputValue(el.clockOutInput.value);
+        const note = String(el.noteInput.value || '').trim();
+        const nowMs = Date.now();
+
+        let message = '';
+        let inInvalid = false;
+        let outInvalid = false;
+        let noteInvalid = false;
+
+        if (!inDate) {
+          inInvalid = true;
+          message = 'Clock In must be a valid date and time.';
+        } else if (!isWithinBounds(inDate)) {
+          inInvalid = true;
+          message = 'Clock In is outside the allowed date range.';
+        } else if (inDate.getTime() > nowMs) {
+          inInvalid = true;
+          message = 'Clock In cannot be in the future.';
+        }
+
+        if (!outDate && !message) {
+          outInvalid = true;
+          message = 'Clock Out must be a valid date and time.';
+        }
+
+        if (outDate && !message) {
+          if (!isWithinBounds(outDate)) {
+            outInvalid = true;
+            message = 'Clock Out is outside the allowed date range.';
+          } else if (outDate.getTime() > nowMs) {
+            outInvalid = true;
+            message = 'Clock Out cannot be in the future.';
+          } else if (inDate && outDate.getTime() <= inDate.getTime()) {
+            outInvalid = true;
+            message = 'Clock Out must be after Clock In.';
+          } else if (inDate && (outDate.getTime() - inDate.getTime()) > state.maxSpanMs) {
+            outInvalid = true;
+            message = 'Entries are limited to ' + String(Math.round(state.maxSpanMs / 3600000)) + ' hours.';
+          }
+        }
+
+        if (inDate && outDate && !message) {
+          const inMs = inDate.getTime();
+          const outMs = outDate.getTime();
+
+          if (isFinite(state.openEntryStartMs) && (inMs >= state.openEntryStartMs || outMs >= state.openEntryStartMs)) {
+            outInvalid = true;
+            message = 'Cannot add missed time at or after open clock-in (' + formatDateTimeForMessage(state.openEntryStartMs) + ').';
+          } else {
+            const overlap = findOverlapInterval(inMs, outMs, state.conflictIntervals);
+            if (overlap) {
+              outInvalid = true;
+              message = 'Selected range overlaps an existing punch (' + formatDateTimeForMessage(overlap.startMs) + ' - ' + formatDateTimeForMessage(overlap.endMs) + ').';
+            }
+          }
+        }
+
+        if (state.requireNote && !note && !message) {
+          noteInvalid = true;
+          message = 'Note is required.';
+        }
+
+        const valid = !inInvalid && !outInvalid && !noteInvalid && !!inDate && !!outDate;
+        return {
+          valid,
+          message,
+          inDate,
+          outDate,
+          note,
+          workType: normalizeWorkType(el.workTypeInput.value),
+          inInvalid,
+          outInvalid,
+          noteInvalid
+        };
+      }
+
+      function applyValidationUi(validation) {
+        setInvalidClass(el.clockInInput, validation.inInvalid);
+        setInvalidClass(el.clockOutInput, validation.outInvalid);
+        setInvalidClass(el.noteInput, validation.noteInvalid);
+        el.submitBtn.disabled = !validation.valid;
+
+        if (validation.message) {
+          setError(validation.message);
+          return;
+        }
+
+        setError('');
+      }
+
+      function validateAndRender() {
+        const validation = getValidationState();
+        applyValidationUi(validation);
+        updateTargetLabelFromInputs();
+        return validation;
+      }
+
+      function resolveHostBridge() {
+        if (state.hostBridge && typeof state.hostBridge === 'object') return state.hostBridge;
+        if (window.AddMissedTimeModalHost && typeof window.AddMissedTimeModalHost === 'object') return window.AddMissedTimeModalHost;
+
+        try {
+          if (window.parent && window.parent !== window) {
+            if (window.parent.AddMissedTimeModalHost && typeof window.parent.AddMissedTimeModalHost === 'object') {
+              return window.parent.AddMissedTimeModalHost;
+            }
+            if (window.parent.timecardAdminHost && typeof window.parent.timecardAdminHost === 'object') {
+              return window.parent.timecardAdminHost;
+            }
+          }
+        } catch (_e) {
+          return null;
+        }
+
+        return null;
+      }
+
+      function getPickerBridge() {
+        const bridge = resolveHostBridge();
+        if (!bridge || typeof bridge.openDateTimePickerModal !== 'function') {
+          state.pickerAvailable = false;
+          if (el.shell) el.shell.classList.remove('html-picker-available');
+          return null;
+        }
+        state.pickerAvailable = true;
+        if (el.shell) el.shell.classList.add('html-picker-available');
+        return bridge;
+      }
+
+      function closeHostWindow() {
+        if (window.google && window.google.script && window.google.script.host && typeof window.google.script.host.close === 'function') {
+          window.google.script.host.close();
+        }
+      }
+
+      function applyStyleTokens(tokens) {
+        const input = (tokens && typeof tokens === 'object') ? tokens : {};
+        state.styleTokens = input;
+        const root = document.documentElement;
+
+        Object.keys(STYLE_TOKEN_MAP).forEach(function (key) {
+          const cssVar = STYLE_TOKEN_MAP[key];
+          const value = input[key];
+          if (typeof value === 'string' && value.trim()) {
+            root.style.setProperty(cssVar, value.trim());
+          }
+        });
+
+        Object.keys(input).forEach(function (key) {
+          const value = input[key];
+          if (typeof value !== 'string' || !value.trim()) return;
+          if (key.indexOf('--') === 0) {
+            root.style.setProperty(key, value.trim());
+          }
+        });
+      }
+
+      function buildDefaultDate(minDate, fallbackHour) {
+        const now = new Date();
+        const base = minDate instanceof Date ? new Date(minDate.getTime()) : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        base.setHours(fallbackHour, 0, 0, 0);
+        return floorToFiveMinuteStep(base);
+      }
+
+      function openDateTimePickerModal(options) {
+        const bridge = getPickerBridge();
+        if (!bridge) {
+          return Promise.reject(new Error('Date time picker unavailable.'));
+        }
+        return bridge.openDateTimePickerModal(options || {});
+      }
+
+      function refreshConflictContextFromCallback() {
+        const callback = state.refreshConflictContext;
+        if (typeof callback !== 'function') {
+          return Promise.resolve(false);
+        }
+        // Transitional host callback support: keeps conflict context fresh during staged
+        // migration. Reevaluate after all callers provide unified interval snapshots.
+        try {
+          const result = callback({ targetEmail: state.targetEmail });
+          return Promise.resolve(result).then(function (context) {
+            applyConflictContext(context);
+            return true;
+          }).catch(function () {
+            return false;
+          });
+        } catch (_e) {
+          return Promise.resolve(false);
+        }
+      }
+
+      function preloadDateTimePickerRuntime() {
+        if (state.pickerReady) {
+          return Promise.resolve(true);
+        }
+        if (state.pickerPreloadPromise) {
+          return state.pickerPreloadPromise;
+        }
+
+        const bridge = getPickerBridge();
+        if (!bridge) {
+          state.pickerReady = false;
+          return Promise.resolve(false);
+        }
+
+        // Transitional optional preload hook: not every host bridge implements this yet.
+        // Keep graceful fallback until host support is guaranteed everywhere.
+        const hasDedicatedPreload = typeof bridge.preloadDateTimePickerModal === 'function';
+        if (!hasDedicatedPreload) {
+          state.pickerReady = true;
+          return Promise.resolve(true);
+        }
+
+        state.pickerPreloadInFlight = true;
+        state.pickerPreloadPromise = Promise.resolve(bridge.preloadDateTimePickerModal({
+          themeMode: state.currentThemeMode,
+          uiScalePercent: state.currentScalePercent
+        })).then(function () {
+          state.pickerReady = true;
+          return true;
+        }).catch(function () {
+          state.pickerReady = false;
+          return false;
+        }).finally(function () {
+          state.pickerPreloadInFlight = false;
+          state.pickerPreloadPromise = null;
+        });
+
+        return state.pickerPreloadPromise;
+      }
+
+      async function openPickerForField(which) {
+        if (state.pickerInFlight) return;
+        state.pickerInFlight = true;
+        el.clockInPickerBtn.disabled = true;
+        el.clockOutPickerBtn.disabled = true;
+
+        const isClockIn = which === 'clockIn';
+        const input = isClockIn ? el.clockInInput : el.clockOutInput;
+        const roleLabel = isClockIn ? 'Clock In' : 'Clock Out';
+
+        try {
+          if (state.preloadDateTimePicker) {
+            if (state.pickerPreloadInFlight) {
+              setStatus('Preparing date time picker...', '');
+            }
+            await preloadDateTimePickerRuntime();
+          }
+
+          const currentDate = parseDateTimeInputValue(input.value);
+          const fallbackDate = isClockIn
+            ? buildDefaultDate(state.minDate, 8)
+            : buildDefaultDate(state.minDate, 13);
+          const defaultDate = currentDate || fallbackDate;
+
+          const options = {
+            defaultDateTime: formatDateTimeString(defaultDate),
+            minDate: state.minDateKey || undefined,
+            maxDate: state.maxDateKey || undefined,
+            timeMode: '24h',
+            closeOnConfirm: true,
+            themeMode: state.currentThemeMode,
+            uiScalePercent: state.currentScalePercent
+          };
+
+          const picked = await openDateTimePickerModal(options);
+          if (!picked) {
+            setStatus(roleLabel + ' selection cancelled.', '');
+            return;
+          }
+
+          const pickedDate = parseFlexibleDateTime(picked);
+          if (!pickedDate) {
+            setStatus('Picked date time format was invalid.', 'error');
+            return;
+          }
+
+          input.value = formatForInput(pickedDate);
+          await refreshConflictContextFromCallback();
+          validateAndRender();
+          setStatus(roleLabel + ' updated.', 'ok');
+        } catch (error) {
+          setStatus((error && error.message) ? error.message : 'Unable to open date time picker.', 'error');
+        } finally {
+          state.pickerInFlight = false;
+          el.clockInPickerBtn.disabled = false;
+          el.clockOutPickerBtn.disabled = false;
+        }
+      }
+
+      function closeModalWithValue(value, shouldReject) {
+        const resolve = state.resolver;
+        const reject = state.rejecter;
+        state.resolver = null;
+        state.rejecter = null;
+        if (resolve) resolve(value);
+        if (shouldReject === true && reject) reject(new Error('Add missed time modal cancelled'));
+      }
+
+      function readParentThemeMode() {
+        try {
+          const p = window.parent;
+          if (!p || p === window || !p.document || !p.document.documentElement) return '';
+          return normalizeThemeMode(p.document.documentElement.getAttribute('data-theme'));
+        } catch (_e) {
+          return '';
+        }
+      }
+
+      function readParentScalePercent() {
+        try {
+          const p = window.parent;
+          if (!p || p === window || !p.document || !p.document.documentElement || !p.getComputedStyle) return NaN;
+          const rootFont = parseFloat(p.getComputedStyle(p.document.documentElement).fontSize);
+          if (!isFinite(rootFont) || rootFont <= 0) return NaN;
+          return (rootFont / 16) * 100;
+        } catch (_e) {
+          return NaN;
+        }
+      }
+
+      function bindHostPresentationEvents() {
+        try {
+          const p = window.parent;
+          if (!p || p === window || !p.addEventListener) return;
+
+          p.addEventListener('timecard-ui-scale-change', function (event) {
+            const percent = event && event.detail ? event.detail.percent : NaN;
+            if (isFinite(Number(percent))) {
+              applyScalePercent(percent);
+            }
+          });
+
+          p.addEventListener('timecard-theme-mode-change', function (event) {
+            const mode = event && event.detail ? event.detail.mode : '';
+            const resolved = normalizeThemeMode(mode);
+            if (resolved) {
+              applyThemeMode(resolved);
+            }
+          });
+        } catch (_e) {
+          return;
+        }
+      }
+
+      function applyOptions(options) {
+        const opts = options || {};
+
+        state.requireNote = opts.requireNote !== false;
+        state.closeHostOnCancel = opts.closeHostOnCancel === true;
+        state.closeHostOnSubmit = opts.closeHostOnSubmit === true;
+        state.preloadDateTimePicker = opts.preloadDateTimePicker !== false;
+
+        state.targetEmail = String(opts.targetEmail || '').trim().toLowerCase();
+        state.refreshConflictContext = typeof opts.refreshConflictContext === 'function' ? opts.refreshConflictContext : null;
+
+        const maxSpanHours = Number(opts.maxSpanHours);
+        state.maxSpanMs = (isFinite(maxSpanHours) && maxSpanHours > 0) ? Math.round(maxSpanHours * 60 * 60 * 1000) : (14 * 60 * 60 * 1000);
+
+        const requestedTheme = normalizeThemeMode(opts.themeMode) || normalizeThemeMode(opts.theme) || normalizeThemeMode(document.documentElement.getAttribute('data-theme')) || readParentThemeMode() || 'dark';
+        const requestedScale = Number(opts.scalePercent);
+        const requestedModalScale = Number(opts.modalScalePercent);
+        const requestedUiScale = Number(opts.uiScalePercent);
+        const fallbackScale = readParentScalePercent();
+        const resolvedScale =
+          isFinite(requestedScale) ? requestedScale :
+          isFinite(requestedModalScale) ? requestedModalScale :
+          isFinite(requestedUiScale) ? requestedUiScale :
+          (isFinite(fallbackScale) ? fallbackScale : 100);
+
+        applyThemeMode(requestedTheme);
+        applyScalePercent(resolvedScale);
+        applyStyleTokens(opts.styleTokens);
+
+        state.hostBridge = (opts.hostBridge && typeof opts.hostBridge === 'object') ? opts.hostBridge : null;
+
+        applyConflictContext({
+          openEntryStartMs: opts.openEntryStartMs,
+          openEntryStartIso: opts.openEntryStartIso,
+          conflictIntervals: opts.conflictIntervals
+        });
+        if (opts.conflictContext && typeof opts.conflictContext === 'object') {
+          applyConflictContext(opts.conflictContext);
+        }
+
+        // Bounds contract: picker keys are ISO date-only strings (YYYY-MM-DD).
+        // Display text is handled separately through rangeLabel.
+        const min = parseDateKey(opts.minDate);
+        const max = parseDateKey(opts.maxDate);
+        state.minDate = min;
+        state.maxDate = max;
+
+        if (state.minDate && state.maxDate && state.minDate.getTime() > state.maxDate.getTime()) {
+          const swap = state.minDate;
+          state.minDate = state.maxDate;
+          state.maxDate = swap;
+        }
+
+        state.minDateKey = state.minDate ? (state.minDate.getFullYear() + '-' + pad(state.minDate.getMonth() + 1) + '-' + pad(state.minDate.getDate())) : '';
+        state.maxDateKey = state.maxDate ? (state.maxDate.getFullYear() + '-' + pad(state.maxDate.getMonth() + 1) + '-' + pad(state.maxDate.getDate())) : '';
+
+        const targetLabel = String(opts.targetLabel || opts.targetEmail || 'Current User');
+        state.targetLabelBase = extractTargetLabelBase(targetLabel);
+
+        const inDefault = parseFlexibleDateTime(opts.defaultClockInDateTime || opts.defaultClockIn || '');
+        const outDefault = parseFlexibleDateTime(opts.defaultClockOutDateTime || opts.defaultClockOut || '');
+        const fallbackIn = buildDefaultDate(state.minDate, 8);
+        const fallbackOut = buildDefaultDate(state.minDate, 13);
+
+        el.clockInInput.value = formatForInput(floorToFiveMinuteStep(inDefault || fallbackIn));
+        el.clockOutInput.value = formatForInput(floorToFiveMinuteStep(outDefault || fallbackOut));
+        el.workTypeInput.value = normalizeWorkType(opts.workType || 'worked');
+        el.noteInput.value = String(opts.note || '');
+
+        // rangeLabel should come from host-computed policy text; fallback renders U.S. format
+        // when only min/max keys are provided.
+        const rangeLabel = (opts.rangeLabel && String(opts.rangeLabel).trim())
+          ? String(opts.rangeLabel).trim()
+          : (state.minDate && state.maxDate ? ('Allowed range: ' + formatUsDate(state.minDate) + ' to ' + formatUsDate(state.maxDate) + '.') : 'Use a date/time inside the allowed active period.');
+        el.allowedRangeInfo.textContent = rangeLabel;
+
+        updateInputBounds();
+        setError('');
+        setStatus('', '');
+        validateAndRender();
+
+        refreshConflictContextFromCallback().then(function (updated) {
+          if (updated) {
+            validateAndRender();
+          }
+        });
+
+        if (state.preloadDateTimePicker) {
+          preloadDateTimePickerRuntime().then(function (ready) {
+            if (!ready) {
+              setStatus('Date time picker will load on first use.', '');
+            }
+          });
+        }
+
+        // Toggle native picker indicator based on HTML picker bridge availability.
+        getPickerBridge();
+      }
+
+      function buildSubmitPayload(validation) {
+        return {
+          clockInDateTime: formatDateTimeString(validation.inDate),
+          clockOutDateTime: formatDateTimeString(validation.outDate),
+          workType: validation.workType,
+          note: validation.note,
+          targetEmail: state.targetEmail,
+          isoClockIn: validation.inDate.toISOString(),
+          isoClockOut: validation.outDate.toISOString()
+        };
+      }
+
+      function openAddMissedTimeModal(options) {
+        if (state.resolver) {
+          closeModalWithValue(null, false);
+        }
+
+        applyOptions(options || {});
+
+        return new Promise(function (resolve, reject) {
+          state.resolver = resolve;
+          state.rejecter = reject;
+        });
+      }
+
+      el.clockInInput.addEventListener('input', validateAndRender);
+      el.clockOutInput.addEventListener('input', validateAndRender);
+      el.workTypeInput.addEventListener('change', validateAndRender);
+      el.noteInput.addEventListener('input', validateAndRender);
+
+      el.clockInPickerBtn.addEventListener('click', function () {
+        openPickerForField('clockIn');
+      });
+
+      el.clockOutPickerBtn.addEventListener('click', function () {
+        openPickerForField('clockOut');
+      });
+
+      el.cancelBtn.addEventListener('click', function () {
+        closeModalWithValue(null, false);
+        if (state.closeHostOnCancel) {
+          closeHostWindow();
+        }
+      });
+
+      el.submitBtn.addEventListener('click', function () {
+        const validation = validateAndRender();
+        if (!validation.valid) {
+          return;
+        }
+
+        const payload = buildSubmitPayload(validation);
+        closeModalWithValue(payload, false);
+
+        const bridge = resolveHostBridge();
+        if (bridge && typeof bridge.onAddMissedTimeSubmit === 'function') {
+          try {
+            bridge.onAddMissedTimeSubmit(payload);
+          } catch (_e) {
+            // Keep modal return deterministic even if host callback fails.
+          }
+        }
+
+        if (state.closeHostOnSubmit) {
+          closeHostWindow();
+        }
+      });
+
+      // Public API usage example:
+      // const payload = await window.AddMissedTimeModal.open({
+      //   targetEmail: 'worker@example.com',
+      //   targetLabel: 'worker@example.com | 09-03-2026 (Thu)',
+      //   minDate: '2026-09-01',
+      //   maxDate: '2026-09-14',
+      //   rangeLabel: 'Allowed range: 09/01/2026 to 09/14/2026 (active pay period).',
+      //   defaultClockInDateTime: '2026-09-03 08:00:00',
+      //   defaultClockOutDateTime: '2026-09-03 17:00:00',
+      //   conflictIntervals: [{ startIso: '2026-09-03T10:00:00Z', endIso: '2026-09-03T12:00:00Z' }],
+      //   openEntryStartIso: '',
+      //   preloadDateTimePicker: true,
+      //   styleTokens: { primary: '#2e6fd6' }
+      // });
+      window.AddMissedTimeModal = {
+        open: openAddMissedTimeModal,
+        preloadDateTimePicker: preloadDateTimePickerRuntime,
+        applyThemeMode: applyThemeMode,
+        applyScalePercent: applyScalePercent,
+        applyStyleTokens: applyStyleTokens,
+        setHostBridge: function (bridge) {
+          state.hostBridge = (bridge && typeof bridge === 'object') ? bridge : null;
+        }
+      };
+
+      bindHostPresentationEvents();
+      applyThemeMode(normalizeThemeMode(document.documentElement.getAttribute('data-theme')) || readParentThemeMode() || 'dark');
+      applyScalePercent(readParentScalePercent());
+      validateAndRender();
+    })();
+  </script>
+</body>
+</html>

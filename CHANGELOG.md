@@ -7,6 +7,341 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Corrected Add Missed Time text scaling so rem-based modal typography follows UI scale settings.
+- Why: Text size appeared fixed across UI scale levels because font scaling was applied to body while component typography is defined in rem units.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Moved modal font scaling to root html font-size via `--modal-font-scale`; confirmed diagnostics report no file errors.
+
+- Summary: Split Add Missed Time scaling into separate container-scale and font-scale tracks to align modal text sizing with global UI scale.
+- Why: Modal text could appear visually compressed/smaller than surrounding page text when UI scale changed because only shell size was being tuned.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Added `--modal-font-scale` and mapped it directly from UI scale while retaining dampened `--modal-scale` for modal footprint; confirmed diagnostics report no file errors.
+
+- Summary: Tuned Add Missed Time modal UI-scale behavior so desktop size growth is dampened above 100% scale.
+- Why: At higher global UI scale, modal width expansion felt too aggressive and visually heavy relative to surrounding page context.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Added modal-specific UI-scale mapping (slower growth above 100%, gentler shrink below 100%) with capped modal scale band; confirmed diagnostics report no file errors.
+
+- Summary: Removed Add Missed Time host iframe surface fill to eliminate large desktop background slab beneath the inner card.
+- Why: Even after host chrome removal, the iframe background still rendered a tall dark rectangle because host height is fixed for responsive bounds.
+- Files: src/UserInterface.js
+- Validation: Set `#addMissedTimeFrame` background to transparent while preserving current host sizing; confirmed diagnostics report no file errors.
+
+- Summary: Removed Add Missed Time host-modal chrome so the iframe content modal is the single visible dialog layer.
+- Why: The host wrapper background/shadow/close chrome created a nested-modal look and made sizing appear incorrect.
+- Files: src/UserInterface.js, src/AddMissedTimeModalHTML.html
+- Validation: Dropped outer Add Missed host close button and host panel chrome, restored inner modal card styling, and preserved mobile full-space behavior; confirmed diagnostics report no file errors.
+
+- Summary: Applied second-pass Add Missed Time visual cleanup with desktop detail-grid layout and stronger mobile full-space behavior.
+- Why: Reduces unused vertical space by placing Work Type and Note side-by-side on desktop, softens allowed-range visual weight, and prevents small-looking modal sizing on phones.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Added desktop-only `detail-grid` (Work Type + Note), reduced allowed-range chip contrast, and set mobile modal shell to full viewport height/width; confirmed diagnostics report no file errors.
+
+- Summary: Simplified Add Missed Time modal chrome and spacing to remove duplicate range text and reduce nested modal appearance.
+- Why: The modal showed allowed-range text twice and had extra framing/padding that made it read as a modal-inside-a-modal.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Removed duplicate range hint rendering, tightened header/body/footer spacing, made status line collapse when empty, and confirmed diagnostics report no file errors.
+
+- Summary: Switched server manual-entry allowed-range computation to mode-driven constants aligned with Add Missed Time range policy.
+- Why: Ensures `validateManualTimeEntry(...)` uses the same configurable range mode semantics as current Add Missed Time behavior instead of fixed hardcoded range limits.
+- Files: src/Code.js
+- Validation: Added server constants (`pay_period_only | pay_period_to_now | allow_all`) and wired `getAllowedDateRange()` to compute bounds by `ADD_MISSED_TIME_ALLOWED_RANGE_MODE`; confirmed diagnostics report no file errors.
+
+- Summary: Added explicit removal-marker comments on now-unreferenced employee legacy manual-picker helpers retained in the main UI bundle.
+- Why: These helpers are no longer referenced after employee Add Time Entry switched to the shared Add Missed Time modal, so comments now mark safe cleanup targets for a later removal pass.
+- Files: src/UserInterface.js
+- Validation: Verified helpers are unreferenced in-file before annotation (`ceilToManualStep`, `isSelectableManualClockIn`, `isSelectableManualClockOut`) and confirmed diagnostics report no file errors.
+
+- Summary: Routed employee Add Time Entry in the main user interface to the shared Add Missed Time iframe modal contract, while preserving the admin-target legacy entry modal path.
+- Why: The reusable modal was already integrated for host loading/bridging and documented with a canonical payload, so employee users now use the same validated contract and conflict-context behavior.
+- Files: src/UserInterface.js
+- Validation: Added employee modal option builder (`targetEmail`, `targetLabel`, `minDate`, `maxDate`, `rangeLabel`, defaults, `conflictContext`, `refreshConflictContext`), wired employee button flow through `openAddMissedTimeModal(...)` with best-effort preload, submitted modal payload via `submitManualTimeEntry(...)` using `isoClockIn`/`isoClockOut`, and confirmed diagnostics report no file errors.
+
+- Summary: Refreshed Add Missed Time modal inline contract comments to reflect current host wiring and range/debugging behavior.
+- Why: Recent range-policy and context-wiring fixes changed practical integration requirements, so comments were updated to prevent drift and future miswiring.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Documented host responsibilities for `minDate`/`maxDate` picker keys, `rangeLabel` display text, no extra range RPC expectation, and legacy fallback rationale; confirmed diagnostics report no file errors.
+
+- Summary: Normalized allowed-range display text to U.S. date format (`MM/DD/YYYY`) across Admin timeline and shared Add Missed Time modal hints/messages.
+- Why: Active pay period labels already use U.S. formatting, so showing allowed ranges in ISO format was inconsistent and confusing for admins.
+- Files: src/AdminModalHTML.html, src/AddMissedTimeModalHTML.html
+- Validation: Added U.S. date format helpers for range labels and bounds validation messages, updated shared modal fallback range hint formatting, and confirmed diagnostics report no file errors.
+
+- Summary: Corrected Admin Timeline pay-period-to-now mode so allowed range ends at current time instead of active pay period end.
+- Why: The configured mode text and behavior were inconsistent when today was after pay period end, showing a pay-period-only upper bound while labeled as through-now.
+- Files: src/AdminModalHTML.html
+- Validation: Updated `getAddMissedTimeAllowedBoundsMs()` so `pay_period_to_now` uses `Date.now()` as `endMs` (with start clamp), then confirmed diagnostics report no file errors.
+
+- Summary: Unified Admin Timeline Add Missed Time and Edit Times to the same mode-driven allowed range, and made that range visibly render in modal UIs.
+- Why: Confirms both workflows enforce identical date bounds and gives admins immediate visual confirmation of current range policy.
+- Files: src/AdminModalHTML.html, src/AddMissedTimeModalHTML.html
+- Validation: Verified shared Add Missed options pass `minDate`, `maxDate`, and `rangeLabel`; updated Edit picker opens to use the same computed bounds and added Edit apply-time bounds validation; added explicit allowed-range display blocks in shared Add Missed header and Admin fallback/edit modals; diagnostics report no file errors.
+
+- Summary: Added a single 3-mode Admin Timeline constant for Add Missed Time date bounds, defaulting to pay-period-start through now.
+- Why: Makes allowed-range behavior easy to switch between strict active-period bounds, active-period-start-through-now bounds, or unrestricted client-side bounds without rewiring modal code.
+- Files: src/AdminModalHTML.html
+- Validation: Added `ADD_MISSED_TIME_ALLOWED_RANGE_MODE` with `pay_period_only | pay_period_to_now | allow_all`, wired range computation into shared modal `minDate/maxDate/rangeLabel`, applied same bounds to fallback picker defaults, and added submit-time bounds validation for fallback entry path; diagnostics report no file errors.
+
+- Summary: Fixed Admin timeline pay-period context wiring so active pay-period labels are loaded from parent in-memory state at modal initialization and rendered prominently in the header.
+- Why: Ensures Add Missed Time has pay-period bounds immediately available without a second server call and makes the active period clearly visible at the top of the admin timeline view.
+- Files: src/UserInterface.js, src/AdminModalHTML.html
+- Validation: Added `getAdminTimelineContextSnapshot()` parent accessor and updated iframe bridge `getAdminContext()` to use it, added visible `activePayPeriodBanner` rendering from initialized context, fixed startup preload invocation to call `preloadAddMissedTimeModal` correctly, and confirmed diagnostics report no file errors.
+
+- Summary: Refined shared Add Missed Time modal UX by syncing target-day text with selected datetime, keeping validation errors in a single bottom pill, and hiding native datetime picker affordances when HTML picker bridge is available.
+- Why: Improves clarity and responsiveness during day changes, removes duplicate error rendering, and keeps picker interaction consistent with the shared HTML picker flow.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Added dynamic target label refresh from current Clock In/Out values, removed status-line mirroring for validation messages so overlap/conflict feedback appears once in the bottom error pill, conditionally toggled native datetime picker indicators via `html-picker-available` class when `openDateTimePickerModal` bridge is present, and confirmed diagnostics report no file errors.
+
+- Summary: Added explicit transitional/stale-candidate comments around fallback Add Missed Time paths and bridge compatibility shims.
+- Why: Makes future validation and cleanup safer by clearly marking rollout-only behaviors that should be rechecked before removal.
+- Files: src/AddMissedTimeModalHTML.html, src/AdminModalHTML.html, src/UserInterface.js
+- Validation: Marked fallback manual modal state/handlers, host bridge compatibility shims, and legacy parsing/preload compatibility branches with targeted comments; diagnostics report no file errors.
+
+- Summary: Wired Admin timeline Add Missed Time to the new shared AddMissedTime modal path, including host open/preload bridge plumbing and server HTML endpoint.
+- Why: Enables incremental cutover from embedded admin-only modal logic to one reusable modal with faster warm-load behavior and shared validation UX.
+- Files: src/AddMissedTimeModalHTML.html, src/Code.js, src/UserInterface.js, src/AdminModalHTML.html
+- Validation: Added API/wiring comments in modal, exposed `getAddMissedTimeModalDialogHtml(...)`, added parent modal iframe lifecycle helpers (`openAddMissedTimeModal`, `closeAddMissedTimeModal`, preload/caching, frame bridge injection), extended admin iframe bridge with shared modal open/preload functions, routed add-missed action through shared modal payload submission with employee conflict context, and confirmed diagnostics report no file errors.
+
+- Summary: Implemented Phase 1 and Phase 2 in the reusable Add Missed Time modal with non-blocking DateTime picker preloading and live employee conflict-context validation.
+- Why: Improves first-picker interaction speed and gives immediate overlap/open-punch feedback while users edit times.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Added picker warm-state tracking and optional host preload hook usage (`preloadDateTimePickerModal`), configurable `preloadDateTimePicker` behavior, and live conflict checks using `openEntryStartIso/openEntryStartMs`, merged `conflictIntervals`, and optional `refreshConflictContext` callback; submit is disabled in real time when conflicts are present.
+
+- Summary: Fixed Add Missed Time picker return normalization so valid local datetime strings are accepted consistently in both employee and admin flows.
+- Why: A valid picker return such as `2026-09-02 08:10:00` could be rejected as invalid-format in some modal paths due to narrow string matching.
+- Files: src/UserInterface.js, src/AdminModalHTML.html
+- Validation: Expanded picker return parsing to accept local `YYYY-MM-DD HH:MM[:SS]` and `YYYY-MM-DDTHH:MM[:SS]` forms with optional milliseconds/quotes/timezone suffixes and normalize them to `datetime-local` input values.
+
+- Summary: Added a reusable Add Missed Time modal artifact that follows the DateTimePicker blueprint and returns canonical picker-compatible datetime payloads.
+- Why: Standardizes missed-time UI and validation behavior in one reusable file, and prevents downstream callers from needing extra datetime normalization.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Implemented strict live validation for ordering, active-range bounds, future-time blocking, 14-hour max span, required note, and canonical submit payload fields (`clockInDateTime`, `clockOutDateTime`, `workType`, `note`, `isoClockIn`, `isoClockOut`) with datetime strings emitted as `YYYY-MM-DD HH:MM:SS`.
+
+- Summary: Added host-driven style token support and DateTimePicker-style presentation hooks to the reusable Add Missed Time modal.
+- Why: Keeps modal visuals consistent with existing picker/UI themes while avoiding hardcoded visual dependencies and allowing runtime style overrides.
+- Files: src/AddMissedTimeModalHTML.html
+- Validation: Confirmed modal supports `themeMode/theme`, `uiScalePercent` aliases, host theme/scale events, and `styleTokens` semantic overrides with safe defaults when tokens are omitted.
+
+- Summary: Replaced Date-object-based picker return validation with deterministic string-contract mapping to `datetime-local` values.
+- Why: A valid picker return (`2026-09-02 08:05:00`) was still being rejected; mapping directly from the known picker contract avoids runtime date-constructor edge cases and false invalid-format errors.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified picker consumers now convert return strings via `pickerReturnToInputValue(...)` and assign `YYYY-MM-DDTHH:MM` directly to inputs.
+
+- Summary: Improved picker-format error diagnostics by showing the returned picker string in UI error/status messages and logging the full value to console warnings.
+- Why: Makes format mismatches immediately visible during testing without additional instrumentation.
+- Files: src/UserInterface.js, src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified invalid-format branches now include `Returned: "..."` plus `console.warn(...)` payload logging.
+
+- Summary: Adjusted strict DateTime picker contract parser to accept `YYYY-MM-DD HH:MM[:SS]` and `YYYY-MM-DDTHH:MM[:SS]` return shapes.
+- Why: Keeps parsing deterministic while handling expected separator/seconds variants that can appear across cached picker iframe versions, preventing false "Picked date time format was invalid" errors.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified picker consumers still parse only explicit contract-like datetime strings via `parsePickerDateTimeValue(...)`.
+
+- Summary: Simplified DateTime picker return handling to strict contract parsing (`YYYY-MM-DD HH:MM:SS`) and removed broad normalization behavior for picker results.
+- Why: Uses the known picker output format directly, avoids unnecessary normalization layers, and ensures consistent value acceptance across employee/admin picker consumers.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified both `openManualEntryDateTimePicker(...)` and `openAdminTimeEditDateTimePicker(...)` now parse picker output via strict `parsePickerDateTimeValue(...)` before writing to inputs.
+
+- Summary: Fixed false "Picked date time format was invalid" errors in employee Add Missed Time by broadening DateTime picker return normalization to accept common local/ISO datetime variants.
+- Why: Some valid picker return strings were being rejected by an overly strict parser shape check, preventing selected values from loading into employee manual-entry fields.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified normalization now accepts `YYYY-MM-DD HH:MM[:SS]`, `YYYY-MM-DDTHH:MM[:SS]` with optional milliseconds/`Z`, plus Date-parseable fallback formatting.
+
+- Summary: Fixed employee Add Missed Time picker value application by adding deterministic local datetime parsing for `datetime-local` values.
+- Why: Prevents browser-dependent `new Date(...)` parsing from treating valid picker return strings as invalid and triggering fallback resets, which made selected times appear not to load.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified `parseDateTimeInputValue(...)` now explicitly parses `YYYY-MM-DDTHH:MM[:SS]` / `YYYY-MM-DD HH:MM[:SS]` into local Date values before fallback parsing.
+
+- Summary: Aligned employee Add Missed Time DateTime picker open flow with Admin modal behavior by rebuilding picker bounds on each open and adding an in-flight open guard for trigger buttons.
+- Why: Improves reopen reliability in the employee modal by reducing pre-open state churn and preventing duplicate open races that can leave picker interactions appearing unresponsive after first use.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified employee picker launch now uses a single in-flight request gate with both trigger buttons disabled during open and restored in `finally`.
+
+- Summary: Hardened DateTime picker reopen reliability by ignoring stale picker promise callbacks from prior sessions when a new open request is active.
+- Why: Prevents late resolution of an old picker promise from closing or resolving the current picker open, which could make the picker appear to only open once.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified picker promise `.then/.catch` handlers now check active request identity before resolving/rejecting and closing host modal.
+
+- Summary: Fixed intermittent DateTime picker modal load stalls by preserving the iframe load handler while an in-flight picker frame load promise is active.
+- Why: Prevents a close/reopen race from clearing `frame.onload` too early, which could leave shared loader promises unresolved and make modal opens appear stuck without console errors.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified `closeDateTimePickerModal(...)` now clears `frame.onload` only when no frame-load promise is active.
+
+- Summary: Enforced allowed-range forwarding on all current DateTime picker launch points by passing active pay-period bounds for Admin timeline Add Missed Time and Edit Times picker button opens.
+- Why: Guarantees consistent date-range restrictions across employee/manual, admin/missed-time, and admin/edit-time picker flows.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified Admin timeline picker calls for `manualClockIn`, `manualClockOut`, `editClockIn`, and `editClockOut` now pass `{ useActivePeriodBounds: true }`, while UserInterface employee/admin picker launches already pass explicit `minDate`/`maxDate` options.
+
+- Summary: Removed Flatpickr completely from the main user interface and switched manual-entry/admin-edit datetime handling to direct `datetime-local` inputs with standalone DateTime picker launch buttons.
+- Why: Simplifies the date-time stack to one picker implementation and avoids adapter complexity while preserving existing validation and overlap safeguards.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors, verified no `flatpickr` references remain under `src/`, verified manual and admin edit pickers still open via `openDateTimePickerModal(...)`, and verified allowed `minDate`/`maxDate` values are passed in picker options on open.
+
+- Summary: Matched employee Add Time Entry Clock In/Out field visuals to the Admin modal datetime field style and fixed picker overlay stacking so the DateTime picker appears above the Add Missed Time modal.
+- Why: Ensures consistent field appearance across admin/employee flows and prevents the picker from rendering behind the parent modal.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors, verified employee manual fields now render as `datetime-local` inputs with admin-matching input tokens, and verified `#dateTimePickerModal` z-index is above `#manualEntryModal`.
+
+- Summary: Aligned employee Add Time Entry date-time field wrapper and calendar-trigger styling/classes with the same side-button pattern used in Admin modal pickers.
+- Why: Keeps picker launch controls visually consistent across employee and admin missed-time/edit flows for easier reuse and lower UI drift.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors and verified employee manual Clock In/Out now use the same `field-input-with-trigger` and `field-calendar-trigger` pattern/geometry as Admin modal.
+
+- Summary: Wired employee Add Time Entry Clock In/Out controls to the standalone DateTime picker with right-side trigger buttons and disabled legacy flatpickr popup opening for those fields.
+- Why: Unifies date/time entry UX across employee and admin flows while preserving the existing manual-entry validation engine and keeping picker launches fast.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors, verified picker options include `minDate`/`maxDate` from the existing manual allowed-range/rule state on each open, and verified selected values are written back into the existing manual-entry inputs used by submit/overlap validation logic.
+
+- Summary: Wired Edit Times clock-in/clock-out inputs in timeline Admin to the standalone DateTime picker using right-side calendar trigger buttons and hidden native picker indicators.
+- Why: Keeps date/time interactions consistent with Add Missed Time and standardizes future picker rollout while preserving existing edit-save validation and overlap checks.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors, verified Edit Times inputs now use custom trigger buttons for picker launch, and verified Add Missed Time remains pay-period bounded while Edit Times picker launch remains unbounded.
+
+- Summary: Hardened DateTime picker reuse by normalizing host open options and adding explicit picker API contract comments for future call-site consistency.
+- Why: Supports seamless rollout across all date/time entry points by accepting common option aliases (`use24Hour`, `timeMode`, scale aliases) while keeping behavior deterministic.
+- Files: src/UserInterface.js, src/DateTimePickerModal.html
+- Validation: Confirmed diagnostics report no file errors and verified `openDateTimePickerModal(...)` now normalizes option aliases before each launch while picker-side `applyOptions(...)` recognizes `timeMode` and `use24Hour` consistently.
+
+- Summary: Optimized DateTime picker host loading by caching picker HTML after first fetch and reusing a warm iframe between opens, while preserving fresh per-open option application.
+- Why: Reduces repeated server round trips and iframe reparse cost for faster back-to-back picker launches during admin Add Missed Time workflows without risking stale default/range data.
+- Files: src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors, verified host now performs a single lazy picker HTML fetch per page session, verified close no longer tears down picker iframe content, and verified each `openDateTimePickerModal(options)` call still applies a fresh options object before opening.
+
+- Summary: Rewired only the Add Missed Time clock-in/clock-out calendar triggers in timeline Admin to open the new standalone DateTime picker modal through the parent iframe host bridge.
+- Why: Enables incremental migration in one controlled location while preserving existing Add Missed Time validation, submission flow, and data contract behavior.
+- Files: src/AdminModalHTML.html, src/UserInterface.js
+- Validation: Confirmed diagnostics report no file errors, verified new Admin host bridge exposes `openDateTimePickerModal(options)`, and verified clicking the new calendar trigger buttons beside Add Missed Time fields opens the standalone picker and writes confirmed selections back into existing `datetime-local` inputs.
+
+- Summary: Started DateTime picker Phase 1 production wiring by adding a dedicated picker HTML payload, server endpoint, and parent iframe modal bridge in the main UI without replacing existing call sites.
+- Why: Establishes the Schedule/Admin-style host architecture for incremental rollout so current flows remain stable while the new picker contract is integrated.
+- Files: src/DateTimePickerModal.html, src/Code.js, src/UserInterface.js
+- Validation: Confirmed diagnostics report no errors for touched files, verified `getDateTimePickerDialogHtml(preferredThemeMode)` serves themed HTML, and verified host bridge functions (`openDateTimePickerModal`, `closeDateTimePickerModal`, `buildDateTimePickerFrameHtml`) load the child picker API and resolve/cancel promise results.
+
+- Summary: Reworked Calendar V3 into a compact modal-style click/tap picker with side-by-side desktop layout, stacked mobile layout, and a top selected datetime display.
+- Why: Aligns the V3 direction to a production-ready small modal picker concept that can be called with allowed date range and default datetime inputs and return a datetime string output.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed the mock exposes a callable API (`window.CalendarCompactPicker.open(options)`), enforces min/max allowed date selection in calendar interactions, supports click/tap-only date and time picking (including 12h/24h toggle), and resolves selected value as `YYYY-MM-DD HH:MM:00` on confirmation.
+
+- Summary: Refined Calendar V3 clock flow so tapping an hour automatically advances to minute selection on the same clock face and removed the separate minute button grid below the clock.
+- Why: Keeps the picker compact and reduces extra UI controls while making hour-to-minute selection faster on touch devices.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed hour taps switch the active selection state to minute mode immediately and minute selection continues on the radial clock without the lower minute grid.
+
+- Summary: Added an AM/PM toggle beside the minute box in Calendar V3 for 12-hour mode period selection.
+- Why: Makes period changes explicit and fast in compact touch flow without reopening or reselecting hour values.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed AM/PM controls appear next to the minute box in 12h mode, hide in 24h mode, and correctly shift selected time between AM and PM while preserving hour/minute value.
+
+- Summary: Corrected Calendar V3 24-hour clock layout so hour labels render in proper centered inner/outer rings with improved sizing and radial alignment.
+- Why: Fixes off-center and undersized 24h labels while keeping the compact clock interaction usable and visually balanced.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed 24h labels now map to a two-ring geometry (0-11 outer, 12-23 inner), hand alignment follows hour angle correctly, and 12h mode behavior remains unchanged.
+
+- Summary: Fixed Calendar V3 clock-face render timing so 24h labels are positioned only after modal layout is visible and sized.
+- Why: Prevents collapsed/off-corner number placement caused by computing radial coordinates while the hidden modal reports near-zero clock width.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed open flow now defers number layout until after modal open paint and radial labels render centered on the clock face in 24h mode.
+
+- Summary: Updated Calendar V3 interaction polish so 24h hand length targets inner or outer ring based on selected hour, and added hover highlights with live hand preview for clock/calendar options.
+- Why: Improves 24h ring clarity and gives immediate visual feedback while hovering candidate selections before click/tap commit.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed in 24h hour mode the hand shortens for inner-ring hours (12-23) and extends for outer-ring hours (0-11), calendar/clock items show hover highlighting, and hovering clock values dynamically previews hand angle/length.
+
+- Summary: Added a theme-and-scale integration prewire pass to Calendar V3 so the compact modal can adopt main-app light/dark mode tokens and dynamic UI scale signals when embedded.
+- Why: Reduces migration effort when moving the mockup into production by aligning with existing `data-theme` and `timecard-ui-scale-change` patterns used by current modals.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed the mock exposes `applyThemeMode` and `applyScalePercent`, accepts `themeMode` and scale options in `open(...)`, reads parent theme/font-scale fallbacks, listens for host scale/theme events, and reflows clock geometry after scale changes.
+
+- Summary: Added an in-file production integration blueprint to Calendar V3 describing the extraction path to `DateTimePickerModal.html` and host bridge contracts.
+- Why: Captures the exact API and wiring plan in the mockup so migration into Code.js/UserInterface.js follows existing Schedule/Admin modal patterns with less ambiguity.
+- Files: mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Confirmed comments now define endpoint naming, frame host function expectations, open options shape, result contract, and theme/scale bridge event expectations.
+
+- Summary: Added three standalone calendar replacement mockups covering vertical time scroll, snap time reel, and clock-based picking with 12h/24h mode toggle, all linked from the mockup index.
+- Why: Creates focused alternatives for replacing the current admin/calendar picker experience while preserving keyboard-first workflows and touch/mouse parity before production integration.
+- Files: mockups/index.html, mockups/option-calendar-v1-date-plus-time-scroll.html, mockups/option-calendar-v2-date-time-reel.html, mockups/option-calendar-v3-date-plus-clock-toggle.html
+- Validation: Verified each mockup runs as standalone HTML, supports typed entry with tab flow, supports wheel/swipe interactions for time selection, enforces min/max date restrictions by disabling out-of-range days and blocking out-of-range typed values, and is reachable from the mockup index.
+
+- Summary: Removed inline note-save flashing in timeline Admin so save feedback relies on status messaging instead of pending pulse visuals.
+- Why: Reduces visual distraction during frequent note updates while preserving clear save-state communication.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified inline note saves still apply optimistically with status updates and rollback on failure.
+
+- Summary: Removed the timeline helper legend footer text and adjusted content top padding so the first employee/email row sits flush under the header divider.
+- Why: Reduces visual noise and reclaims vertical space while improving alignment with the top divider.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors after removing legend markup/styles and tightening content spacing.
+
+- Summary: Ran a compact top-chrome pass on timeline Admin by reducing header/title/control sizing and converting toolbar/switch rows to horizontal scroll strips to reclaim vertical space.
+- Why: Increases default visible rows within the modal without changing feature behavior.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified all header controls remain available while taking less vertical space.
+
+- Summary: Updated timeline Admin V3 notes to use true optimistic inline saving (note appears instantly, sync runs in background, rollback on failure) and removed fixed-height content capping so the view fills modal height.
+- Why: Improves perceived responsiveness for note entry and fixes wasted vertical space inside the admin modal.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified inline notes render immediately, save via Enter/Save, and revert on server failure.
+
+- Summary: Promoted the V3 inline note workflow into the live timeline Admin notes panel so plus opens an in-grid typable note tile with Save/Cancel and keyboard controls.
+- Why: Lets admins add notes directly in context without leaving the day notes surface while keeping timeline-dot edit modal behavior intact.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified inline composer supports Enter to save, Shift+Enter for line breaks, and Escape to cancel.
+
+- Summary: Updated the V3 inline note composer keyboard behavior so Enter saves the note in-place (with Shift+Enter reserved for line breaks).
+- Why: Makes inline note entry faster and matches expected quick-add behavior during admin review.
+- Files: mockups/option-notes-v3-hybrid-grid.html
+- Validation: Confirmed Enter saves, Save button still works, and Escape still cancels the inline composer.
+
+- Summary: Iterated V3 notes mockup with inline note composition so plus opens an in-place typable note tile (save/cancel) instead of modal-style behavior.
+- Why: Supports faster UX iteration for day-level note entry directly inside the contained notes grid before applying production Admin UI changes.
+- Files: mockups/option-notes-v3-hybrid-grid.html
+- Validation: Confirmed inline composer opens from per-note plus buttons, supports Save/Cancel and keyboard shortcuts (Ctrl/Cmd+Enter, Esc), and inserts saved notes back into the same grid style.
+
+- Summary: Applied the selected V3 notes containment style to timeline Admin: one large day-level notes box using a compact responsive grid so shorter notes share rows when space allows.
+- Why: Increases information density while keeping a clean daily notes surface and preserving per-note plus actions.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors after replacing row-stack notes rendering with hybrid-grid tile rendering.
+
+- Summary: Added three focused note-containment mockups to evaluate denser day-level note grouping before further production UI changes.
+- Why: Speeds iteration by comparing layout density options side-by-side (single stream, wrapped shared rows, and hybrid grid) for the new Admin timeline notes surface.
+- Files: mockups/option-notes-v1-single-stream.html, mockups/option-notes-v2-wrap-rows.html, mockups/option-notes-v3-hybrid-grid.html, mockups/index.html
+- Validation: Confirmed files render as standalone HTML mockups and linked all variants from the mockup index for one-click review.
+
+- Summary: Unified timeline Admin day notes into a single cross-entry notes list so note rows are grouped by day instead of by underlying sheet entry, with one plus action rendered per note row.
+- Why: Matches admin workflow expectations where daily notes matter more than internal entry boundaries.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified plus actions still route through existing add-note flow.
+
+- Summary: Reworked timeline Admin day detail cards into a single grouped notes panel per day, removing duplicated time/hour text and removing pencil actions so timeline dots remain the edit entrypoint while plus buttons continue to add notes.
+- Why: Tightens visual hierarchy and matches intended interaction model (timeline for edits, notes panel for note management).
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified add-note buttons still open the edit modal focused on note input.
+
+- Summary: Corrected timeline Admin user-row sticky behavior by removing overflow clipping on employee sections so each user header stays pinned until the next user section reaches the top.
+- Why: Restores legacy-style sticky grouping behavior for easier scanning in long admin lists.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors after the CSS adjustment.
+
+- Summary: Updated the timeline Admin modal to match legacy control details by making employee headers sticky, converting filter options to legacy-style switch tracks, and using icon-style row actions including a dedicated add-note affordance.
+- Why: Improves visual/interaction parity so old vs new Admin testing focuses on behavior differences instead of control styling inconsistencies.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified new controls still route through existing edit/add-note flows.
+
+- Summary: Flattened the new AdminModalHTML container so it renders full-bleed inside the parent iframe modal and removed the duplicate in-frame close button.
+- Why: Prevents the new Admin timeline UI from appearing as a second nested modal during testing.
+- Files: src/AdminModalHTML.html
+- Validation: Confirmed diagnostics report no file errors and verified layout now uses the parent modal as the sole shell.
+
+- Summary: Completed the first full AdminModalHTML implementation pass by replacing the scaffold with a live B2.1-style timeline admin app, wiring real admin mutations (verify/edit/delete/restore/note/manual add), and adding a persistent test-mode toggle to switch between legacy and timeline Admin UIs.
+- Why: Enables side-by-side migration testing with safe rollback while exercising real server contracts from the new dedicated Admin HTML surface.
+- Files: src/AdminModalHTML.html, src/UserInterface.js, src/Code.js
+- Validation: Confirmed diagnostics report no errors, verified new iframe host bridge provides context and legacy handoff hooks, and ensured Admin View routing now honors persisted mode (`legacy` vs `timeline`) for repeatable testing.
+
+- Summary: Started AdminModalHTML migration by adding a dedicated server HTML endpoint, parent iframe modal/bridge wiring, guarded rollout switch routing from Admin View, and an initial AdminModalHTML scaffold that loads and groups admin entries.
+- Why: Establishes the new ScheduleHTML-style architecture for Admin UI while preserving the legacy Admin modal path for phased rollout and safe fallback.
+- Files: src/Code.js, src/UserInterface.js, src/AdminModalHTML.html
+- Validation: Confirmed endpoint/theme injection path compiles conceptually against existing modal patterns, retained legacy show/hide admin behavior behind `USE_ADMIN_MODAL_HTML`, and scaffolded child UI to load `getAllEntriesForAdminView(...)` through iframe bridge hooks.
+
 - Summary: Expanded B2.1 implementation comments for Add Missed Time with explicit server hook routing, optimistic reconcile/rollback flow, and a custom picker module plan that avoids reusing the current calendar picker stack.
 - Why: Prepares the mockup as an implementation-ready spec for a dedicated Admin HTML modal with fast, reliable data flow and clear ownership of missed-time validation/submission behavior.
 - Files: mockups/option-b2-1-day-timeline.html

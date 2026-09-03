@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes Containment V2 - Wrap Rows</title>
+  <style>
+    :root {
+      --bg: #172235;
+      --panel: #25354d;
+      --line: #4b6383;
+      --ink: #dce8fa;
+      --muted: #9ab0cf;
+      --chip: #2f425f;
+      --chip-line: #5a7395;
+      --add-bg: #2f5868;
+      --add-line: #6494b0;
+      --add-ink: #e7f8ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #152132 0%, #1a2a3f 55%, #14233a 100%);
+      color: var(--ink);
+    }
+
+    .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 14px; }
+
+    .head {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+
+    h1 { margin: 0; font-size: 1.2rem; }
+    .sub { margin: 5px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+    .notes-box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .note-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(125, 154, 189, 0.35);
+    }
+
+    .note-row:last-child { border-bottom: 0; }
+
+    .note-chip {
+      border: 1px solid var(--chip-line);
+      background: var(--chip);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+      line-height: 1.2;
+      max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .note-row.dense .note-chip {
+      flex: 0 1 auto;
+      max-width: 360px;
+    }
+
+    .add-btn {
+      width: 1.65rem;
+      height: 1.65rem;
+      border-radius: 999px;
+      border: 1px solid var(--add-line);
+      background: var(--add-bg);
+      color: var(--add-ink);
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .foot {
+      color: var(--muted);
+      font-size: 0.82rem;
+      padding-left: 2px;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="head">
+      <h1>V2: Wrap Rows</h1>
+      <p class="sub">One large day box. Short notes share the same row and wrap fluidly.</p>
+    </section>
+
+    <section class="notes-box" aria-label="Day notes wrap rows">
+      <div class="note-row dense">
+        <span class="note-chip">Verified by sam at 13:30 09/01/2026</span><button class="add-btn" type="button">+</button>
+        <span class="note-chip">Time edited by sam at 16:43 09/01/2026</span><button class="add-btn" type="button">+</button>
+      </div>
+      <div class="note-row dense">
+        <span class="note-chip">Customer changed lunch timing due to field call.</span><button class="add-btn" type="button">+</button>
+        <span class="note-chip">Truck return delayed 18 minutes.</span><button class="add-btn" type="button">+</button>
+      </div>
+      <div class="note-row dense">
+        <span class="note-chip">No notes</span><button class="add-btn" type="button">+</button>
+      </div>
+    </section>
+
+    <div class="foot">Density profile: highest compactness, best use of horizontal space for short notes.</div>
+  </main>
+</body>
+</html>

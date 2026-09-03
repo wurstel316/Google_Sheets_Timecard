@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Date Time Picker Modal</title>
+  <style>
+    :root {
+      --picker-scale: 1;
+      --bg: var(--tc-page-bg, #131821);
+      --panel: var(--tc-modal-bg, #262b35);
+      --panel-2: var(--tc-surface-muted, #2f3542);
+      --line: var(--tc-border, #525d71);
+      --ink: var(--tc-text, #ecf2ff);
+      --muted: var(--tc-text-muted, #b8c4db);
+      --accent: var(--tc-primary, #4a8dff);
+      --accent-soft: rgba(74, 141, 255, 0.2);
+      --bad: var(--tc-danger, #ff9db2);
+    }
+
+    :root[data-theme="light"] {
+      --bg: var(--tc-page-bg, #edf3fb);
+      --panel: var(--tc-modal-bg, #f8fbff);
+      --panel-2: var(--tc-surface-muted, #ffffff);
+      --line: var(--tc-border, #c7d4e4);
+      --ink: var(--tc-text, #1b2b42);
+      --muted: var(--tc-text-muted, #52667f);
+      --accent: var(--tc-primary, #2e6fd6);
+      --accent-soft: rgba(46, 111, 214, 0.16);
+      --bad: var(--tc-danger, #b3213b);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      padding: 8px;
+    }
+
+    .picker-shell {
+      width: 100%;
+      min-height: calc(100vh - 16px);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .modal-head {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 80%, #30394a 20%);
+      display: grid;
+      gap: 8px;
+    }
+
+    .head-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .selected {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-2) 88%, var(--accent) 12%);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--ink);
+      min-width: 240px;
+    }
+
+    .mode {
+      display: inline-flex;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px;
+      background: var(--panel-2);
+    }
+
+    .mode button {
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .mode button.active {
+      background: var(--accent);
+      color: #f7fbff;
+    }
+
+    .status {
+      min-height: 18px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .status.error { color: var(--bad); }
+
+    .picker-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 10px;
+      align-items: start;
+      overflow: auto;
+    }
+
+    .pane {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel-2);
+      padding: 10px;
+    }
+
+    .month-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .month-title {
+      font-size: 0.93rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--ink);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .icon-btn:hover {
+      background: color-mix(in srgb, var(--panel-2) 72%, var(--accent) 28%);
+    }
+
+    .dow,
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+
+    .dow div {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 4px 0;
+    }
+
+    .day-btn {
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--panel-2);
+      color: var(--ink);
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .day-btn.disabled {
+      opacity: 0.32;
+      text-decoration: line-through;
+      cursor: not-allowed;
+    }
+
+    .day-btn.active {
+      border-color: color-mix(in srgb, var(--accent) 70%, #ffffff 30%);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .day-btn:not(.disabled):hover {
+      border-color: color-mix(in srgb, var(--accent) 62%, #ffffff 38%);
+      background: color-mix(in srgb, var(--panel-2) 72%, var(--accent) 28%);
+    }
+
+    .time-readout {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .ampm {
+      display: inline-flex;
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 2px;
+      background: var(--panel-2);
+    }
+
+    .ampm button {
+      border: 0;
+      min-width: 38px;
+      min-height: 30px;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .ampm button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .ampm.hidden {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .time-box {
+      min-width: 66px;
+      text-align: center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      font-size: 1.95rem;
+      line-height: 1;
+      font-weight: 800;
+      color: var(--ink);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .time-box.active {
+      background: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 72%, #ffffff 28%);
+      color: #fff;
+    }
+
+    .colon {
+      font-size: 2.2rem;
+      color: var(--ink);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .clock {
+      width: min(calc(280px * var(--picker-scale)), 100%);
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel) 72%, #1f2733 28%);
+      position: relative;
+      touch-action: none;
+    }
+
+    .hand {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 2px;
+      height: 38%;
+      transform-origin: 50% 100%;
+      background: var(--accent);
+      transform: translate(-50%, -100%) rotate(0deg);
+      z-index: 2;
+    }
+
+    .hand::after {
+      content: "";
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: translateX(-50%);
+    }
+
+    .center-dot {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      transform: translate(-50%, -50%);
+      z-index: 3;
+    }
+
+    .clock-num {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font-size: 0.62rem;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 999px;
+      min-width: 30px;
+      min-height: 30px;
+      line-height: 30px;
+      text-align: center;
+      padding: 0;
+      z-index: 4;
+    }
+
+    .clock-num.ring-outer {
+      font-size: 0.74rem;
+      min-width: 34px;
+      min-height: 34px;
+      line-height: 34px;
+    }
+
+    .clock-num.ring-inner {
+      font-size: 0.72rem;
+      min-width: 32px;
+      min-height: 32px;
+      line-height: 32px;
+    }
+
+    .clock-num.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 52%, #ffffff 48%) inset;
+    }
+
+    .clock-num:hover {
+      background: var(--accent-soft);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 54%, #ffffff 46%) inset;
+    }
+
+    .modal-foot {
+      padding: 10px;
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: var(--panel-2);
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: color-mix(in srgb, var(--panel-2) 78%, var(--accent) 22%);
+      color: var(--ink);
+      border-radius: 9px;
+      padding: 7px 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      border-color: color-mix(in srgb, var(--accent) 72%, #ffffff 28%);
+      background: var(--accent);
+      color: #f7fbff;
+    }
+
+    @media (max-width: 800px) {
+      .picker-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .clock {
+        width: min(calc(260px * var(--picker-scale)), 88vw);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="picker-shell" aria-label="Date time picker">
+    <header class="modal-head">
+      <div class="head-top">
+        <div class="selected" id="selectedDisplay">-</div>
+        <div class="mode" aria-label="Time format">
+          <button id="mode12Btn" type="button" class="active">12h</button>
+          <button id="mode24Btn" type="button">24h</button>
+        </div>
+      </div>
+      <div class="status" id="status"></div>
+    </header>
+
+    <div class="picker-grid">
+      <section class="pane" aria-label="Calendar">
+        <div class="month-bar">
+          <button id="prevMonthBtn" class="icon-btn" type="button" aria-label="Previous month">&#9664;</button>
+          <div class="month-title" id="monthTitle"></div>
+          <button id="nextMonthBtn" class="icon-btn" type="button" aria-label="Next month">&#9654;</button>
+        </div>
+        <div class="dow" aria-hidden="true">
+          <div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div><div>S</div>
+        </div>
+        <div class="days" id="days"></div>
+      </section>
+
+      <section class="pane" aria-label="Clock picker">
+        <div class="time-readout">
+          <button id="hourBox" class="time-box active" type="button">10</button>
+          <div class="colon">:</div>
+          <button id="minuteBox" class="time-box" type="button">30</button>
+          <div class="ampm" id="ampmWrap" aria-label="AM PM toggle">
+            <button id="amBtn" type="button" class="active">AM</button>
+            <button id="pmBtn" type="button">PM</button>
+          </div>
+        </div>
+        <div class="clock" id="clockArea">
+          <div class="hand" id="clockHand"></div>
+          <div class="center-dot" aria-hidden="true"></div>
+        </div>
+      </section>
+    </div>
+
+    <footer class="modal-foot">
+      <button id="cancelBtn" class="btn" type="button">Cancel</button>
+      <button id="okBtn" class="btn primary" type="button">Use Date Time</button>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const state = {
+        selectionMode: 'hour',
+        timeMode: '12h',
+        currentThemeMode: '',
+        currentScalePercent: 100,
+        viewYear: 0,
+        viewMonth: 0,
+        selectedDate: new Date(),
+        hour24: 10,
+        minute: 30,
+        minDate: null,
+        maxDate: null,
+        hoverTarget: null,
+        resolver: null,
+        rejecter: null
+      };
+
+      const el = {
+        selectedDisplay: document.getElementById('selectedDisplay'),
+        status: document.getElementById('status'),
+        mode12Btn: document.getElementById('mode12Btn'),
+        mode24Btn: document.getElementById('mode24Btn'),
+        monthTitle: document.getElementById('monthTitle'),
+        days: document.getElementById('days'),
+        prevMonthBtn: document.getElementById('prevMonthBtn'),
+        nextMonthBtn: document.getElementById('nextMonthBtn'),
+        hourBox: document.getElementById('hourBox'),
+        minuteBox: document.getElementById('minuteBox'),
+        ampmWrap: document.getElementById('ampmWrap'),
+        amBtn: document.getElementById('amBtn'),
+        pmBtn: document.getElementById('pmBtn'),
+        clockArea: document.getElementById('clockArea'),
+        clockHand: document.getElementById('clockHand'),
+        cancelBtn: document.getElementById('cancelBtn'),
+        okBtn: document.getElementById('okBtn')
+      };
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+
+      function normalizeThemeMode(value) {
+        const normalized = String(value || '').trim().toLowerCase();
+        return normalized === 'light' || normalized === 'dark' ? normalized : '';
+      }
+
+      function applyThemeMode(mode) {
+        const resolved = normalizeThemeMode(mode) || 'dark';
+        state.currentThemeMode = resolved;
+        document.documentElement.setAttribute('data-theme', resolved);
+        return resolved;
+      }
+
+      function clampScalePercent(value) {
+        const numeric = Number(value);
+        if (!isFinite(numeric)) return 100;
+        return Math.min(155, Math.max(85, Math.round(numeric)));
+      }
+
+      function applyScalePercent(value) {
+        const percent = clampScalePercent(value);
+        state.currentScalePercent = percent;
+        document.documentElement.style.setProperty('--picker-scale', (percent / 100).toFixed(3));
+        requestAnimationFrame(function () {
+          updateHandAndNumbers();
+        });
+        return percent;
+      }
+
+      function toDayStart(d) {
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      }
+
+      function parseDateKey(raw) {
+        const match = String(raw || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return null;
+        const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        if (Number.isNaN(d.getTime())) return null;
+        if (d.getFullYear() !== Number(match[1]) || d.getMonth() !== Number(match[2]) - 1 || d.getDate() !== Number(match[3])) return null;
+        return d;
+      }
+
+      function parseDateTime(raw) {
+        const text = String(raw || '').trim();
+        const match = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::\d{2})?$/);
+        if (!match) return null;
+        const d = new Date(
+          Number(match[1]),
+          Number(match[2]) - 1,
+          Number(match[3]),
+          Number(match[4]),
+          Number(match[5]),
+          0,
+          0
+        );
+        if (Number.isNaN(d.getTime())) return null;
+        return d;
+      }
+
+      function dateKey(d) {
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+      }
+
+      function inRange(day) {
+        const ms = toDayStart(day).getTime();
+        if (state.minDate && ms < state.minDate.getTime()) return false;
+        if (state.maxDate && ms > state.maxDate.getTime()) return false;
+        return true;
+      }
+
+      function formatHourForDisplay() {
+        if (state.timeMode === '24h') return pad(state.hour24);
+        const h = state.hour24 % 12 || 12;
+        return String(h);
+      }
+
+      function formatDateTimeString() {
+        return dateKey(state.selectedDate) + ' ' + pad(state.hour24) + ':' + pad(state.minute) + ':00';
+      }
+
+      function renderSelectedDisplay() {
+        const suffix = state.timeMode === '12h' ? (state.hour24 >= 12 ? ' PM' : ' AM') : '';
+        el.selectedDisplay.textContent = dateKey(state.selectedDate) + ' ' + pad(state.hour24) + ':' + pad(state.minute) + suffix;
+        el.hourBox.textContent = formatHourForDisplay();
+        el.minuteBox.textContent = pad(state.minute);
+        el.hourBox.classList.toggle('active', state.selectionMode === 'hour');
+        el.minuteBox.classList.toggle('active', state.selectionMode === 'minute');
+        const is12h = state.timeMode === '12h';
+        el.ampmWrap.classList.toggle('hidden', !is12h);
+        const isPm = state.hour24 >= 12;
+        el.amBtn.classList.toggle('active', is12h && !isPm);
+        el.pmBtn.classList.toggle('active', is12h && isPm);
+      }
+
+      function setPeriod(period) {
+        const isPm = state.hour24 >= 12;
+        if (period === 'AM' && isPm) {
+          state.hour24 -= 12;
+        } else if (period === 'PM' && !isPm) {
+          state.hour24 += 12;
+        }
+        renderSelectedDisplay();
+        updateHandAndNumbers();
+      }
+
+      function setStatus(message, isError) {
+        el.status.textContent = message;
+        el.status.classList.toggle('error', !!isError);
+      }
+
+      function renderCalendar() {
+        const first = new Date(state.viewYear, state.viewMonth, 1);
+        el.monthTitle.textContent = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+        el.days.innerHTML = '';
+        const start = (first.getDay() + 6) % 7;
+        const count = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
+
+        for (let i = 0; i < start; i++) {
+          const spacer = document.createElement('div');
+          el.days.appendChild(spacer);
+        }
+
+        for (let day = 1; day <= count; day++) {
+          const d = new Date(state.viewYear, state.viewMonth, day);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'day-btn';
+          btn.textContent = String(day);
+
+          const allowed = inRange(d);
+          if (!allowed) {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+          }
+
+          if (dateKey(d) === dateKey(state.selectedDate)) {
+            btn.classList.add('active');
+          }
+
+          btn.addEventListener('click', function () {
+            if (!allowed) {
+              setStatus('Date blocked by allowed range.', true);
+              return;
+            }
+            state.selectedDate = d;
+            renderCalendar();
+            renderSelectedDisplay();
+            setStatus('', false);
+          });
+
+          el.days.appendChild(btn);
+        }
+      }
+
+      function getHourCandidates() {
+        if (state.timeMode === '24h') return Array.from({ length: 24 }, function (_, i) { return i; });
+        return [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+      }
+
+      function mapDisplayed12hTo24(displayHour) {
+        const isPm = state.hour24 >= 12;
+        if (displayHour === 12) return isPm ? 12 : 0;
+        return isPm ? displayHour + 12 : displayHour;
+      }
+
+      function updateClockHandVisual() {
+        const width = el.clockArea.clientWidth;
+        if (!width || width < 120) return;
+
+        const preview = state.hoverTarget;
+        let angleDeg = 0;
+        let handHeight = Math.round(width * 0.41);
+
+        if (state.selectionMode === 'minute') {
+          const minuteValue = preview && preview.type === 'minute' ? preview.minute : state.minute;
+          const minuteStep = Math.round(minuteValue / 5) % 12;
+          angleDeg = (minuteStep / 12) * 360;
+          handHeight = Math.round(width * 0.41);
+        } else if (state.timeMode === '24h') {
+          const hourValue = preview && preview.type === 'hour' ? preview.hour24 : state.hour24;
+          angleDeg = ((hourValue % 12) / 12) * 360;
+          handHeight = Math.round(width * (hourValue >= 12 ? 0.24 : 0.41));
+        } else {
+          const hourValue = preview && preview.type === 'hour' ? preview.hour24 : state.hour24;
+          const display = hourValue % 12 || 12;
+          const steps = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+          const stepIndex = steps.indexOf(display);
+          angleDeg = (stepIndex / 12) * 360;
+          handHeight = Math.round(width * 0.41);
+        }
+
+        el.clockHand.style.height = handHeight + 'px';
+        el.clockHand.style.transform = 'translate(-50%, -100%) rotate(' + angleDeg + 'deg)';
+      }
+
+      function updateHandAndNumbers() {
+        state.hoverTarget = null;
+        const existing = el.clockArea.querySelectorAll('.clock-num');
+        existing.forEach(function (node) { node.remove(); });
+
+        const width = el.clockArea.clientWidth;
+        if (!width || width < 120) return;
+        const center = width / 2;
+        const is24HourRing = state.selectionMode === 'hour' && state.timeMode === '24h';
+        const labels = state.selectionMode === 'hour' ? getHourCandidates() : Array.from({ length: 12 }, function (_, i) { return i * 5; });
+
+        labels.forEach(function (value, idx) {
+          const total = is24HourRing ? 12 : labels.length;
+          const angleIndex = is24HourRing ? value % 12 : idx;
+          const angle = (angleIndex / total) * Math.PI * 2 - Math.PI / 2;
+          let radius = center - 28;
+          if (is24HourRing) {
+            const outer = center * 0.82;
+            const inner = center * 0.48;
+            radius = value >= 12 ? inner : outer;
+          }
+          const x = center + radius * Math.cos(angle);
+          const y = center + radius * Math.sin(angle);
+
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'clock-num';
+          if (is24HourRing) {
+            btn.classList.add(value >= 12 ? 'ring-inner' : 'ring-outer');
+          }
+          btn.style.left = x + 'px';
+          btn.style.top = y + 'px';
+          btn.textContent = is24HourRing ? String(value) : pad(value);
+
+          let active = false;
+          if (state.selectionMode === 'hour') {
+            const actual = state.timeMode === '24h' ? value : mapDisplayed12hTo24(value);
+            active = actual === state.hour24;
+            btn.addEventListener('mouseenter', function () {
+              state.hoverTarget = { type: 'hour', hour24: actual };
+              updateClockHandVisual();
+            });
+            btn.addEventListener('mouseleave', function () {
+              state.hoverTarget = null;
+              updateClockHandVisual();
+            });
+            btn.addEventListener('click', function () {
+              state.hour24 = actual;
+              state.selectionMode = 'minute';
+              renderSelectedDisplay();
+              updateHandAndNumbers();
+            });
+          } else {
+            active = value === state.minute;
+            btn.addEventListener('mouseenter', function () {
+              state.hoverTarget = { type: 'minute', minute: value };
+              updateClockHandVisual();
+            });
+            btn.addEventListener('mouseleave', function () {
+              state.hoverTarget = null;
+              updateClockHandVisual();
+            });
+            btn.addEventListener('click', function () {
+              state.minute = value;
+              renderSelectedDisplay();
+              updateHandAndNumbers();
+            });
+          }
+
+          if (active) btn.classList.add('active');
+          el.clockArea.appendChild(btn);
+        });
+
+        updateClockHandVisual();
+      }
+
+      function redrawPicker() {
+        renderCalendar();
+        renderSelectedDisplay();
+        updateHandAndNumbers();
+      }
+
+      function closePickerWithValue(value, shouldReject) {
+        const resolve = state.resolver;
+        const reject = state.rejecter;
+        state.resolver = null;
+        state.rejecter = null;
+        if (resolve) resolve(value);
+        if (shouldReject === true && reject) reject(new Error('Picker cancelled'));
+      }
+
+      function readParentThemeMode() {
+        try {
+          const p = window.parent;
+          if (!p || p === window || !p.document || !p.document.documentElement) return '';
+          return normalizeThemeMode(p.document.documentElement.getAttribute('data-theme'));
+        } catch (_e) {
+          return '';
+        }
+      }
+
+      function readParentScalePercent() {
+        try {
+          const p = window.parent;
+          if (!p || p === window || !p.document || !p.document.documentElement || !p.getComputedStyle) return NaN;
+          const rootFont = parseFloat(p.getComputedStyle(p.document.documentElement).fontSize);
+          if (!isFinite(rootFont) || rootFont <= 0) return NaN;
+          return (rootFont / 16) * 100;
+        } catch (_e) {
+          return NaN;
+        }
+      }
+
+      function bindHostPresentationEvents() {
+        try {
+          const p = window.parent;
+          if (!p || p === window || !p.addEventListener) return;
+
+          p.addEventListener('timecard-ui-scale-change', function (event) {
+            const percent = event && event.detail ? event.detail.percent : NaN;
+            if (isFinite(Number(percent))) {
+              applyScalePercent(percent);
+            }
+          });
+
+          p.addEventListener('timecard-theme-mode-change', function (event) {
+            const mode = event && event.detail ? event.detail.mode : '';
+            const resolved = normalizeThemeMode(mode);
+            if (resolved) {
+              applyThemeMode(resolved);
+            }
+          });
+        } catch (_e) {
+          return;
+        }
+      }
+
+      function applyOptions(options) {
+        const opts = options || {};
+        const requestedTheme = normalizeThemeMode(opts.themeMode) || normalizeThemeMode(opts.theme) || normalizeThemeMode(document.documentElement.getAttribute('data-theme')) || readParentThemeMode() || 'dark';
+        const requestedScale = Number(opts.scalePercent);
+        const requestedPickerScale = Number(opts.pickerScalePercent);
+        const requestedUiScale = Number(opts.uiScalePercent);
+        const fallbackScale = readParentScalePercent();
+        const resolvedScale =
+          isFinite(requestedScale) ? requestedScale :
+          isFinite(requestedPickerScale) ? requestedPickerScale :
+          isFinite(requestedUiScale) ? requestedUiScale :
+          (isFinite(fallbackScale) ? fallbackScale : 100);
+
+        applyThemeMode(requestedTheme);
+        applyScalePercent(resolvedScale);
+
+        const now = new Date();
+        const min = parseDateKey(opts.minDate);
+        const max = parseDateKey(opts.maxDate);
+        const defaultDt = parseDateTime(opts.defaultDateTime);
+
+        state.minDate = min ? toDayStart(min) : null;
+        state.maxDate = max ? toDayStart(max) : null;
+        if (state.minDate && state.maxDate && state.minDate.getTime() > state.maxDate.getTime()) {
+          const swap = state.minDate;
+          state.minDate = state.maxDate;
+          state.maxDate = swap;
+        }
+
+        const selected = defaultDt || now;
+        state.selectedDate = toDayStart(selected);
+        state.hour24 = selected.getHours();
+        state.minute = selected.getMinutes() - (selected.getMinutes() % 5);
+        const requestedTimeMode = String(opts.timeMode || '').trim().toLowerCase();
+        const use24Hour = opts.use24Hour === true;
+        state.timeMode = (requestedTimeMode === '24h' || requestedTimeMode === '24' || use24Hour) ? '24h' : '12h';
+        state.selectionMode = 'hour';
+
+        if (!inRange(state.selectedDate)) {
+          if (state.minDate) state.selectedDate = new Date(state.minDate);
+          if (state.maxDate && state.selectedDate.getTime() > state.maxDate.getTime()) state.selectedDate = new Date(state.maxDate);
+          setStatus('Default date was outside range; clamped to allowed date.', true);
+        } else {
+          setStatus('', false);
+        }
+
+        state.viewYear = state.selectedDate.getFullYear();
+        state.viewMonth = state.selectedDate.getMonth();
+        el.mode12Btn.classList.toggle('active', state.timeMode === '12h');
+        el.mode24Btn.classList.toggle('active', state.timeMode === '24h');
+      }
+
+      function openCompactPicker(options) {
+        if (state.resolver) {
+          closePickerWithValue(null, false);
+        }
+
+        applyOptions(options || {});
+        requestAnimationFrame(function () {
+          redrawPicker();
+          requestAnimationFrame(function () {
+            updateHandAndNumbers();
+          });
+        });
+
+        return new Promise(function (resolve, reject) {
+          state.resolver = resolve;
+          state.rejecter = reject;
+        });
+      }
+
+      // Public API contract for host callers:
+      // open(options): Promise<string|null>
+      // options:
+      // - defaultDateTime: 'YYYY-MM-DD HH:MM:SS' | ISO-like parseable string
+      // - minDate/maxDate: 'YYYY-MM-DD'
+      // - timeMode: '12h' | '24h' (alias: use24Hour: boolean)
+      // - themeMode/theme: 'light' | 'dark'
+      // - uiScalePercent (aliases: pickerScalePercent, scalePercent)
+      window.CalendarCompactPicker = {
+        open: openCompactPicker,
+        applyThemeMode: applyThemeMode,
+        applyScalePercent: applyScalePercent
+      };
+
+      el.prevMonthBtn.addEventListener('click', function () {
+        state.viewMonth -= 1;
+        if (state.viewMonth < 0) {
+          state.viewMonth = 11;
+          state.viewYear -= 1;
+        }
+        renderCalendar();
+      });
+
+      el.nextMonthBtn.addEventListener('click', function () {
+        state.viewMonth += 1;
+        if (state.viewMonth > 11) {
+          state.viewMonth = 0;
+          state.viewYear += 1;
+        }
+        renderCalendar();
+      });
+
+      el.mode12Btn.addEventListener('click', function () {
+        state.timeMode = '12h';
+        state.selectionMode = 'hour';
+        el.mode12Btn.classList.add('active');
+        el.mode24Btn.classList.remove('active');
+        renderSelectedDisplay();
+        updateHandAndNumbers();
+      });
+
+      el.mode24Btn.addEventListener('click', function () {
+        state.timeMode = '24h';
+        state.selectionMode = 'hour';
+        el.mode24Btn.classList.add('active');
+        el.mode12Btn.classList.remove('active');
+        renderSelectedDisplay();
+        updateHandAndNumbers();
+      });
+
+      el.hourBox.addEventListener('click', function () {
+        state.selectionMode = 'hour';
+        renderSelectedDisplay();
+        updateHandAndNumbers();
+      });
+
+      el.minuteBox.addEventListener('click', function () {
+        state.selectionMode = 'minute';
+        renderSelectedDisplay();
+        updateHandAndNumbers();
+      });
+
+      el.amBtn.addEventListener('click', function () {
+        if (state.timeMode !== '12h') return;
+        setPeriod('AM');
+      });
+
+      el.pmBtn.addEventListener('click', function () {
+        if (state.timeMode !== '12h') return;
+        setPeriod('PM');
+      });
+
+      el.clockArea.addEventListener('pointerdown', function (event) {
+        const rect = el.clockArea.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const dx = event.clientX - cx;
+        const dy = event.clientY - cy;
+        const angle = Math.atan2(dy, dx) + Math.PI / 2;
+        const normalized = (angle + Math.PI * 2) % (Math.PI * 2);
+        const step12 = Math.round(normalized / (Math.PI * 2 / 12)) % 12;
+
+        if (state.selectionMode === 'minute') {
+          state.minute = step12 * 5;
+        } else if (state.timeMode === '24h') {
+          const radius = Math.sqrt(dx * dx + dy * dy);
+          const ringThreshold = rect.width * 0.33;
+          const outerHour = step12;
+          state.hour24 = radius < ringThreshold ? outerHour + 12 : outerHour;
+          state.selectionMode = 'minute';
+        } else {
+          const currentPm = state.hour24 >= 12;
+          const base = step12 === 0 ? 12 : step12;
+          if (base === 12) state.hour24 = currentPm ? 12 : 0;
+          else state.hour24 = currentPm ? base + 12 : base;
+          state.selectionMode = 'minute';
+        }
+
+        renderSelectedDisplay();
+        updateHandAndNumbers();
+      });
+
+      el.cancelBtn.addEventListener('click', function () {
+        closePickerWithValue(null, false);
+        if (window.google && window.google.script && window.google.script.host && typeof window.google.script.host.close === 'function') {
+          window.google.script.host.close();
+        }
+      });
+
+      el.okBtn.addEventListener('click', function () {
+        if (!inRange(state.selectedDate)) {
+          setStatus('Selected date is outside allowed range.', true);
+          return;
+        }
+        const value = formatDateTimeString();
+        closePickerWithValue(value, false);
+      });
+
+      window.addEventListener('resize', function () {
+        updateHandAndNumbers();
+      });
+
+      bindHostPresentationEvents();
+      applyThemeMode(normalizeThemeMode(document.documentElement.getAttribute('data-theme')) || readParentThemeMode() || 'dark');
+      applyScalePercent(readParentScalePercent());
+    })();
+  </script>
+</body>
+</html>

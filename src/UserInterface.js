@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.113 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.159 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -172,7 +172,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
         <base target="_top">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
         <style>
           :root {
             font-size: 20px;
@@ -2488,6 +2487,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           #manualEntryModal {
             z-index: 1100;
           }
+          #dateTimePickerModal {
+            z-index: 1300;
+          }
           .modal-content {
             background: var(--tc-modal-bg);
             width: min(32rem, 96vw);
@@ -2639,99 +2641,58 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding: 0.5rem 0.65rem;
             line-height: 1.2;
           }
+          .modal-content input.manual-datetime-input-field {
+            border: 1px solid #4f6587;
+            background: #151f2f;
+            color: #e5efff;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 0.9rem;
+          }
+          .field-input-with-trigger,
+          .manual-datetime-trigger-row {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 6px;
+            align-items: center;
+          }
+          .field-calendar-trigger,
+          .manual-datetime-trigger-btn {
+            width: 2.15rem;
+            min-width: 2.15rem;
+            height: 2.15rem;
+            border: 1px solid #4f6587;
+            background: #20324a;
+            color: #dbe9fb;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .field-calendar-trigger:disabled,
+          .manual-datetime-trigger-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
           .modal-content input[type="date"]::-webkit-calendar-picker-indicator,
           .modal-content input[type="datetime-local"]::-webkit-calendar-picker-indicator {
             transform: scale(1.15);
             transform-origin: center;
             cursor: pointer;
           }
-          .flatpickr-calendar {
-            font-size: var(--timecard-picker-font-size);
-            background: var(--tc-picker-bg) !important;
-            border: 1px solid var(--tc-picker-border);
-            border-radius: 0.6rem;
-            box-shadow: 0 0.45rem 1rem rgba(15, 23, 42, 0.24);
-            width: min(20rem, 92vw);
-            opacity: 1 !important;
-            z-index: 2200 !important;
-            isolation: isolate;
-            color: var(--tc-text) !important;
-          }
-          .flatpickr-calendar.open,
-          .flatpickr-calendar.inline {
-            opacity: 1 !important;
-            visibility: visible !important;
-          }
-          .flatpickr-calendar,
-          .flatpickr-calendar * {
-            backdrop-filter: none !important;
-          }
-          .flatpickr-calendar .flatpickr-days,
-          .flatpickr-calendar .dayContainer {
-            background: var(--tc-picker-bg) !important;
-            width: 100% !important;
-            min-width: 100% !important;
-            max-width: 100% !important;
-          }
-          .flatpickr-rContainer,
-          .flatpickr-innerContainer,
-          .flatpickr-months,
-          .flatpickr-weekdays,
-          .flatpickr-month {
-            background: var(--tc-picker-bg) !important;
-            opacity: 1 !important;
-          }
-          .flatpickr-calendar .flatpickr-day,
-          .flatpickr-calendar span.flatpickr-weekday {
-            width: calc(var(--timecard-picker-cell-size) - 0.02rem);
-            max-width: calc(var(--timecard-picker-cell-size) - 0.02rem);
-            height: var(--timecard-picker-cell-size);
-            line-height: var(--timecard-picker-cell-size);
-          }
-          .flatpickr-time {
-            background: var(--tc-picker-bg) !important;
-            border-top: 1px solid var(--tc-picker-time-separator);
-            opacity: 1 !important;
-            position: relative;
-            z-index: 1;
-          }
-          .flatpickr-time input,
-          .flatpickr-time .flatpickr-am-pm,
-          .flatpickr-time .numInputWrapper {
-            background: var(--tc-picker-bg) !important;
-            color: var(--tc-text) !important;
-            opacity: 1 !important;
-          }
-          .flatpickr-calendar .flatpickr-weekday {
-            font-size: 0.88em;
-            font-weight: 600;
-          }
-          .flatpickr-months .flatpickr-month,
-          .flatpickr-current-month {
-            height: 2.45rem;
-          }
-          .flatpickr-current-month {
-            font-size: 1.08em;
-            padding-top: 0.3rem;
-          }
-          .flatpickr-time input.flatpickr-hour,
-          .flatpickr-time input.flatpickr-minute {
-            font-size: var(--timecard-picker-time-font-size);
-            font-weight: 600;
-          }
-          .flatpickr-time .flatpickr-am-pm {
-            font-size: calc(var(--timecard-picker-time-font-size) * 0.95);
+          .modal-content input.manual-datetime-input-field::-webkit-calendar-picker-indicator {
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
           }
           .modal-content input.manual-picker-invalid,
           .modal-content input.admin-picker-invalid {
             border-color: var(--tc-input-invalid-border) !important;
             background: var(--tc-input-invalid-bg) !important;
             box-shadow: 0 0 0 1px var(--tc-input-invalid-shadow) inset;
-          }
-          .flatpickr-day.flatpickr-disabled,
-          .flatpickr-time .flatpickr-disabled {
-            text-decoration: line-through;
-            opacity: 0.4;
           }
           .modal-actions {
             display: flex;
@@ -3149,6 +3110,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 <span id="idleRefreshLock" class="idle-refresh-line">Lock -- min</span>
               </div>
             </div>
+            ${canAccessAdminView ? '<button id="adminUiModeBtn" class="admin-top-btn" type="button" onclick="toggleAdminUiMode()">Admin UI: Legacy</button>' : ''}
             ${canAccessAdminView ? '<button class="admin-top-btn" onclick="showAdminView()">Admin View</button>' : ''}
           </div>
           <h1>Welcome ${email}!</h1>
@@ -3215,10 +3177,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <p id="dateRangeInfo" class="modal-note">Loading allowed date range...</p>
 
               <label for="manualClockIn">Clock In</label>
-              <input type="text" id="manualClockIn" class="manual-datetime-picker" required autocomplete="off">
+              <div class="field-input-with-trigger manual-datetime-trigger-row">
+                <input type="datetime-local" id="manualClockIn" class="manual-datetime-picker manual-datetime-input-field" required autocomplete="off">
+                <button type="button" id="manualClockInPickerBtn" class="field-calendar-trigger manual-datetime-trigger-btn" aria-label="Choose clock in date and time" title="Choose date and time" onclick="openManualEntryDateTimePicker('clockIn')">&#128197;</button>
+              </div>
 
               <label for="manualClockOut">Clock Out</label>
-              <input type="text" id="manualClockOut" class="manual-datetime-picker" required autocomplete="off">
+              <div class="field-input-with-trigger manual-datetime-trigger-row">
+                <input type="datetime-local" id="manualClockOut" class="manual-datetime-picker manual-datetime-input-field" required autocomplete="off">
+                <button type="button" id="manualClockOutPickerBtn" class="field-calendar-trigger manual-datetime-trigger-btn" aria-label="Choose clock out date and time" title="Choose date and time" onclick="openManualEntryDateTimePicker('clockOut')">&#128197;</button>
+              </div>
 
               <div class="manual-entry-type-group">
                 <label class="manual-entry-type-option"><input type="checkbox" id="manualEntryTypeWorked" onchange="handleManualEntryTypeChange('worked')"> Worked</label>
@@ -3348,6 +3316,26 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             </div>
           </div>
 
+          <div id="adminModalHtmlModal" class="modal" style="display: none;">
+            <div class="modal-content admin-modal-content" style="width:min(98vw,120rem); height:min(96vh,78rem); padding:0; overflow:hidden; position:relative;">
+              <button class="admin-close-btn" type="button" aria-label="Close admin timeline view" title="Close" onclick="closeAdminModalHtml()">&#10005;</button>
+              <iframe id="adminModalHtmlFrame" title="Admin Timeline View" style="width:100%; height:100%; border:0; background:var(--tc-surface);"></iframe>
+            </div>
+          </div>
+
+          <div id="dateTimePickerModal" class="modal" style="display: none;">
+            <div class="modal-content admin-modal-content" style="width:min(56rem,96vw); height:min(44rem,92vh); padding:0; overflow:hidden; position:relative;">
+              <button class="admin-close-btn" type="button" aria-label="Close date time picker" title="Close" onclick="closeDateTimePickerModal()">&#10005;</button>
+              <iframe id="dateTimePickerFrame" title="Date Time Picker" style="width:100%; height:100%; border:0; background:var(--tc-surface);"></iframe>
+            </div>
+          </div>
+
+          <div id="addMissedTimeModal" class="modal" style="display: none;">
+            <div class="modal-content" style="width:min(44rem,96vw); height:min(42rem,92vh); padding:0; overflow:hidden; position:relative; background:transparent; box-shadow:none; border-radius:0;">
+              <iframe id="addMissedTimeFrame" title="Add Missed Time" style="width:100%; height:100%; border:0; background:transparent;"></iframe>
+            </div>
+          </div>
+
           <div id="adminHtmlPreviewModal" class="modal" style="display: none;">
             <div class="modal-content admin-modal-content" style="width:min(70rem,96vw);">
               <button class="admin-close-btn" type="button" aria-label="Close HTML preview" title="Close" onclick="closeAdminHtmlPreviewModal()">&#10005;</button>
@@ -3457,10 +3445,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <p class="modal-note" id="adminTimeEditRawInfo">Raw times</p>
 
               <label for="adminEditClockIn">Clock In</label>
-              <input type="text" id="adminEditClockIn" class="admin-datetime-picker" autocomplete="off">
+              <div class="field-input-with-trigger manual-datetime-trigger-row">
+                <input type="datetime-local" id="adminEditClockIn" class="admin-datetime-picker manual-datetime-input-field" autocomplete="off">
+                <button type="button" class="field-calendar-trigger manual-datetime-trigger-btn" aria-label="Choose edit clock in date and time" title="Choose date and time" onclick="openAdminTimeEditDateTimePicker('clockIn')">&#128197;</button>
+              </div>
 
               <label for="adminEditClockOut">Clock Out</label>
-              <input type="text" id="adminEditClockOut" class="admin-datetime-picker" autocomplete="off">
+              <div class="field-input-with-trigger manual-datetime-trigger-row">
+                <input type="datetime-local" id="adminEditClockOut" class="admin-datetime-picker manual-datetime-input-field" autocomplete="off">
+                <button type="button" class="field-calendar-trigger manual-datetime-trigger-btn" aria-label="Choose edit clock out date and time" title="Choose date and time" onclick="openAdminTimeEditDateTimePicker('clockOut')">&#128197;</button>
+              </div>
 
               <p id="adminEditError" class="error" style="display:none;"></p>
 
@@ -3496,7 +3490,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           
         </div>
         
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         <script>
           const clientDebugEnabled = ${isDebugEnabled() ? 'true' : 'false'};
           const UI_SCALE_STORAGE_KEY = 'timecard_ui_scale_percent';
@@ -3507,6 +3500,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           const UI_SCALE_BASE_FONT_SIZE_PX = 20;
           const UI_SCALE_PRESET_VALUES = [85, 90, 95, 100, 105, 110, 115, 120, 130, 140, 150, 175, 200, 225, 250, 275, 300];
           const THEME_MODE_LOCAL_STORAGE_KEY = 'timecard_theme_mode';
+          const ADMIN_UI_MODE_STORAGE_KEY = 'timecard_admin_ui_mode';
+          const ADMIN_UI_MODE_LEGACY = 'legacy';
+          const ADMIN_UI_MODE_TIMELINE = 'timeline';
           const INITIAL_THEME_MODE_FROM_SERVER = ${JSON.stringify((function () {
         const raw = String(storedThemeModeFromServer || '').trim().toLowerCase();
         return raw === 'light' || raw === 'dark' ? raw : '';
@@ -3547,11 +3543,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let adminManualEntryTargetEmail = '';
           let manualEntryType = 'worked';
           let manualEntryModalOpenedAtMs = 0;
-          let manualClockInPicker = null;
-          let manualClockOutPicker = null;
           let manualPickerRuleState = null;
-          let adminEditClockInPicker = null;
-          let adminEditClockOutPicker = null;
+          let manualEntryPickerInFlight = false;
           let adminTempRowSeed = -1;
           let adminEditingRowIndex = null;
           let adminPreviewReady = false;
@@ -3581,6 +3574,74 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let idleLockActive = false;
           let idleLockMode = '';
           let currentThemeMode = '';
+          let dateTimePickerPromiseResolve = null;
+          let dateTimePickerPromiseReject = null;
+          let dateTimePickerOpenOptions = null;
+          let dateTimePickerCachedHtml = '';
+          let dateTimePickerFrameReady = false;
+          let dateTimePickerFrameLoadPromise = null;
+          let addMissedTimePromiseResolve = null;
+          let addMissedTimePromiseReject = null;
+          let addMissedTimeOpenOptions = null;
+          let addMissedTimeCachedHtml = '';
+          let addMissedTimeFrameReady = false;
+          let addMissedTimeFrameLoadPromise = null;
+          let employeeAddMissedTimeInFlight = false;
+          let adminUiMode = ADMIN_UI_MODE_LEGACY;
+
+          function normalizeAdminUiMode(mode) {
+            const normalized = String(mode || '').trim().toLowerCase();
+            return normalized === ADMIN_UI_MODE_TIMELINE ? ADMIN_UI_MODE_TIMELINE : ADMIN_UI_MODE_LEGACY;
+          }
+
+          function readStoredAdminUiMode() {
+            try {
+              return normalizeAdminUiMode(window.localStorage.getItem(ADMIN_UI_MODE_STORAGE_KEY));
+            } catch (_e) {
+              return ADMIN_UI_MODE_LEGACY;
+            }
+          }
+
+          function persistAdminUiMode(mode) {
+            try {
+              window.localStorage.setItem(ADMIN_UI_MODE_STORAGE_KEY, normalizeAdminUiMode(mode));
+            } catch (_e) {
+              // No-op when storage is unavailable.
+            }
+          }
+
+          function updateAdminUiModeToggleButton() {
+            const btn = document.getElementById('adminUiModeBtn');
+            if (!btn) return;
+            const isTimeline = normalizeAdminUiMode(adminUiMode) === ADMIN_UI_MODE_TIMELINE;
+            btn.innerText = isTimeline ? 'Admin UI: Timeline' : 'Admin UI: Legacy';
+            btn.title = isTimeline ? 'Switch to legacy admin UI' : 'Switch to timeline admin UI';
+          }
+
+          function setAdminUiMode(mode, shouldPersist) {
+            adminUiMode = normalizeAdminUiMode(mode);
+            if (shouldPersist !== false) {
+              persistAdminUiMode(adminUiMode);
+            }
+            updateAdminUiModeToggleButton();
+            return adminUiMode;
+          }
+
+          function initializeAdminUiMode() {
+            setAdminUiMode(readStoredAdminUiMode(), false);
+          }
+
+          function toggleAdminUiMode() {
+            const nextMode = normalizeAdminUiMode(adminUiMode) === ADMIN_UI_MODE_TIMELINE
+              ? ADMIN_UI_MODE_LEGACY
+              : ADMIN_UI_MODE_TIMELINE;
+            setAdminUiMode(nextMode, true);
+            setUiResultMessage('Admin UI mode set to ' + (nextMode === ADMIN_UI_MODE_TIMELINE ? 'Timeline' : 'Legacy') + '.', false, 2200);
+          }
+
+          function isAdminModalHtmlEnabled() {
+            return normalizeAdminUiMode(adminUiMode) === ADMIN_UI_MODE_TIMELINE;
+          }
 
           function getScheduleDayNamesClient() {
             return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -4050,15 +4111,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             document.documentElement.style.setProperty('--timecard-picker-cell-size', cellSizeRem);
             document.documentElement.style.setProperty('--timecard-picker-time-font-size', timeFontSizeRem);
 
-            // If pickers are mounted, redraw so open popups reflect current scale immediately.
-            try {
-              if (manualClockInPicker && typeof manualClockInPicker.redraw === 'function') manualClockInPicker.redraw();
-              if (manualClockOutPicker && typeof manualClockOutPicker.redraw === 'function') manualClockOutPicker.redraw();
-              if (adminEditClockInPicker && typeof adminEditClockInPicker.redraw === 'function') adminEditClockInPicker.redraw();
-              if (adminEditClockOutPicker && typeof adminEditClockOutPicker.redraw === 'function') adminEditClockOutPicker.redraw();
-            } catch (e) {
-              // No-op when picker instance is unavailable.
-            }
+            // Standalone modal picker handles its own scaling via open options and host events.
           }
 
           function applyUiScalePercent(value) {
@@ -4170,6 +4223,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const resolved = normalizeThemeMode(mode) || 'dark';
             currentThemeMode = resolved;
             document.documentElement.setAttribute('data-theme', resolved);
+            try {
+              window.dispatchEvent(new CustomEvent('timecard-theme-mode-change', { detail: { mode: resolved } }));
+            } catch (_e) {
+              // No-op when CustomEvent is unavailable.
+            }
             persistThemeModeToLocal(resolved);
             updateThemeToggleButton();
             if (persistServer === true && window.google && google.script && google.script.run) {
@@ -4476,6 +4534,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const startMs = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0, 0).getTime();
             const endMs = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999).getTime();
             return { startMs: startMs, endMs: endMs };
+          }
+
+          function getAdminTimelineContextSnapshot() {
+            return {
+              currentUserEmail: String(currentUserEmail || ''),
+              activePayPeriodStartLabel: String(activePayPeriodStartLabel || ''),
+              activePayPeriodEndLabel: String(activePayPeriodEndLabel || ''),
+              permissions: adminPermissions || {}
+            };
           }
 
           function isInActivePayPeriod(isoValue) {
@@ -4914,6 +4981,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
            }
           
           initializeThemeMode();
+          initializeAdminUiMode();
           initializeOfflineDetection();
           initializeIdleRefreshManager();
           initializeUiScale();
@@ -5546,6 +5614,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               alert('Admin access required.');
               return;
             }
+            if (isAdminModalHtmlEnabled()) {
+              openAdminModalHtml();
+              return;
+            }
+            showLegacyAdminView();
+          }
+
+          function showLegacyAdminView() {
             document.getElementById('adminViewModal').style.display = 'flex';
             const periodToggle = document.getElementById('adminShowOnlyActivePayPeriod');
             adminShowOnlyActivePayPeriod = !(periodToggle && periodToggle.checked === false);
@@ -5553,7 +5629,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function hideAdminView() {
-            document.getElementById('adminViewModal').style.display = 'none';
+            const legacyModal = document.getElementById('adminViewModal');
+            if (legacyModal) {
+              legacyModal.style.display = 'none';
+            }
+            closeAdminModalHtml();
           }
 
           function formatAdminDateForInput(iso) {
@@ -5916,6 +5996,495 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
+          function openAdminModalHtml() {
+            if (adminPermissions.canAccessAdminView !== true) {
+              const msg = document.getElementById('adminLoadMsg');
+              if (msg) msg.innerText = 'Admin access required.';
+              return;
+            }
+            const modal = document.getElementById('adminModalHtmlModal');
+            const frame = document.getElementById('adminModalHtmlFrame');
+            const msg = document.getElementById('adminLoadMsg');
+            if (msg) msg.innerText = 'Loading Admin timeline view...';
+            google.script.run
+              .withSuccessHandler((html) => {
+                if (!frame || !modal) {
+                  if (msg) msg.innerText = 'Admin timeline modal unavailable.';
+                  return;
+                }
+                frame.srcdoc = buildAdminModalFrameHtml(html || '');
+                modal.style.display = 'flex';
+                if (msg) msg.innerText = 'Admin timeline view loaded.';
+              })
+              .withFailureHandler((error) => {
+                const message = (error && error.message) ? error.message : 'Unable to load Admin timeline view.';
+                if (msg) msg.innerText = message;
+                alert(message);
+              })
+              .getAdminModalDialogHtml(currentThemeMode);
+          }
+
+          function closeAdminModalHtml() {
+            const modal = document.getElementById('adminModalHtmlModal');
+            const frame = document.getElementById('adminModalHtmlFrame');
+            if (frame) {
+              frame.srcdoc = '';
+            }
+            if (modal) {
+              modal.style.display = 'none';
+            }
+          }
+
+          function resolveDateTimePickerRequest(value) {
+            const resolve = dateTimePickerPromiseResolve;
+            dateTimePickerPromiseResolve = null;
+            dateTimePickerPromiseReject = null;
+            dateTimePickerOpenOptions = null;
+            if (typeof resolve === 'function') {
+              resolve(value || null);
+            }
+          }
+
+          function rejectDateTimePickerRequest(error) {
+            const reject = dateTimePickerPromiseReject;
+            dateTimePickerPromiseResolve = null;
+            dateTimePickerPromiseReject = null;
+            dateTimePickerOpenOptions = null;
+            if (typeof reject === 'function') {
+              reject(error || new Error('Date time picker failed.'));
+            }
+          }
+
+          function getCurrentUiScalePercentForPicker() {
+            try {
+              const computed = window.getComputedStyle ? window.getComputedStyle(document.documentElement) : null;
+              const rootFontPx = computed ? parseFloat(computed.fontSize) : NaN;
+              if (!isFinite(rootFontPx) || rootFontPx <= 0) return 100;
+              return Math.round((rootFontPx / UI_SCALE_BASE_FONT_SIZE_PX) * 100);
+            } catch (_e) {
+              return 100;
+            }
+          }
+
+          function closeDateTimePickerModal(resolveAsNull) {
+            const shouldResolveAsNull = resolveAsNull !== false;
+            const modal = document.getElementById('dateTimePickerModal');
+            const frame = document.getElementById('dateTimePickerFrame');
+            // Keep the in-flight load listener intact so a shared load promise can still settle.
+            if (frame && !dateTimePickerFrameLoadPromise) {
+              frame.onload = null;
+            }
+            if (modal) {
+              modal.style.display = 'none';
+            }
+            if (shouldResolveAsNull) {
+              resolveDateTimePickerRequest(null);
+            }
+          }
+
+          function fetchDateTimePickerHtmlCached() {
+            if (dateTimePickerCachedHtml) {
+              return Promise.resolve(dateTimePickerCachedHtml);
+            }
+            return new Promise((resolve, reject) => {
+              google.script.run
+                .withSuccessHandler((html) => {
+                  dateTimePickerCachedHtml = String(html || '');
+                  resolve(dateTimePickerCachedHtml);
+                })
+                .withFailureHandler((error) => {
+                  reject(error || new Error('Unable to load Date Time Picker.'));
+                })
+                .getDateTimePickerDialogHtml(currentThemeMode);
+            });
+          }
+
+          function ensureDateTimePickerFrameReady(frame) {
+            if (dateTimePickerFrameReady && frame && frame.contentWindow && frame.contentWindow.CalendarCompactPicker) {
+              return Promise.resolve(frame.contentWindow.CalendarCompactPicker);
+            }
+            if (dateTimePickerFrameLoadPromise) {
+              return dateTimePickerFrameLoadPromise;
+            }
+            dateTimePickerFrameLoadPromise = fetchDateTimePickerHtmlCached()
+              .then((html) => {
+                return new Promise((resolve, reject) => {
+                  frame.onload = function () {
+                    frame.onload = null;
+                    try {
+                      const pickerApi = frame.contentWindow && frame.contentWindow.CalendarCompactPicker;
+                      if (!pickerApi || typeof pickerApi.open !== 'function') {
+                        throw new Error('Date time picker API unavailable.');
+                      }
+                      dateTimePickerFrameReady = true;
+                      resolve(pickerApi);
+                    } catch (error) {
+                      dateTimePickerFrameReady = false;
+                      reject(error);
+                    }
+                  };
+                  frame.srcdoc = buildDateTimePickerFrameHtml(html || '');
+                });
+              })
+              .catch((error) => {
+                dateTimePickerFrameReady = false;
+                throw error;
+              })
+              .finally(() => {
+                dateTimePickerFrameLoadPromise = null;
+              });
+            return dateTimePickerFrameLoadPromise;
+          }
+
+          // Canonical host-side options normalization for all future picker call sites.
+          // Supported aliases:
+          // - timeMode: '12h' | '24h'
+          // - use24Hour: boolean (mapped to timeMode when provided)
+          // - themeMode/theme
+          // - uiScalePercent/pickerScalePercent/scalePercent
+          function normalizeDateTimePickerOpenOptions(options) {
+            const optionBag = Object.assign({}, options || {});
+            const requestedTimeMode = String(optionBag.timeMode || '').trim().toLowerCase();
+            const hasUse24Hour = Object.prototype.hasOwnProperty.call(optionBag, 'use24Hour');
+            const use24Hour = hasUse24Hour ? optionBag.use24Hour === true : null;
+            if (requestedTimeMode === '24h' || requestedTimeMode === '24') {
+              optionBag.timeMode = '24h';
+            } else if (requestedTimeMode === '12h' || requestedTimeMode === '12') {
+              optionBag.timeMode = '12h';
+            } else if (use24Hour === true) {
+              optionBag.timeMode = '24h';
+            } else if (use24Hour === false) {
+              optionBag.timeMode = '12h';
+            }
+
+            optionBag.themeMode = normalizeThemeMode(optionBag.themeMode) || normalizeThemeMode(optionBag.theme) || normalizeThemeMode(currentThemeMode) || 'dark';
+
+            if (!isFinite(Number(optionBag.uiScalePercent))) {
+              if (isFinite(Number(optionBag.pickerScalePercent))) {
+                optionBag.uiScalePercent = Number(optionBag.pickerScalePercent);
+              } else if (isFinite(Number(optionBag.scalePercent))) {
+                optionBag.uiScalePercent = Number(optionBag.scalePercent);
+              } else {
+                optionBag.uiScalePercent = getCurrentUiScalePercentForPicker();
+              }
+            }
+
+            return optionBag;
+          }
+
+          function openDateTimePickerModal(options) {
+            const modal = document.getElementById('dateTimePickerModal');
+            const frame = document.getElementById('dateTimePickerFrame');
+            if (!modal || !frame) {
+              return Promise.reject(new Error('Date time picker modal unavailable.'));
+            }
+
+            if (typeof dateTimePickerPromiseResolve === 'function') {
+              closeDateTimePickerModal(true);
+            }
+
+            return new Promise((resolve, reject) => {
+              dateTimePickerPromiseResolve = resolve;
+              dateTimePickerPromiseReject = reject;
+
+              const optionBag = normalizeDateTimePickerOpenOptions(options);
+              dateTimePickerOpenOptions = optionBag;
+
+              const activeResolve = resolve;
+              modal.style.display = 'flex';
+
+              ensureDateTimePickerFrameReady(frame)
+                .then((pickerApi) => {
+                  if (dateTimePickerPromiseResolve !== activeResolve) {
+                    return;
+                  }
+                  window.requestAnimationFrame(() => {
+                    if (dateTimePickerPromiseResolve !== activeResolve) {
+                      return;
+                    }
+                    pickerApi.open(Object.assign({}, dateTimePickerOpenOptions || optionBag))
+                      .then((value) => {
+                        if (dateTimePickerPromiseResolve !== activeResolve) {
+                          return;
+                        }
+                        resolveDateTimePickerRequest(value || null);
+                        closeDateTimePickerModal(false);
+                      })
+                      .catch((error) => {
+                        if (dateTimePickerPromiseResolve !== activeResolve) {
+                          return;
+                        }
+                        rejectDateTimePickerRequest(error);
+                        closeDateTimePickerModal(false);
+                      });
+                  });
+                })
+                .catch((error) => {
+                  rejectDateTimePickerRequest(error || new Error('Unable to load Date Time Picker.'));
+                  closeDateTimePickerModal(false);
+                });
+            });
+          }
+
+          function resolveAddMissedTimeRequest(value) {
+            const resolve = addMissedTimePromiseResolve;
+            addMissedTimePromiseResolve = null;
+            addMissedTimePromiseReject = null;
+            addMissedTimeOpenOptions = null;
+            if (typeof resolve === 'function') {
+              resolve(value || null);
+            }
+          }
+
+          function rejectAddMissedTimeRequest(error) {
+            const reject = addMissedTimePromiseReject;
+            addMissedTimePromiseResolve = null;
+            addMissedTimePromiseReject = null;
+            addMissedTimeOpenOptions = null;
+            if (typeof reject === 'function') {
+              reject(error || new Error('Add missed time modal failed.'));
+            }
+          }
+
+          function closeAddMissedTimeModal(resolveAsNull) {
+            const shouldResolveAsNull = resolveAsNull !== false;
+            const modal = document.getElementById('addMissedTimeModal');
+            const frame = document.getElementById('addMissedTimeFrame');
+            if (frame && !addMissedTimeFrameLoadPromise) {
+              frame.onload = null;
+            }
+            if (modal) {
+              modal.style.display = 'none';
+            }
+            if (shouldResolveAsNull) {
+              resolveAddMissedTimeRequest(null);
+            }
+          }
+
+          function fetchAddMissedTimeHtmlCached() {
+            // Transitional cache path: mirrors DateTimePicker lazy-warm behavior for rollout.
+            // Reassess once shared modal is the only add-missed entry path.
+            if (addMissedTimeCachedHtml) {
+              return Promise.resolve(addMissedTimeCachedHtml);
+            }
+            return new Promise((resolve, reject) => {
+              google.script.run
+                .withSuccessHandler((html) => {
+                  addMissedTimeCachedHtml = String(html || '');
+                  resolve(addMissedTimeCachedHtml);
+                })
+                .withFailureHandler((error) => {
+                  reject(error || new Error('Unable to load Add Missed Time modal.'));
+                })
+                .getAddMissedTimeModalDialogHtml(currentThemeMode);
+            });
+          }
+
+          function ensureAddMissedTimeFrameReady(frame) {
+            if (addMissedTimeFrameReady && frame && frame.contentWindow && frame.contentWindow.AddMissedTimeModal) {
+              return Promise.resolve(frame.contentWindow.AddMissedTimeModal);
+            }
+            if (addMissedTimeFrameLoadPromise) {
+              return addMissedTimeFrameLoadPromise;
+            }
+
+            addMissedTimeFrameLoadPromise = fetchAddMissedTimeHtmlCached()
+              .then((html) => {
+                return new Promise((resolve, reject) => {
+                  frame.onload = function () {
+                    frame.onload = null;
+                    try {
+                      const modalApi = frame.contentWindow && frame.contentWindow.AddMissedTimeModal;
+                      if (!modalApi || typeof modalApi.open !== 'function') {
+                        throw new Error('Add missed time modal API unavailable.');
+                      }
+                      addMissedTimeFrameReady = true;
+                      resolve(modalApi);
+                    } catch (error) {
+                      addMissedTimeFrameReady = false;
+                      reject(error);
+                    }
+                  };
+                  frame.srcdoc = buildAddMissedTimeFrameHtml(html || '');
+                });
+              })
+              .catch((error) => {
+                addMissedTimeFrameReady = false;
+                throw error;
+              })
+              .finally(() => {
+                addMissedTimeFrameLoadPromise = null;
+              });
+
+            return addMissedTimeFrameLoadPromise;
+          }
+
+          function normalizeAddMissedTimeOpenOptions(options) {
+            const optionBag = Object.assign({}, options || {});
+            optionBag.themeMode = normalizeThemeMode(optionBag.themeMode) || normalizeThemeMode(optionBag.theme) || normalizeThemeMode(currentThemeMode) || 'dark';
+
+            if (!isFinite(Number(optionBag.uiScalePercent))) {
+              if (isFinite(Number(optionBag.modalScalePercent))) {
+                optionBag.uiScalePercent = Number(optionBag.modalScalePercent);
+              } else if (isFinite(Number(optionBag.scalePercent))) {
+                optionBag.uiScalePercent = Number(optionBag.scalePercent);
+              } else {
+                optionBag.uiScalePercent = getCurrentUiScalePercentForPicker();
+              }
+            }
+
+            if (!optionBag.styleTokens || typeof optionBag.styleTokens !== 'object') {
+              optionBag.styleTokens = {};
+            }
+
+            return optionBag;
+          }
+
+          function preloadDateTimePickerModal(options) {
+            const frame = document.getElementById('dateTimePickerFrame');
+            if (!frame) {
+              return Promise.reject(new Error('Date time picker modal unavailable.'));
+            }
+            const optionBag = normalizeDateTimePickerOpenOptions(options);
+            dateTimePickerOpenOptions = optionBag;
+            return ensureDateTimePickerFrameReady(frame).then((pickerApi) => {
+              if (pickerApi && typeof pickerApi.applyThemeMode === 'function') {
+                pickerApi.applyThemeMode(optionBag.themeMode);
+              }
+              if (pickerApi && typeof pickerApi.applyScalePercent === 'function') {
+                pickerApi.applyScalePercent(optionBag.uiScalePercent);
+              }
+              return true;
+            });
+          }
+
+          function preloadAddMissedTimeModal(options) {
+            // Transitional preloader: keeps shared modal and picker warm for first interaction.
+            // Validate long-term benefit after cutover and remove if no measurable gain.
+            const frame = document.getElementById('addMissedTimeFrame');
+            if (!frame) {
+              return Promise.reject(new Error('Add missed time modal unavailable.'));
+            }
+            const optionBag = normalizeAddMissedTimeOpenOptions(options);
+            return ensureAddMissedTimeFrameReady(frame).then((modalApi) => {
+              if (modalApi && typeof modalApi.applyThemeMode === 'function') {
+                modalApi.applyThemeMode(optionBag.themeMode);
+              }
+              if (modalApi && typeof modalApi.applyScalePercent === 'function') {
+                modalApi.applyScalePercent(optionBag.uiScalePercent);
+              }
+              if (modalApi && typeof modalApi.applyStyleTokens === 'function') {
+                modalApi.applyStyleTokens(optionBag.styleTokens || {});
+              }
+              if (modalApi && typeof modalApi.preloadDateTimePicker === 'function') {
+                return modalApi.preloadDateTimePicker().then(() => true).catch(() => true);
+              }
+              return true;
+            });
+          }
+
+          function openAddMissedTimeModal(options) {
+            const modal = document.getElementById('addMissedTimeModal');
+            const frame = document.getElementById('addMissedTimeFrame');
+            if (!modal || !frame) {
+              return Promise.reject(new Error('Add missed time modal unavailable.'));
+            }
+
+            if (typeof addMissedTimePromiseResolve === 'function') {
+              closeAddMissedTimeModal(true);
+            }
+
+            return new Promise((resolve, reject) => {
+              addMissedTimePromiseResolve = resolve;
+              addMissedTimePromiseReject = reject;
+
+              const optionBag = normalizeAddMissedTimeOpenOptions(options);
+              addMissedTimeOpenOptions = optionBag;
+              const activeResolve = resolve;
+              modal.style.display = 'flex';
+
+              ensureAddMissedTimeFrameReady(frame)
+                .then((modalApi) => {
+                  if (addMissedTimePromiseResolve !== activeResolve) {
+                    return;
+                  }
+
+                  if (modalApi && typeof modalApi.setHostBridge === 'function') {
+                    modalApi.setHostBridge({
+                      openDateTimePickerModal: openDateTimePickerModal,
+                      preloadDateTimePickerModal: preloadDateTimePickerModal,
+                      // Transitional shim: currently no-op because caller handles submit resolution
+                      // directly from modal Promise. Keep shape for compatibility during rollout.
+                      onAddMissedTimeSubmit: function () {}
+                    });
+                  }
+
+                  window.requestAnimationFrame(() => {
+                    if (addMissedTimePromiseResolve !== activeResolve) {
+                      return;
+                    }
+                    modalApi.open(Object.assign({}, addMissedTimeOpenOptions || optionBag))
+                      .then((value) => {
+                        if (addMissedTimePromiseResolve !== activeResolve) {
+                          return;
+                        }
+                        resolveAddMissedTimeRequest(value || null);
+                        closeAddMissedTimeModal(false);
+                      })
+                      .catch((error) => {
+                        if (addMissedTimePromiseResolve !== activeResolve) {
+                          return;
+                        }
+                        rejectAddMissedTimeRequest(error);
+                        closeAddMissedTimeModal(false);
+                      });
+                  });
+                })
+                .catch((error) => {
+                  rejectAddMissedTimeRequest(error || new Error('Unable to load Add Missed Time modal.'));
+                  closeAddMissedTimeModal(false);
+                });
+            });
+          }
+
+          function buildAdminModalFrameHtml(rawHtml) {
+            const html = String(rawHtml || '');
+            const scriptOpen = '<scr' + 'ipt>';
+            const scriptClose = '</scr' + 'ipt>';
+            const bridgeScript = scriptOpen + '(function(){' +
+              'var p=window.parent;' +
+              'window.google=window.google||{};' +
+              'window.google.script=window.google.script||{};' +
+              'if(p&&p.google&&p.google.script&&p.google.script.run){window.google.script.run=p.google.script.run;}' +
+              'window.google.script.host={close:function(){if(p&&typeof p.closeAdminModalHtml==="function"){p.closeAdminModalHtml();}}};' +
+              'window.timecardAdminHost={' +
+                'openScheduleToolModal:function(){if(p&&typeof p.openScheduleToolModal==="function"){p.openScheduleToolModal();}},' +
+                'openMoreReportsModal:function(){if(p&&typeof p.openMoreReportsModal==="function"){p.openMoreReportsModal();}},' +
+                'openAdminHtmlPreviewModal:function(){if(p&&typeof p.openAdminHtmlPreviewModal==="function"){p.openAdminHtmlPreviewModal();}},' +
+                'openDateTimePickerModal:function(options){if(p&&typeof p.openDateTimePickerModal==="function"){return p.openDateTimePickerModal(options||{});}return Promise.reject(new Error("Date time picker unavailable."));},' +
+                'openAddMissedTimeModal:function(options){if(p&&typeof p.openAddMissedTimeModal==="function"){return p.openAddMissedTimeModal(options||{});}return Promise.reject(new Error("Add missed time modal unavailable."));},' +
+                'preloadAddMissedTimeModal:function(options){if(p&&typeof p.preloadAddMissedTimeModal==="function"){return p.preloadAddMissedTimeModal(options||{});}return Promise.resolve(false);},' +
+                'preloadDateTimePickerModal:function(options){if(p&&typeof p.preloadDateTimePickerModal==="function"){return p.preloadDateTimePickerModal(options||{});}return Promise.resolve(false);},' +
+                'openLegacyAdminView:function(){if(p&&typeof p.showLegacyAdminView==="function"){p.showLegacyAdminView();}},' +
+                'getAdminContext:function(){' +
+                  'if(p&&typeof p.getAdminTimelineContextSnapshot==="function"){return p.getAdminTimelineContextSnapshot();}' +
+                  'return {' +
+                    'currentUserEmail:"",' +
+                    'activePayPeriodStartLabel:"",' +
+                    'activePayPeriodEndLabel:"",' +
+                    'permissions:{}' +
+                  '};' +
+                '},' +
+                'getAdminUiMode:function(){return p&&typeof p.adminUiMode==="string"?p.adminUiMode:"legacy";},' +
+                'setAdminUiMode:function(mode){if(p&&typeof p.setAdminUiMode==="function"){return p.setAdminUiMode(mode,true);}return "legacy";}' +
+              '};' +
+              '})();' + scriptClose;
+            if (html.indexOf('<body>') > -1) {
+              return html.replace('<body>', '<body>' + bridgeScript);
+            }
+            return bridgeScript + html;
+          }
+
           function buildScheduleToolFrameHtml(rawHtml) {
             const html = String(rawHtml || '');
             const scriptOpen = '<scr' + 'ipt>';
@@ -5927,6 +6496,47 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               'if(p&&p.google&&p.google.script&&p.google.script.run){window.google.script.run=p.google.script.run;}' +
               'window.google.script.host={close:function(){if(p&&typeof p.closeScheduleToolModal==="function"){p.closeScheduleToolModal();}}};' +
               '})();' + scriptClose;
+            if (html.indexOf('<body>') > -1) {
+              return html.replace('<body>', '<body>' + bridgeScript);
+            }
+            return bridgeScript + html;
+          }
+
+          function buildDateTimePickerFrameHtml(rawHtml) {
+            const html = String(rawHtml || '');
+            const scriptOpen = '<scr' + 'ipt>';
+            const scriptClose = '</scr' + 'ipt>';
+            const bridgeScript = scriptOpen + '(function(){' +
+              'var p=window.parent;' +
+              'window.google=window.google||{};' +
+              'window.google.script=window.google.script||{};' +
+              'if(p&&p.google&&p.google.script&&p.google.script.run){window.google.script.run=p.google.script.run;}' +
+              'window.google.script.host={close:function(){if(p&&typeof p.closeDateTimePickerModal==="function"){p.closeDateTimePickerModal(true);}}};' +
+            '})();' + scriptClose;
+            if (html.indexOf('<body>') > -1) {
+              return html.replace('<body>', '<body>' + bridgeScript);
+            }
+            return bridgeScript + html;
+          }
+
+          function buildAddMissedTimeFrameHtml(rawHtml) {
+            const html = String(rawHtml || '');
+            const scriptOpen = '<scr' + 'ipt>';
+            const scriptClose = '</scr' + 'ipt>';
+            // Transitional bridge shim: keep host contract broad during rollout, then
+            // trim to minimal methods once all callers use Promise-only submission.
+            const bridgeScript = scriptOpen + '(function(){' +
+              'var p=window.parent;' +
+              'window.google=window.google||{};' +
+              'window.google.script=window.google.script||{};' +
+              'if(p&&p.google&&p.google.script&&p.google.script.run){window.google.script.run=p.google.script.run;}' +
+              'window.google.script.host={close:function(){if(p&&typeof p.closeAddMissedTimeModal==="function"){p.closeAddMissedTimeModal(true);}}};' +
+              'window.AddMissedTimeModalHost={' +
+                'openDateTimePickerModal:function(options){if(p&&typeof p.openDateTimePickerModal==="function"){return p.openDateTimePickerModal(options||{});}return Promise.reject(new Error("Date time picker unavailable."));},' +
+                'preloadDateTimePickerModal:function(options){if(p&&typeof p.preloadDateTimePickerModal==="function"){return p.preloadDateTimePickerModal(options||{});}return Promise.resolve(false);},' +
+                'onAddMissedTimeSubmit:function(){return null;}' +
+              '};' +
+            '})();' + scriptClose;
             if (html.indexOf('<body>') > -1) {
               return html.replace('<body>', '<body>' + bridgeScript);
             }
@@ -7559,11 +8169,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (applyBtn) {
               applyBtn.disabled = true;
             }
-            if (adminEditClockInPicker && adminEditClockOutPicker) {
-              adminEditClockInPicker.setDate(document.getElementById('adminEditClockIn').value, false, 'Y-m-d\\TH:i');
-              adminEditClockOutPicker.setDate(document.getElementById('adminEditClockOut').value, false, 'Y-m-d\\TH:i');
-              refreshAdminTimeEditPickerBounds();
-            }
+            refreshAdminTimeEditPickerBounds();
             document.getElementById('adminEditError').style.display = 'none';
             document.getElementById('adminTimeEditModal').style.display = 'flex';
             updateDatePickerModalScrollLock();
@@ -7588,8 +8194,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const outDate = parseDateTimeInputValue(document.getElementById('adminEditClockOut').value);
             const validation = getAdminTimeEditValidationState(rowIndex, inDate, outDate);
 
-            setPickerInputInvalid(adminEditClockInPicker, validation.inInvalid, 'admin-picker-invalid');
-            setPickerInputInvalid(adminEditClockOutPicker, validation.outInvalid, 'admin-picker-invalid');
+            setInputInvalid(document.getElementById('adminEditClockIn'), validation.inInvalid, 'admin-picker-invalid');
+            setInputInvalid(document.getElementById('adminEditClockOut'), validation.outInvalid, 'admin-picker-invalid');
 
             if (!validation.valid) {
               errorEl.innerText = validation.hint || 'Updated time range is invalid.';
@@ -8130,8 +8736,96 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           function parseDateTimeInputValue(value) {
             const text = String(value || '').trim();
             if (!text) return null;
+
+            // Parse local datetime values explicitly so browser-dependent Date parsing
+            // cannot cause valid picker selections to be treated as invalid.
+            const localMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?$/);
+            if (localMatch) {
+              const year = Number(localMatch[1]);
+              const month = Number(localMatch[2]) - 1;
+              const day = Number(localMatch[3]);
+              const hour = Number(localMatch[4]);
+              const minute = Number(localMatch[5]);
+              const second = Number(localMatch[6] || 0);
+              const localDate = new Date(year, month, day, hour, minute, second, 0);
+              if (
+                !isNaN(localDate.getTime()) &&
+                localDate.getFullYear() === year &&
+                localDate.getMonth() === month &&
+                localDate.getDate() === day &&
+                localDate.getHours() === hour &&
+                localDate.getMinutes() === minute
+              ) {
+                return localDate;
+              }
+              return null;
+            }
+
             const parsed = new Date(text);
             return isNaN(parsed.getTime()) ? null : parsed;
+          }
+
+          function formatDateOnlyIsoFromMs(ms) {
+            const d = new Date(ms);
+            if (isNaN(d.getTime())) return '';
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + day;
+          }
+
+          function pickerReturnToInputValue(value) {
+            const raw = String(value == null ? '' : value).trim();
+            if (!raw) return '';
+
+            let text = raw.replace(/\u00A0/g, ' ').trim();
+            if (
+              (text.length >= 2 && text.charAt(0) === '"' && text.charAt(text.length - 1) === '"') ||
+              (text.length >= 2 && text.charAt(0) === "'" && text.charAt(text.length - 1) === "'")
+            ) {
+              text = text.slice(1, -1).trim();
+            }
+
+            // Primary picker contract plus tolerant variants: optional seconds, milliseconds,
+            // and optional timezone suffix for cross-version compatibility.
+            const localMatch = text.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(?:\s*(Z|[+-]\d{2}:?\d{2}))?$/);
+            if (localMatch && !localMatch[7]) {
+              const year = Number(localMatch[1]);
+              const month = Number(localMatch[2]) - 1;
+              const day = Number(localMatch[3]);
+              const hour = Number(localMatch[4]);
+              const minute = Number(localMatch[5]);
+              const second = Number(localMatch[6] || 0);
+              const localDate = new Date(year, month, day, hour, minute, second, 0);
+              if (
+                !isNaN(localDate.getTime()) &&
+                localDate.getFullYear() === year &&
+                localDate.getMonth() === month &&
+                localDate.getDate() === day &&
+                localDate.getHours() === hour &&
+                localDate.getMinutes() === minute
+              ) {
+                return formatForInput(localDate);
+              }
+            }
+
+            const parsed = parseDateTimeInputValue(text);
+            return parsed ? formatForInput(parsed) : '';
+          }
+
+          function getPickerReturnedDebugText(value) {
+            const text = String(value == null ? '' : value);
+            return text.length > 140 ? (text.slice(0, 140) + '...') : text;
+          }
+
+          function toPickerDefaultDateTimeString(dateObj) {
+            if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return '';
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const h = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+            return y + '-' + m + '-' + d + ' ' + h + ':' + min + ':00';
           }
 
           function getCurrentManualTargetEmail() {
@@ -8145,6 +8839,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function ceilToManualStep(ms) {
+            // Legacy employee-manual-picker helper is currently unreferenced after
+            // shared Add Missed Time modal cutover; remove when legacy path cleanup begins.
             return Math.ceil(ms / MANUAL_PICKER_STEP_MS) * MANUAL_PICKER_STEP_MS;
           }
 
@@ -8178,6 +8874,216 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               minMs: minDate.getTime(),
               maxMs: maxDate.getTime()
             };
+          }
+
+          function formatUsDateOnly(dateObj) {
+            if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return '';
+            return String(dateObj.getMonth() + 1).padStart(2, '0') + '/' +
+              String(dateObj.getDate()).padStart(2, '0') + '/' +
+              String(dateObj.getFullYear());
+          }
+
+          function toPickerDateTimeStringFromMs(ms) {
+            const d = new Date(ms);
+            if (isNaN(d.getTime())) return '';
+            return d.getFullYear() + '-' +
+              String(d.getMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getDate()).padStart(2, '0') + ' ' +
+              String(d.getHours()).padStart(2, '0') + ':' +
+              String(d.getMinutes()).padStart(2, '0') + ':00';
+          }
+
+          function buildEmployeeAddMissedConflictContext() {
+            const targetEmail = getCurrentManualTargetEmail();
+            const openEntryStart = getOpenEntryStart();
+            return {
+              openEntryStartMs: openEntryStart ? openEntryStart.getTime() : NaN,
+              conflictIntervals: collectManualConflictIntervals(targetEmail)
+            };
+          }
+
+          function refreshRecentEntriesPromise() {
+            return new Promise((resolve) => {
+              refreshRecentEntries(() => {
+                resolve(true);
+              });
+            });
+          }
+
+          function buildEmployeeSharedMissedTimeModalOptions() {
+            const manualWindow = getManualAllowedWindow();
+            const targetEmail = String(currentUserEmail || '').trim().toLowerCase();
+            const now = new Date();
+            const defaultIn = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0, 0);
+            const defaultOut = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 13, 0, 0, 0);
+
+            const minMs = Number(manualWindow.minMs);
+            const maxMs = Number(manualWindow.maxMs);
+            const hasBounds = isFinite(minMs) && isFinite(maxMs) && minMs <= maxMs;
+
+            let inMs = floorToManualStep(defaultIn.getTime());
+            let outMs = floorToManualStep(defaultOut.getTime());
+            if (hasBounds) {
+              inMs = Math.max(minMs, Math.min(maxMs, inMs));
+              outMs = Math.max(minMs, Math.min(maxMs, outMs));
+            }
+            if (outMs <= inMs) {
+              const steppedOut = inMs + MANUAL_PICKER_STEP_MS;
+              outMs = hasBounds ? Math.min(maxMs, steppedOut) : steppedOut;
+            }
+
+            const preloadedMinText = preloadedAllowedRange && preloadedAllowedRange.minDateStr
+              ? String(preloadedAllowedRange.minDateStr)
+              : '';
+            const preloadedMaxText = preloadedAllowedRange && preloadedAllowedRange.maxDateStr
+              ? String(preloadedAllowedRange.maxDateStr)
+              : '';
+            const fallbackMinText = manualWindow.minDate ? formatUsDateOnly(manualWindow.minDate) : '';
+            const fallbackMaxText = manualWindow.maxDate ? formatUsDateOnly(manualWindow.maxDate) : '';
+            const minLabel = preloadedMinText || fallbackMinText;
+            const maxLabel = preloadedMaxText || fallbackMaxText;
+            const rangeLabel = (minLabel && maxLabel)
+              ? ('Allowed range: ' + minLabel + ' to ' + maxLabel + '.')
+              : 'Use a date/time inside the allowed active period.';
+
+            return {
+              targetEmail: targetEmail,
+              targetLabel: 'Current User',
+              minDate: manualWindow.minDate ? formatDateIsoForInput(manualWindow.minDate) : '',
+              maxDate: manualWindow.maxDate ? formatDateIsoForInput(manualWindow.maxDate) : '',
+              rangeLabel: rangeLabel,
+              defaultClockInDateTime: toPickerDateTimeStringFromMs(inMs),
+              defaultClockOutDateTime: toPickerDateTimeStringFromMs(outMs),
+              workType: getManualEntryType(),
+              note: '',
+              preloadDateTimePicker: true,
+              closeHostOnCancel: false,
+              closeHostOnSubmit: false,
+              conflictContext: buildEmployeeAddMissedConflictContext(),
+              refreshConflictContext: function () {
+                if (!entriesAreStale()) {
+                  return buildEmployeeAddMissedConflictContext();
+                }
+                return refreshRecentEntriesPromise().then(function () {
+                  return buildEmployeeAddMissedConflictContext();
+                });
+              }
+            };
+          }
+
+          function submitEmployeeAddMissedTimePayload(payload) {
+            const inIso = String(payload && payload.isoClockIn || '').trim();
+            const outIso = String(payload && payload.isoClockOut || '').trim();
+            const notesVal = String(payload && payload.note || '').trim();
+            const selectedEntryType = normalizeEntryTypeClient(payload && payload.workType ? payload.workType : 'worked');
+            const errorEl = document.getElementById('error');
+            const messageEl = document.getElementById('message');
+            const loadingEl = document.getElementById('loading');
+            const startedAt = Date.now();
+
+            if (errorEl) {
+              errorEl.style.display = 'none';
+            }
+            if (messageEl) {
+              messageEl.style.display = 'none';
+            }
+
+            if (!inIso || !outIso || !notesVal) {
+              if (errorEl) {
+                errorEl.innerText = 'Clock in, clock out, and note are required.';
+                errorEl.style.display = 'block';
+              }
+              return;
+            }
+
+            if (loadingEl) {
+              loadingEl.style.display = 'block';
+            }
+
+            google.script.run
+              .withSuccessHandler((result) => {
+                if (loadingEl) {
+                  loadingEl.style.display = 'none';
+                }
+                debugClientLog('submitEmployeeAddMissedTimePayload.success', {
+                  success: !!(result && result.success),
+                  durationMs: Date.now() - startedAt
+                });
+
+                if (result && result.success) {
+                  hideManualEntryForm();
+                  setStatusText(result.status);
+                  const ct = document.getElementById('clockToggle');
+                  if (ct) ct.disabled = false;
+                  if (messageEl) {
+                    messageEl.innerText = result.message;
+                    messageEl.style.display = 'block';
+                    setTimeout(() => {
+                      messageEl.style.display = 'none';
+                    }, 3000);
+                  }
+                  refreshRecentEntries();
+                  return;
+                }
+
+                if (errorEl) {
+                  errorEl.innerText = (result && result.message) ? result.message : 'Unable to save missed time.';
+                  errorEl.style.display = 'block';
+                }
+              })
+              .withFailureHandler((err) => {
+                if (loadingEl) {
+                  loadingEl.style.display = 'none';
+                }
+                debugClientError('submitEmployeeAddMissedTimePayload.failure', {
+                  message: (err && err.message) ? err.message : 'Unknown error',
+                  durationMs: Date.now() - startedAt
+                });
+                if (errorEl) {
+                  errorEl.innerText = err && err.message ? err.message : 'Unable to save missed time.';
+                  errorEl.style.display = 'block';
+                }
+              })
+              .submitManualTimeEntry(inIso, outIso, notesVal, selectedEntryType);
+          }
+
+          async function openEmployeeSharedAddMissedTimeModal() {
+            if (employeeAddMissedTimeInFlight) return;
+            employeeAddMissedTimeInFlight = true;
+            const manualBtn = document.getElementById('manualEntryBtn');
+            if (manualBtn) manualBtn.disabled = true;
+
+            try {
+              if (entriesAreStale()) {
+                await refreshRecentEntriesPromise();
+              }
+
+              const options = buildEmployeeSharedMissedTimeModalOptions();
+
+              try {
+                await preloadAddMissedTimeModal(options);
+              } catch (_e) {
+                // Best-effort preload only.
+              }
+
+              const payload = await openAddMissedTimeModal(options);
+              if (!payload) {
+                setStatusText('Add missed time cancelled.');
+                return;
+              }
+
+              submitEmployeeAddMissedTimePayload(payload);
+            } catch (error) {
+              const message = (error && error.message) ? error.message : 'Unable to open Add Missed Time.';
+              const errorEl = document.getElementById('error');
+              if (errorEl) {
+                errorEl.innerText = message;
+                errorEl.style.display = 'block';
+              }
+            } finally {
+              employeeAddMissedTimeInFlight = false;
+              if (manualBtn) manualBtn.disabled = false;
+            }
           }
 
           function collectManualConflictIntervals(targetEmail) {
@@ -8290,6 +9196,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function isSelectableManualClockIn(dateObj) {
+            // Legacy employee-manual-picker helper is currently unreferenced after
+            // shared Add Missed Time modal cutover; remove when legacy path cleanup begins.
             if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return false;
             if (!manualPickerRuleState) return true;
             const ms = floorToManualStep(dateObj.getTime());
@@ -8342,6 +9250,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function isSelectableManualClockOut(dateObj) {
+            // Legacy employee-manual-picker helper is currently unreferenced after
+            // shared Add Missed Time modal cutover; remove when legacy path cleanup begins.
             if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return false;
             if (!manualPickerRuleState) return true;
             if (manualPickerRuleState.selectedClockInMs === null) return false;
@@ -8385,19 +9295,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return '';
           }
 
-          function setPickerInputInvalid(picker, invalid, className) {
-            if (!picker) return;
-            const targets = [picker.input, picker.altInput];
-            targets.forEach((target) => {
-              if (!target || !target.classList) return;
-              target.classList.toggle(className, invalid === true);
-            });
-          }
-
-          function getPickerSelectedDate(picker) {
-            if (!picker || !Array.isArray(picker.selectedDates) || picker.selectedDates.length === 0) return null;
-            const d = picker.selectedDates[0];
-            return (d instanceof Date && !isNaN(d.getTime())) ? new Date(d.getTime()) : null;
+          function setInputInvalid(inputEl, invalid, className) {
+            if (!inputEl || !inputEl.classList) return;
+            inputEl.classList.toggle(className, invalid === true);
           }
 
           function ensureNativeDateTimeFallback(inputIdList) {
@@ -8413,61 +9313,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             });
           }
 
-          function stepPickerTimeByInput(picker, inputEl, direction) {
-            if (!picker || !inputEl || !direction) return;
-            const baseDate = getPickerSelectedDate(picker) || new Date();
-            const next = new Date(baseDate.getTime());
-            if (inputEl.classList.contains('flatpickr-minute')) {
-              next.setMinutes(next.getMinutes() + (MANUAL_PICKER_MINUTE_INCREMENT * direction));
-            } else if (inputEl.classList.contains('flatpickr-hour')) {
-              next.setHours(next.getHours() + direction);
-            } else if (inputEl.classList.contains('flatpickr-am-pm')) {
-              next.setHours(next.getHours() + (next.getHours() >= 12 ? -12 : 12));
-            } else {
-              return;
-            }
-            picker.setDate(next, true, 'Y-m-d\\TH:i');
-          }
-
-          function attachPickerTimeScrollInteractions(picker) {
-            if (!picker || !picker.calendarContainer) return;
-            const controls = picker.calendarContainer.querySelectorAll('.flatpickr-hour, .flatpickr-minute, .flatpickr-am-pm');
-            controls.forEach((control) => {
-              if (!control || control.dataset.timeScrollBound === '1') return;
-              control.dataset.timeScrollBound = '1';
-              control.addEventListener('wheel', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const direction = e.deltaY > 0 ? -1 : 1;
-                stepPickerTimeByInput(picker, control, direction);
-              }, { passive: false });
-              let touchY = null;
-              control.addEventListener('touchstart', function(e) {
-                if (!e.touches || e.touches.length === 0) return;
-                touchY = e.touches[0].clientY;
-              }, { passive: true });
-              control.addEventListener('touchmove', function(e) {
-                if (!e.touches || e.touches.length === 0 || touchY === null) return;
-                const nextY = e.touches[0].clientY;
-                const delta = touchY - nextY;
-                if (Math.abs(delta) >= 12) {
-                  const direction = delta > 0 ? 1 : -1;
-                  stepPickerTimeByInput(picker, control, direction);
-                  touchY = nextY;
-                }
-              }, { passive: true });
-              control.addEventListener('touchend', function() {
-                touchY = null;
-              }, { passive: true });
-            });
-          }
-
           function updateManualPickerValidityHints() {
             const errorEl = document.getElementById('manualError');
             const submitBtn = document.getElementById('manualSubmit');
-            if (!manualClockInPicker || !manualClockOutPicker || !errorEl) return;
-            const inDate = parseDateTimeInputValue(manualClockInPicker.input ? manualClockInPicker.input.value : '');
-            const outDate = parseDateTimeInputValue(manualClockOutPicker.input ? manualClockOutPicker.input.value : '');
+            const clockInInput = document.getElementById('manualClockIn');
+            const clockOutInput = document.getElementById('manualClockOut');
+            if (!clockInInput || !clockOutInput || !errorEl) return;
+            const inDate = parseDateTimeInputValue(clockInInput.value);
+            const outDate = parseDateTimeInputValue(clockOutInput.value);
             const hasIn = !!(inDate && !isNaN(inDate.getTime()));
             const hasOut = !!(outDate && !isNaN(outDate.getTime()));
             const inReason = hasIn ? getManualClockInInvalidReason(inDate) : '';
@@ -8490,8 +9343,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               hint = inReason;
             }
 
-            setPickerInputInvalid(manualClockInPicker, inInvalid, 'manual-picker-invalid');
-            setPickerInputInvalid(manualClockOutPicker, outInvalid, 'manual-picker-invalid');
+            setInputInvalid(clockInInput, inInvalid, 'manual-picker-invalid');
+            setInputInvalid(clockOutInput, outInvalid, 'manual-picker-invalid');
 
             const shouldDisableSubmit = !hasIn || !hasOut || inInvalid || outInvalid;
             if (submitBtn) {
@@ -8512,58 +9365,26 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function initializeManualDateTimePickers() {
-            if (manualClockInPicker || manualClockOutPicker) return;
-            if (typeof flatpickr !== 'function') {
-              ensureNativeDateTimeFallback(['manualClockIn', 'manualClockOut']);
-              return;
-            }
+            ensureNativeDateTimeFallback(['manualClockIn', 'manualClockOut']);
 
             const clockInInput = document.getElementById('manualClockIn');
             const clockOutInput = document.getElementById('manualClockOut');
             if (!clockInInput || !clockOutInput) return;
 
-            const commonOptions = {
-              enableTime: true,
-              dateFormat: 'Y-m-d\\TH:i',
-              altInput: true,
-              altFormat: 'm/d/Y h:i K',
-              time_24hr: false,
-              minuteIncrement: MANUAL_PICKER_MINUTE_INCREMENT,
-              disableMobile: true,
-              allowInput: false
-            };
+            if (clockInInput.dataset.manualNativeValidationBound === '1' && clockOutInput.dataset.manualNativeValidationBound === '1') {
+              return;
+            }
 
-            manualClockInPicker = flatpickr(clockInInput, Object.assign({}, commonOptions, {
-              onReady: function(_, __, instance) {
-                attachPickerTimeScrollInteractions(instance);
-              },
-              onOpen: function() {
-                attachPickerTimeScrollInteractions(manualClockInPicker);
+            [clockInInput, clockOutInput].forEach((el) => {
+              if (!el || el.dataset.manualNativeValidationBound === '1') return;
+              el.dataset.manualNativeValidationBound = '1';
+              el.addEventListener('input', function() {
                 refreshManualDateTimePickers(true);
-              },
-              onChange: function() {
+              });
+              el.addEventListener('change', function() {
                 refreshManualDateTimePickers(true);
-              },
-              onValueUpdate: function() {
-                updateManualPickerValidityHints();
-              }
-            }));
-
-            manualClockOutPicker = flatpickr(clockOutInput, Object.assign({}, commonOptions, {
-              onReady: function(_, __, instance) {
-                attachPickerTimeScrollInteractions(instance);
-              },
-              onOpen: function() {
-                attachPickerTimeScrollInteractions(manualClockOutPicker);
-                refreshManualDateTimePickers(true);
-              },
-              onChange: function() {
-                updateManualPickerValidityHints();
-              },
-              onValueUpdate: function() {
-                updateManualPickerValidityHints();
-              }
-            }));
+              });
+            });
           }
 
           function refreshManualDateTimePickers(keepClockOutValue) {
@@ -8575,22 +9396,24 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const clockOutInput = document.getElementById('manualClockOut');
             const manualErrorEl = document.getElementById('manualError');
             if (!clockInInput || !clockOutInput) return;
-            if (!manualClockInPicker || !manualClockOutPicker) return;
 
-            const disableOutsideManualRange = buildDateOnlyDisablePredicate(manualWindow.minDate, manualWindow.maxDate);
-            manualClockInPicker.set('disable', [disableOutsideManualRange]);
-            manualClockOutPicker.set('disable', [disableOutsideManualRange]);
+            const minBound = formatForInput(new Date(manualWindow.minMs));
+            const maxBound = formatForInput(new Date(manualWindow.maxMs));
+            clockInInput.min = minBound;
+            clockInInput.max = maxBound;
+            clockOutInput.min = minBound;
+            clockOutInput.max = maxBound;
 
             if (!parseDateTimeInputValue(clockInInput.value)) {
               const fallbackClockIn = new Date();
               fallbackClockIn.setHours(8, 0, 0, 0);
-              manualClockInPicker.setDate(fallbackClockIn, false, 'Y-m-d\\TH:i');
+              clockInInput.value = formatForInput(fallbackClockIn);
             }
 
             if (!keepClockOutValue || !parseDateTimeInputValue(clockOutInput.value)) {
               const fallbackClockOut = new Date();
               fallbackClockOut.setHours(13, 0, 0, 0);
-              manualClockOutPicker.setDate(fallbackClockOut, false, 'Y-m-d\\TH:i');
+              clockOutInput.value = formatForInput(fallbackClockOut);
             }
 
             if (manualErrorEl && manualErrorEl.style.display === 'none') {
@@ -8629,61 +9452,113 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
-          function initializeAdminTimeEditPickers() {
-            if (adminEditClockInPicker || adminEditClockOutPicker) return;
-            if (typeof flatpickr !== 'function') {
-              ensureNativeDateTimeFallback(['adminEditClockIn', 'adminEditClockOut']);
+          async function openManualEntryDateTimePicker(targetField) {
+            if (typeof openDateTimePickerModal !== 'function') {
+              const errorEl = document.getElementById('manualError');
+              if (errorEl) {
+                errorEl.innerText = 'Date time picker is unavailable.';
+                errorEl.style.display = 'block';
+              }
               return;
             }
+
+            const isClockIn = targetField === 'clockIn';
+            const inputId = isClockIn ? 'manualClockIn' : 'manualClockOut';
+            const input = document.getElementById(inputId);
+            const errorEl = document.getElementById('manualError');
+            const clockInBtn = document.getElementById('manualClockInPickerBtn');
+            const clockOutBtn = document.getElementById('manualClockOutPickerBtn');
+            if (!input) return;
+
+            if (manualEntryPickerInFlight) {
+              return;
+            }
+            manualEntryPickerInFlight = true;
+            if (clockInBtn) clockInBtn.disabled = true;
+            if (clockOutBtn) clockOutBtn.disabled = true;
+
+            try {
+              const rule = buildManualPickerRuleState();
+              manualPickerRuleState = rule;
+              if (!rule) {
+                if (errorEl) {
+                  errorEl.innerText = 'No available time range for this selection.';
+                  errorEl.style.display = 'block';
+                }
+                return;
+              }
+
+              if (!isClockIn && rule.selectedClockInMs === null) {
+                if (errorEl) {
+                  errorEl.innerText = 'Select Clock In first.';
+                  errorEl.style.display = 'block';
+                }
+                return;
+              }
+
+              const minMs = isClockIn ? rule.minMs : rule.outMinMs;
+              const maxMs = isClockIn ? rule.latestAllowedMs : rule.outMaxMs;
+              if (!isFinite(minMs) || !isFinite(maxMs) || minMs > maxMs) {
+                if (errorEl) {
+                  errorEl.innerText = 'No available time range for this selection.';
+                  errorEl.style.display = 'block';
+                }
+                return;
+              }
+
+              const inputDate = parseDateTimeInputValue(input.value);
+              const fallbackDate = new Date(isClockIn ? minMs : Math.max(minMs, Math.min(maxMs, (rule.selectedClockInMs || minMs) + MANUAL_PICKER_STEP_MS)));
+              const defaultDate = inputDate && !isNaN(inputDate.getTime()) ? inputDate : fallbackDate;
+
+              const options = {
+                defaultDateTime: toPickerDefaultDateTimeString(defaultDate),
+                minDate: formatDateOnlyIsoFromMs(minMs),
+                maxDate: formatDateOnlyIsoFromMs(maxMs),
+                timeMode: '24h',
+                closeOnConfirm: true
+              };
+
+              const pickedValue = await openDateTimePickerModal(options);
+              if (!pickedValue) return;
+              const inputValue = pickerReturnToInputValue(pickedValue);
+              if (!inputValue) {
+                const returned = getPickerReturnedDebugText(pickedValue);
+                try {
+                  console.warn('Invalid picker return value (employee manual entry):', pickedValue);
+                } catch (_e) {}
+                if (errorEl) {
+                  errorEl.innerText = 'Picked date time format was invalid. Returned: "' + returned + '"';
+                  errorEl.style.display = 'block';
+                }
+                return;
+              }
+
+              input.value = inputValue;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+              refreshManualDateTimePickers(!isClockIn);
+            } catch (error) {
+              if (errorEl) {
+                errorEl.innerText = (error && error.message) ? error.message : 'Unable to open date time picker.';
+                errorEl.style.display = 'block';
+              }
+            } finally {
+              manualEntryPickerInFlight = false;
+              if (clockInBtn) clockInBtn.disabled = false;
+              if (clockOutBtn) clockOutBtn.disabled = false;
+            }
+          }
+
+          function initializeAdminTimeEditPickers() {
+            ensureNativeDateTimeFallback(['adminEditClockIn', 'adminEditClockOut']);
 
             const inEl = document.getElementById('adminEditClockIn');
             const outEl = document.getElementById('adminEditClockOut');
             if (!inEl || !outEl) return;
 
-            const options = {
-              enableTime: true,
-              dateFormat: 'Y-m-d\\TH:i',
-              altInput: true,
-              altFormat: 'm/d/Y h:i K',
-              time_24hr: false,
-              minuteIncrement: MANUAL_PICKER_MINUTE_INCREMENT,
-              disableMobile: true,
-              allowInput: false
-            };
-
-            adminEditClockInPicker = flatpickr(inEl, Object.assign({}, options, {
-              onReady: function(_, __, instance) {
-                attachPickerTimeScrollInteractions(instance);
-                updateAdminTimeEditValidityHints();
-              },
-              onOpen: function() {
-                attachPickerTimeScrollInteractions(adminEditClockInPicker);
-                refreshAdminTimeEditPickerBounds();
-              },
-              onChange: function() {
-                refreshAdminTimeEditPickerBounds();
-                updateAdminTimeEditValidityHints();
-              },
-              onValueUpdate: function() {
-                updateAdminTimeEditValidityHints();
-              }
-            }));
-            adminEditClockOutPicker = flatpickr(outEl, Object.assign({}, options, {
-              onReady: function(_, __, instance) {
-                attachPickerTimeScrollInteractions(instance);
-                updateAdminTimeEditValidityHints();
-              },
-              onOpen: function() {
-                attachPickerTimeScrollInteractions(adminEditClockOutPicker);
-                refreshAdminTimeEditPickerBounds();
-              },
-              onChange: function() {
-                updateAdminTimeEditValidityHints();
-              },
-              onValueUpdate: function() {
-                updateAdminTimeEditValidityHints();
-              }
-            }));
+            if (inEl.dataset.adminLiveValidationBound === '1' && outEl.dataset.adminLiveValidationBound === '1') {
+              return;
+            }
 
             [inEl, outEl].forEach((el) => {
               if (!el || el.dataset.adminLiveValidationBound === '1') return;
@@ -8750,27 +9625,85 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function refreshAdminTimeEditPickerBounds() {
-            if (!adminEditClockInPicker || !adminEditClockOutPicker) return;
             const bounds = getActivePayPeriodBounds();
+            const inEl = document.getElementById('adminEditClockIn');
+            const outEl = document.getElementById('adminEditClockOut');
+            if (!inEl || !outEl) return;
             if (bounds) {
-              const minDate = new Date(bounds.startMs);
-              const maxDate = new Date(bounds.endMs);
-              const disableOutsideEditRange = buildDateOnlyDisablePredicate(minDate, maxDate);
-              adminEditClockInPicker.set('disable', [disableOutsideEditRange]);
-              adminEditClockOutPicker.set('disable', [disableOutsideEditRange]);
+              const minValue = formatForInput(new Date(bounds.startMs));
+              const maxValue = formatForInput(new Date(bounds.endMs));
+              inEl.min = minValue;
+              inEl.max = maxValue;
+              outEl.min = minValue;
+              outEl.max = maxValue;
             } else {
-              adminEditClockInPicker.set('disable', []);
-              adminEditClockOutPicker.set('disable', []);
+              inEl.removeAttribute('min');
+              inEl.removeAttribute('max');
+              outEl.removeAttribute('min');
+              outEl.removeAttribute('max');
             }
             updateAdminTimeEditValidityHints();
+          }
+
+          async function openAdminTimeEditDateTimePicker(targetField) {
+            if (typeof openDateTimePickerModal !== 'function') return;
+            const isClockIn = targetField === 'clockIn';
+            const inInput = document.getElementById('adminEditClockIn');
+            const outInput = document.getElementById('adminEditClockOut');
+            const input = isClockIn ? inInput : outInput;
+            const errorEl = document.getElementById('adminEditError');
+            if (!input) return;
+
+            const bounds = getActivePayPeriodBounds();
+            const currentValue = parseDateTimeInputValue(input.value);
+            const fallbackMs = bounds ? bounds.startMs : Date.now();
+            const defaultDate = currentValue || new Date(fallbackMs);
+            const options = {
+              defaultDateTime: toPickerDefaultDateTimeString(defaultDate),
+              timeMode: '24h',
+              closeOnConfirm: true
+            };
+            if (bounds) {
+              options.minDate = formatDateOnlyIsoFromMs(bounds.startMs);
+              options.maxDate = formatDateOnlyIsoFromMs(bounds.endMs);
+            }
+
+            try {
+              const pickedValue = await openDateTimePickerModal(options);
+              if (!pickedValue) return;
+              const inputValue = pickerReturnToInputValue(pickedValue);
+              if (!inputValue) {
+                const returned = getPickerReturnedDebugText(pickedValue);
+                try {
+                  console.warn('Invalid picker return value (admin edit):', pickedValue);
+                } catch (_e) {}
+                if (errorEl) {
+                  errorEl.innerText = 'Picked date time format was invalid. Returned: "' + returned + '"';
+                  errorEl.style.display = 'block';
+                }
+                return;
+              }
+
+              input.value = inputValue;
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+              input.dispatchEvent(new Event('change', { bubbles: true }));
+              refreshAdminTimeEditPickerBounds();
+            } catch (error) {
+              if (errorEl) {
+                errorEl.innerText = (error && error.message) ? error.message : 'Unable to open date time picker.';
+                errorEl.style.display = 'block';
+              }
+            }
           }
 
           function updateAdminTimeEditValidityHints() {
             const errorEl = document.getElementById('adminEditError');
             const applyBtn = document.getElementById('adminTimeEditApplyBtn');
-            if (!errorEl || !adminEditClockInPicker || !adminEditClockOutPicker) return;
-            const inDate = parseDateTimeInputValue(adminEditClockInPicker.input ? adminEditClockInPicker.input.value : '');
-            const outDate = parseDateTimeInputValue(adminEditClockOutPicker.input ? adminEditClockOutPicker.input.value : '');
+            const inEl = document.getElementById('adminEditClockIn');
+            const outEl = document.getElementById('adminEditClockOut');
+            if (!errorEl || !inEl || !outEl) return;
+            const inDate = parseDateTimeInputValue(inEl.value);
+            const outDate = parseDateTimeInputValue(outEl.value);
             const rowIndex = adminEditingRowIndex;
             const validation = getAdminTimeEditValidationState(rowIndex, inDate, outDate);
 
@@ -8779,8 +9712,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               applyBtn.disabled = shouldDisableApply;
             }
 
-            setPickerInputInvalid(adminEditClockInPicker, validation.inInvalid, 'admin-picker-invalid');
-            setPickerInputInvalid(adminEditClockOutPicker, validation.outInvalid, 'admin-picker-invalid');
+            setInputInvalid(inEl, validation.inInvalid, 'admin-picker-invalid');
+            setInputInvalid(outEl, validation.outInvalid, 'admin-picker-invalid');
 
             if (validation.hint) {
               errorEl.innerText = validation.hint;
@@ -8796,11 +9729,17 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return !!(modal && modal.style.display === 'flex');
           }
 
-          function showManualEntryForm(event) {
+          async function showManualEntryForm(event) {
             if (event) {
               event.preventDefault();
               event.stopPropagation();
             }
+
+            if (!adminManualEntryTargetEmail) {
+              await openEmployeeSharedAddMissedTimeModal();
+              return;
+            }
+
             const targetInfo = document.getElementById('manualTargetInfo');
             const notesInput = document.getElementById('manualNotes');
             const manualSubmit = document.getElementById('manualSubmit');

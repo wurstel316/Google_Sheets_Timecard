@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar V1 - Date + Vertical Time Scroll</title>
+  <style>
+    :root {
+      --bg: #111a24;
+      --bg-glow: #173556;
+      --panel: #1b2734;
+      --panel-2: #213345;
+      --line: #3f5469;
+      --ink: #e6f0fa;
+      --muted: #9ab1c7;
+      --accent: #5dc0ff;
+      --ok: #76dfb0;
+      --bad: #ff9aae;
+      --focus: #ffd977;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background:
+        radial-gradient(900px 420px at 15% -10%, var(--bg-glow), transparent 70%),
+        radial-gradient(1000px 400px at 110% 0%, #2a274d, transparent 70%),
+        var(--bg);
+      padding: 16px;
+    }
+
+    .shell {
+      max-width: 1140px;
+      margin: 0 auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.32);
+    }
+
+    .head {
+      background: linear-gradient(180deg, #27394d 0%, #1c2a38 100%);
+      border-bottom: 1px solid var(--line);
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .head-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 2.8vw, 1.6rem);
+      color: var(--accent);
+    }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid #6385a9;
+      background: #294058;
+      color: #e8f2fc;
+      border-radius: 9px;
+      padding: 7px 11px;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn:hover { filter: brightness(1.08); }
+
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .card {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .fields {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      width: 100%;
+      border: 1px solid #57718a;
+      background: #141e29;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+
+    input:focus,
+    button:focus,
+    [tabindex]:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .status {
+      min-height: 22px;
+      color: var(--ok);
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .status.error { color: var(--bad); }
+
+    .cal-wrap {
+      display: grid;
+      gap: 10px;
+    }
+
+    .month-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .month-title {
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .icon-btn {
+      border: 1px solid #587493;
+      background: #172433;
+      color: #dce9f7;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .days-head,
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .days-head div {
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .day {
+      border: 1px solid #455d75;
+      background: #142130;
+      color: #dbe8f7;
+      border-radius: 8px;
+      min-height: 34px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .day.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    .day.selected {
+      background: #2c628f;
+      border-color: #7dc4ff;
+      color: #f3faff;
+    }
+
+    .time-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .time-col {
+      border: 1px solid #48617a;
+      border-radius: 10px;
+      background: #151f2a;
+      overflow: hidden;
+    }
+
+    .time-col h3 {
+      margin: 0;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      padding: 8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid #3a4e63;
+      background: #182534;
+    }
+
+    .list {
+      max-height: 214px;
+      overflow: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      scroll-behavior: smooth;
+    }
+
+    .item {
+      width: 100%;
+      text-align: center;
+      border: 0;
+      border-bottom: 1px solid #2a3f55;
+      background: transparent;
+      color: #d6e8f9;
+      padding: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 38px;
+    }
+
+    .item.active {
+      background: #28557e;
+      color: #f4fbff;
+    }
+
+    .item:hover { background: #203f5c; }
+
+    .right {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .out {
+      border: 1px dashed #5f7a94;
+      background: #111a24;
+      border-radius: 10px;
+      padding: 10px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .value {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #e9f5ff;
+      letter-spacing: 0.02em;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .fields { grid-template-columns: 1fr; }
+      .time-cols { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="head">
+      <div class="head-top">
+        <h1>Calendar V1: Date + Vertical Time Scroll</h1>
+        <div class="nav">
+          <a class="btn" href="./index.html">Index</a>
+          <a class="btn" href="./option-calendar-v2-date-time-reel.html">V2</a>
+          <a class="btn" href="./option-calendar-v3-date-plus-clock-toggle.html">V3</a>
+          <button class="btn" id="closeMockupBtn" type="button">Close</button>
+        </div>
+      </div>
+      <p class="sub">Keyboard typing, tab flow, wheel + swipe scrolling, and strict min/max date restriction behavior.</p>
+    </section>
+
+    <section class="layout">
+      <section class="card cal-wrap" aria-label="Calendar and time picker">
+        <h2>Picker</h2>
+        <div class="month-row">
+          <button class="icon-btn" id="prevMonthBtn" type="button" aria-label="Previous month">&#9664;</button>
+          <div class="month-title" id="monthTitle" aria-live="polite"></div>
+          <button class="icon-btn" id="nextMonthBtn" type="button" aria-label="Next month">&#9654;</button>
+        </div>
+        <div class="days-head" aria-hidden="true">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="days-grid" id="daysGrid" role="grid" aria-label="Date picker grid"></div>
+
+        <div class="time-cols">
+          <section class="time-col" aria-label="Hour scroller">
+            <h3>Hours</h3>
+            <div class="list" id="hourList" tabindex="0"></div>
+          </section>
+          <section class="time-col" aria-label="Minute scroller">
+            <h3>Minutes</h3>
+            <div class="list" id="minuteList" tabindex="0"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="right">
+        <section class="card">
+          <h2>Restriction Controls</h2>
+          <div class="fields">
+            <div class="field">
+              <label for="minDateInput">Min Date</label>
+              <input id="minDateInput" type="date" />
+            </div>
+            <div class="field">
+              <label for="maxDateInput">Max Date</label>
+              <input id="maxDateInput" type="date" />
+            </div>
+          </div>
+          <div class="actions" style="margin-top: 8px;">
+            <button class="btn" id="applyRangeBtn" type="button">Apply Range</button>
+            <button class="btn" id="thisWeekBtn" type="button">This Week</button>
+          </div>
+          <div class="status" id="statusText" aria-live="polite"></div>
+        </section>
+
+        <section class="card">
+          <h2>Type or Tab Through</h2>
+          <div class="fields">
+            <div class="field">
+              <label for="typedDateInput">Date (YYYY-MM-DD)</label>
+              <input id="typedDateInput" type="text" placeholder="2026-09-02" />
+            </div>
+            <div class="field">
+              <label for="typedTimeInput">Time (HH:MM)</label>
+              <input id="typedTimeInput" type="text" placeholder="13:45" />
+            </div>
+          </div>
+          <div class="actions" style="margin-top: 8px;">
+            <button class="btn" id="applyTypedBtn" type="button">Apply Typed Value</button>
+            <button class="btn" id="commitBtn" type="button">Commit Selection</button>
+          </div>
+        </section>
+
+        <section class="out" aria-label="Selection output">
+          <div class="meta">Date/Time Output</div>
+          <div class="value" id="dateTimeOut">-</div>
+          <div class="meta" id="rangeOut">Allowed range: -</div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const state = {
+        selectedDate: new Date(),
+        selectedHour: 9,
+        selectedMinute: 0,
+        viewYear: new Date().getFullYear(),
+        viewMonth: new Date().getMonth(),
+        minDate: null,
+        maxDate: null
+      };
+
+      const els = {
+        monthTitle: document.getElementById('monthTitle'),
+        daysGrid: document.getElementById('daysGrid'),
+        hourList: document.getElementById('hourList'),
+        minuteList: document.getElementById('minuteList'),
+        minDateInput: document.getElementById('minDateInput'),
+        maxDateInput: document.getElementById('maxDateInput'),
+        typedDateInput: document.getElementById('typedDateInput'),
+        typedTimeInput: document.getElementById('typedTimeInput'),
+        statusText: document.getElementById('statusText'),
+        dateTimeOut: document.getElementById('dateTimeOut'),
+        rangeOut: document.getElementById('rangeOut')
+      };
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function formatDateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+      function normalizeDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+      function parseDateText(s) {
+        const m = String(s || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return null;
+        const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        if (Number.isNaN(dt.getTime())) return null;
+        if (dt.getFullYear() !== Number(m[1]) || dt.getMonth() !== Number(m[2]) - 1 || dt.getDate() !== Number(m[3])) return null;
+        return dt;
+      }
+      function parseTimeText(s) {
+        const m = String(s || '').trim().match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return null;
+        const hh = Number(m[1]);
+        const mm = Number(m[2]);
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+        return { hh, mm };
+      }
+      function inAllowedRange(d) {
+        const ms = normalizeDay(d).getTime();
+        if (state.minDate && ms < state.minDate.getTime()) return false;
+        if (state.maxDate && ms > state.maxDate.getTime()) return false;
+        return true;
+      }
+      function status(msg, isError) {
+        els.statusText.textContent = msg;
+        els.statusText.classList.toggle('error', !!isError);
+      }
+      function syncOutput() {
+        const d = state.selectedDate;
+        const dateKey = formatDateKey(d);
+        const t = pad(state.selectedHour) + ':' + pad(state.selectedMinute);
+        els.dateTimeOut.textContent = dateKey + ' ' + t;
+        const min = state.minDate ? formatDateKey(state.minDate) : '-inf';
+        const max = state.maxDate ? formatDateKey(state.maxDate) : '+inf';
+        els.rangeOut.textContent = 'Allowed range: ' + min + ' to ' + max;
+        els.typedDateInput.value = dateKey;
+        els.typedTimeInput.value = t;
+      }
+
+      function renderDays() {
+        const first = new Date(state.viewYear, state.viewMonth, 1);
+        const startDow = first.getDay();
+        const daysInMonth = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
+        els.monthTitle.textContent = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        els.daysGrid.innerHTML = '';
+        for (let i = 0; i < startDow; i++) {
+          const spacer = document.createElement('div');
+          els.daysGrid.appendChild(spacer);
+        }
+        for (let day = 1; day <= daysInMonth; day++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'day';
+          btn.textContent = String(day);
+          const d = new Date(state.viewYear, state.viewMonth, day);
+          const allowed = inAllowedRange(d);
+          if (!allowed) {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+            btn.setAttribute('aria-disabled', 'true');
+          }
+          const selected = formatDateKey(d) === formatDateKey(state.selectedDate);
+          if (selected) btn.classList.add('selected');
+          btn.addEventListener('click', function () {
+            if (!allowed) {
+              status('Date is outside allowed range.', true);
+              return;
+            }
+            state.selectedDate = d;
+            renderDays();
+            syncOutput();
+            status('Date selected.', false);
+          });
+          els.daysGrid.appendChild(btn);
+        }
+      }
+
+      function renderTimeList(container, max, active, onSelect) {
+        container.innerHTML = '';
+        for (let i = 0; i <= max; i++) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'item' + (i === active ? ' active' : '');
+          b.textContent = pad(i);
+          b.setAttribute('data-value', String(i));
+          b.addEventListener('click', function () {
+            onSelect(i);
+          });
+          container.appendChild(b);
+        }
+      }
+
+      function focusActive(container) {
+        const active = container.querySelector('.item.active');
+        if (active) active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+
+      function setHour(h) {
+        state.selectedHour = h;
+        renderTimeList(els.hourList, 23, state.selectedHour, setHour);
+        focusActive(els.hourList);
+        syncOutput();
+      }
+
+      function setMinute(m) {
+        state.selectedMinute = m;
+        renderTimeList(els.minuteList, 59, state.selectedMinute, setMinute);
+        focusActive(els.minuteList);
+        syncOutput();
+      }
+
+      function listWheel(listEl, getter, setter, max) {
+        listEl.addEventListener('wheel', function (event) {
+          event.preventDefault();
+          const next = getter() + (event.deltaY > 0 ? 1 : -1);
+          if (next < 0) return setter(max);
+          if (next > max) return setter(0);
+          setter(next);
+        }, { passive: false });
+      }
+
+      function listSwipe(listEl, getter, setter, max) {
+        let startY = null;
+        listEl.addEventListener('pointerdown', function (event) {
+          startY = event.clientY;
+          listEl.setPointerCapture(event.pointerId);
+        });
+        listEl.addEventListener('pointerup', function (event) {
+          if (startY === null) return;
+          const delta = event.clientY - startY;
+          if (Math.abs(delta) > 16) {
+            const next = getter() + (delta < 0 ? 1 : -1);
+            if (next < 0) return setter(max);
+            if (next > max) return setter(0);
+            setter(next);
+          }
+          startY = null;
+        });
+      }
+
+      function applyRange() {
+        const minD = parseDateText(els.minDateInput.value);
+        const maxD = parseDateText(els.maxDateInput.value);
+        if (!minD || !maxD) {
+          status('Set valid min and max dates.', true);
+          return;
+        }
+        const minN = normalizeDay(minD);
+        const maxN = normalizeDay(maxD);
+        if (minN.getTime() > maxN.getTime()) {
+          status('Min date must be before max date.', true);
+          return;
+        }
+        state.minDate = minN;
+        state.maxDate = maxN;
+        if (!inAllowedRange(state.selectedDate)) {
+          state.selectedDate = new Date(state.minDate);
+          state.viewYear = state.selectedDate.getFullYear();
+          state.viewMonth = state.selectedDate.getMonth();
+        }
+        renderDays();
+        syncOutput();
+        status('Range applied.', false);
+      }
+
+      function setThisWeek() {
+        const now = new Date();
+        const day = now.getDay();
+        const start = new Date(now);
+        start.setDate(now.getDate() - day);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        state.minDate = normalizeDay(start);
+        state.maxDate = normalizeDay(end);
+        els.minDateInput.value = formatDateKey(state.minDate);
+        els.maxDateInput.value = formatDateKey(state.maxDate);
+        if (!inAllowedRange(state.selectedDate)) {
+          state.selectedDate = new Date(state.minDate);
+          state.viewYear = state.selectedDate.getFullYear();
+          state.viewMonth = state.selectedDate.getMonth();
+        }
+        renderDays();
+        syncOutput();
+        status('This-week range applied.', false);
+      }
+
+      function applyTyped() {
+        const d = parseDateText(els.typedDateInput.value);
+        const t = parseTimeText(els.typedTimeInput.value);
+        if (!d || !t) {
+          status('Type date as YYYY-MM-DD and time as HH:MM.', true);
+          return;
+        }
+        if (!inAllowedRange(d)) {
+          status('Typed date is outside allowed range.', true);
+          return;
+        }
+        state.selectedDate = d;
+        state.selectedHour = t.hh;
+        state.selectedMinute = t.mm;
+        state.viewYear = d.getFullYear();
+        state.viewMonth = d.getMonth();
+        renderDays();
+        renderTimeList(els.hourList, 23, state.selectedHour, setHour);
+        renderTimeList(els.minuteList, 59, state.selectedMinute, setMinute);
+        focusActive(els.hourList);
+        focusActive(els.minuteList);
+        syncOutput();
+        status('Typed value applied.', false);
+      }
+
+      function commitSelection() {
+        if (!inAllowedRange(state.selectedDate)) {
+          status('Cannot commit outside allowed range.', true);
+          return;
+        }
+        const payload = {
+          date: formatDateKey(state.selectedDate),
+          time: pad(state.selectedHour) + ':' + pad(state.selectedMinute),
+          datetimeLocal: formatDateKey(state.selectedDate) + ' ' + pad(state.selectedHour) + ':' + pad(state.selectedMinute) + ':00'
+        };
+        status('Committed: ' + payload.datetimeLocal, false);
+        if (window.timecardAdminHost && typeof window.timecardAdminHost.onCalendarCommit === 'function') {
+          window.timecardAdminHost.onCalendarCommit(payload);
+        }
+      }
+
+      document.getElementById('prevMonthBtn').addEventListener('click', function () {
+        state.viewMonth -= 1;
+        if (state.viewMonth < 0) {
+          state.viewMonth = 11;
+          state.viewYear -= 1;
+        }
+        renderDays();
+      });
+
+      document.getElementById('nextMonthBtn').addEventListener('click', function () {
+        state.viewMonth += 1;
+        if (state.viewMonth > 11) {
+          state.viewMonth = 0;
+          state.viewYear += 1;
+        }
+        renderDays();
+      });
+
+      document.getElementById('applyRangeBtn').addEventListener('click', applyRange);
+      document.getElementById('thisWeekBtn').addEventListener('click', setThisWeek);
+      document.getElementById('applyTypedBtn').addEventListener('click', applyTyped);
+      document.getElementById('commitBtn').addEventListener('click', commitSelection);
+
+      document.getElementById('closeMockupBtn').addEventListener('click', function () {
+        if (window.google && window.google.script && window.google.script.host && typeof window.google.script.host.close === 'function') {
+          window.google.script.host.close();
+          return;
+        }
+        window.location.href = './index.html';
+      });
+
+      els.typedDateInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          applyTyped();
+        }
+      });
+      els.typedTimeInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          commitSelection();
+        }
+      });
+
+      els.hourList.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown') { event.preventDefault(); setHour((state.selectedHour + 1) % 24); }
+        if (event.key === 'ArrowUp') { event.preventDefault(); setHour((state.selectedHour + 23) % 24); }
+      });
+      els.minuteList.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown') { event.preventDefault(); setMinute((state.selectedMinute + 1) % 60); }
+        if (event.key === 'ArrowUp') { event.preventDefault(); setMinute((state.selectedMinute + 59) % 60); }
+      });
+
+      listWheel(els.hourList, function () { return state.selectedHour; }, setHour, 23);
+      listWheel(els.minuteList, function () { return state.selectedMinute; }, setMinute, 59);
+      listSwipe(els.hourList, function () { return state.selectedHour; }, setHour, 23);
+      listSwipe(els.minuteList, function () { return state.selectedMinute; }, setMinute, 59);
+
+      setThisWeek();
+      renderDays();
+      renderTimeList(els.hourList, 23, state.selectedHour, setHour);
+      renderTimeList(els.minuteList, 59, state.selectedMinute, setMinute);
+      syncOutput();
+    })();
+  </script>
+</body>
+</html>

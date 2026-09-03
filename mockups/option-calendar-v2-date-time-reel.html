@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendar V2 - Date + Time Reel</title>
+  <style>
+    :root {
+      --bg: #181420;
+      --panel: #242034;
+      --panel-2: #30294a;
+      --line: #62568b;
+      --ink: #efe9ff;
+      --muted: #b8add7;
+      --accent: #ffbe78;
+      --focus: #7ee7ff;
+      --ok: #8be3ae;
+      --bad: #ff8da7;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 400px at -10% -10%, #46375f, transparent 70%),
+        radial-gradient(1000px 420px at 120% 10%, #5a2f42, transparent 70%),
+        var(--bg);
+      padding: 16px;
+    }
+
+    .shell {
+      max-width: 1120px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--panel);
+      box-shadow: 0 22px 40px rgba(0, 0, 0, 0.35);
+    }
+
+    .head {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #3c315f 0%, #2a2442 100%);
+      display: grid;
+      gap: 8px;
+    }
+
+    .head-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--accent);
+      font-size: clamp(1.18rem, 2.8vw, 1.55rem);
+    }
+
+    .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .btn {
+      border: 1px solid #8f82bf;
+      background: #413561;
+      color: #f4efff;
+      border-radius: 9px;
+      padding: 7px 10px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .content {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    h2 { margin: 0 0 10px; font-size: 1rem; }
+
+    .range {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .field { display: grid; gap: 4px; }
+
+    .field label {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    input[type="date"],
+    input[type="text"] {
+      width: 100%;
+      border: 1px solid #8678b7;
+      background: #1f1a2d;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.88rem;
+    }
+
+    input:focus,
+    button:focus,
+    [tabindex]:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .status {
+      min-height: 22px;
+      margin-top: 8px;
+      color: var(--ok);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .status.error { color: var(--bad); }
+
+    .month-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      border: 1px solid #7f72ae;
+      background: #231d35;
+      color: var(--ink);
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .days-head,
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .days-head div {
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .day {
+      border: 1px solid #73689d;
+      background: #1d1730;
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 34px;
+      font-size: 0.83rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .day.disabled { opacity: 0.33; text-decoration: line-through; cursor: not-allowed; }
+    .day.selected { background: #5f4ea0; border-color: #b0a5ea; }
+
+    .reel-wrap {
+      margin-top: 12px;
+      border: 1px solid #756aa2;
+      border-radius: 12px;
+      background: #211a33;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .reel {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .lane {
+      border: 1px solid #6d6298;
+      border-radius: 10px;
+      max-height: 240px;
+      overflow: auto;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+      background: #1b152b;
+      scroll-snap-type: y mandatory;
+    }
+
+    .lane-btn {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid #403662;
+      background: transparent;
+      color: #e9e0ff;
+      min-height: 44px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      scroll-snap-align: center;
+    }
+
+    .lane-btn.active { background: #6552ac; }
+
+    .center-band {
+      pointer-events: none;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 44px;
+      border-top: 1px dashed #ad9be2;
+      border-bottom: 1px dashed #ad9be2;
+      opacity: 0.55;
+    }
+
+    .typed {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .output {
+      margin-top: 12px;
+      border: 1px dashed #8579b4;
+      border-radius: 10px;
+      padding: 10px;
+      background: #1d1730;
+      font-size: 1.03rem;
+      font-weight: 800;
+    }
+
+    @media (max-width: 900px) {
+      .content { grid-template-columns: 1fr; }
+      .range { grid-template-columns: 1fr; }
+      .typed { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="head">
+      <div class="head-top">
+        <h1>Calendar V2: Snap Time Reel</h1>
+        <div class="nav">
+          <a class="btn" href="./index.html">Index</a>
+          <a class="btn" href="./option-calendar-v1-date-plus-time-scroll.html">V1</a>
+          <a class="btn" href="./option-calendar-v3-date-plus-clock-toggle.html">V3</a>
+          <button class="btn" type="button" id="closeBtn">Close</button>
+        </div>
+      </div>
+      <p class="sub">Compact vertical reel with snapping; supports keyboard, wheel, touch swipe, and typed input with min/max date restrictions.</p>
+    </section>
+
+    <section class="content">
+      <section class="card">
+        <h2>Date Restrictions</h2>
+        <div class="range">
+          <div class="field">
+            <label for="minDate">Min Date</label>
+            <input id="minDate" type="date" />
+          </div>
+          <div class="field">
+            <label for="maxDate">Max Date</label>
+            <input id="maxDate" type="date" />
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <button class="btn" id="applyRange" type="button">Apply</button>
+          <button class="btn" id="next14" type="button">Next 14 Days</button>
+        </div>
+        <div class="status" id="status" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-label="Calendar with time reel">
+        <h2>Choose Date + Time</h2>
+        <div class="month-row">
+          <button class="icon-btn" type="button" id="prev">&#9664;</button>
+          <div id="monthLabel" aria-live="polite"></div>
+          <button class="icon-btn" type="button" id="next">&#9654;</button>
+        </div>
+        <div class="days-head" aria-hidden="true">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+        <div class="days-grid" id="grid" role="grid"></div>
+
+        <div class="reel-wrap">
+          <div class="reel">
+            <div class="lane" id="hourLane" tabindex="0" aria-label="Hour reel"></div>
+            <div class="lane" id="minuteLane" tabindex="0" aria-label="Minute reel"></div>
+            <div class="center-band" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="typed">
+          <div class="field">
+            <label for="typedDate">Date YYYY-MM-DD</label>
+            <input id="typedDate" type="text" />
+          </div>
+          <div class="field">
+            <label for="typedTime">Time HH:MM</label>
+            <input id="typedTime" type="text" />
+          </div>
+          <button class="btn" id="applyTyped" type="button">Apply Typed</button>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+          <button class="btn" id="commit" type="button">Commit</button>
+        </div>
+
+        <div class="output" id="output">-</div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const state = {
+        date: new Date(),
+        viewYear: new Date().getFullYear(),
+        viewMonth: new Date().getMonth(),
+        hour: 10,
+        minute: 30,
+        min: null,
+        max: null
+      };
+
+      const el = {
+        minDate: document.getElementById('minDate'),
+        maxDate: document.getElementById('maxDate'),
+        status: document.getElementById('status'),
+        monthLabel: document.getElementById('monthLabel'),
+        grid: document.getElementById('grid'),
+        hourLane: document.getElementById('hourLane'),
+        minuteLane: document.getElementById('minuteLane'),
+        typedDate: document.getElementById('typedDate'),
+        typedTime: document.getElementById('typedTime'),
+        output: document.getElementById('output')
+      };
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function dateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+      function startDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+      function parseDate(s) {
+        const m = String(s || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return null;
+        const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+        if (Number.isNaN(d.getTime())) return null;
+        if (d.getFullYear() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1 || d.getDate() !== Number(m[3])) return null;
+        return d;
+      }
+      function parseTime(s) {
+        const m = String(s || '').trim().match(/^(\d{1,2}):(\d{2})$/);
+        if (!m) return null;
+        const hh = Number(m[1]);
+        const mm = Number(m[2]);
+        if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+        return { hh, mm };
+      }
+      function isAllowed(d) {
+        const ms = startDay(d).getTime();
+        if (state.min && ms < state.min.getTime()) return false;
+        if (state.max && ms > state.max.getTime()) return false;
+        return true;
+      }
+      function setStatus(msg, bad) {
+        el.status.textContent = msg;
+        el.status.classList.toggle('error', !!bad);
+      }
+
+      function syncOutput() {
+        const value = dateKey(state.date) + ' ' + pad(state.hour) + ':' + pad(state.minute) + ':00';
+        el.output.textContent = value;
+        el.typedDate.value = dateKey(state.date);
+        el.typedTime.value = pad(state.hour) + ':' + pad(state.minute);
+      }
+
+      function renderCalendar() {
+        const first = new Date(state.viewYear, state.viewMonth, 1);
+        const start = first.getDay();
+        const count = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
+        el.monthLabel.textContent = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+        el.grid.innerHTML = '';
+        for (let i = 0; i < start; i++) {
+          el.grid.appendChild(document.createElement('div'));
+        }
+        for (let day = 1; day <= count; day++) {
+          const d = new Date(state.viewYear, state.viewMonth, day);
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'day';
+          b.textContent = String(day);
+          const allowed = isAllowed(d);
+          if (!allowed) {
+            b.disabled = true;
+            b.classList.add('disabled');
+          }
+          if (dateKey(d) === dateKey(state.date)) b.classList.add('selected');
+          b.addEventListener('click', function () {
+            if (!allowed) {
+              setStatus('Selected date is blocked by range.', true);
+              return;
+            }
+            state.date = d;
+            renderCalendar();
+            syncOutput();
+            setStatus('Date selected.', false);
+          });
+          el.grid.appendChild(b);
+        }
+      }
+
+      function buildLane(node, max, active, setter) {
+        node.innerHTML = '';
+        for (let i = 0; i <= max; i++) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'lane-btn' + (i === active ? ' active' : '');
+          b.textContent = pad(i);
+          b.addEventListener('click', function () { setter(i); });
+          node.appendChild(b);
+        }
+      }
+
+      function setHour(v) {
+        state.hour = v;
+        buildLane(el.hourLane, 23, state.hour, setHour);
+        centerActive(el.hourLane);
+        syncOutput();
+      }
+      function setMinute(v) {
+        state.minute = v;
+        buildLane(el.minuteLane, 59, state.minute, setMinute);
+        centerActive(el.minuteLane);
+        syncOutput();
+      }
+
+      function centerActive(node) {
+        const active = node.querySelector('.active');
+        if (active) active.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+
+      function laneWheel(node, getter, setter, max) {
+        node.addEventListener('wheel', function (event) {
+          event.preventDefault();
+          const current = getter();
+          const next = current + (event.deltaY > 0 ? 1 : -1);
+          if (next < 0) return setter(max);
+          if (next > max) return setter(0);
+          setter(next);
+        }, { passive: false });
+      }
+
+      function laneSwipe(node, getter, setter, max) {
+        let yStart = null;
+        node.addEventListener('pointerdown', function (event) {
+          yStart = event.clientY;
+          node.setPointerCapture(event.pointerId);
+        });
+        node.addEventListener('pointerup', function (event) {
+          if (yStart === null) return;
+          const diff = event.clientY - yStart;
+          if (Math.abs(diff) > 16) {
+            const next = getter() + (diff < 0 ? 1 : -1);
+            if (next < 0) return setter(max);
+            if (next > max) return setter(0);
+            setter(next);
+          }
+          yStart = null;
+        });
+      }
+
+      function applyRange() {
+        const min = parseDate(el.minDate.value);
+        const max = parseDate(el.maxDate.value);
+        if (!min || !max) return setStatus('Provide valid min and max date.', true);
+        state.min = startDay(min);
+        state.max = startDay(max);
+        if (state.min.getTime() > state.max.getTime()) return setStatus('Min must be <= max.', true);
+        if (!isAllowed(state.date)) {
+          state.date = new Date(state.min);
+          state.viewYear = state.date.getFullYear();
+          state.viewMonth = state.date.getMonth();
+        }
+        renderCalendar();
+        syncOutput();
+        setStatus('Range applied.', false);
+      }
+
+      function setNext14() {
+        const now = startDay(new Date());
+        const max = new Date(now);
+        max.setDate(now.getDate() + 13);
+        state.min = now;
+        state.max = max;
+        el.minDate.value = dateKey(state.min);
+        el.maxDate.value = dateKey(state.max);
+        if (!isAllowed(state.date)) {
+          state.date = new Date(state.min);
+          state.viewYear = state.date.getFullYear();
+          state.viewMonth = state.date.getMonth();
+        }
+        renderCalendar();
+        syncOutput();
+        setStatus('Next 14 days enabled.', false);
+      }
+
+      function applyTyped() {
+        const d = parseDate(el.typedDate.value);
+        const t = parseTime(el.typedTime.value);
+        if (!d || !t) return setStatus('Typed format: YYYY-MM-DD and HH:MM.', true);
+        if (!isAllowed(d)) return setStatus('Typed date is outside allowed range.', true);
+        state.date = d;
+        state.viewYear = d.getFullYear();
+        state.viewMonth = d.getMonth();
+        state.hour = t.hh;
+        state.minute = t.mm;
+        renderCalendar();
+        buildLane(el.hourLane, 23, state.hour, setHour);
+        buildLane(el.minuteLane, 59, state.minute, setMinute);
+        centerActive(el.hourLane);
+        centerActive(el.minuteLane);
+        syncOutput();
+        setStatus('Typed value applied.', false);
+      }
+
+      function commit() {
+        if (!isAllowed(state.date)) return setStatus('Cannot commit blocked date.', true);
+        const payload = {
+          date: dateKey(state.date),
+          time: pad(state.hour) + ':' + pad(state.minute),
+          datetimeLocal: dateKey(state.date) + ' ' + pad(state.hour) + ':' + pad(state.minute) + ':00'
+        };
+        setStatus('Committed: ' + payload.datetimeLocal, false);
+        if (window.timecardAdminHost && typeof window.timecardAdminHost.onCalendarCommit === 'function') {
+          window.timecardAdminHost.onCalendarCommit(payload);
+        }
+      }
+
+      document.getElementById('prev').addEventListener('click', function () {
+        state.viewMonth -= 1;
+        if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear -= 1; }
+        renderCalendar();
+      });
+      document.getElementById('next').addEventListener('click', function () {
+        state.viewMonth += 1;
+        if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear += 1; }
+        renderCalendar();
+      });
+
+      document.getElementById('applyRange').addEventListener('click', applyRange);
+      document.getElementById('next14').addEventListener('click', setNext14);
+      document.getElementById('applyTyped').addEventListener('click', applyTyped);
+      document.getElementById('commit').addEventListener('click', commit);
+
+      el.typedDate.addEventListener('keydown', function (event) { if (event.key === 'Enter') { event.preventDefault(); applyTyped(); } });
+      el.typedTime.addEventListener('keydown', function (event) { if (event.key === 'Enter') { event.preventDefault(); commit(); } });
+
+      el.hourLane.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown') { event.preventDefault(); setHour((state.hour + 1) % 24); }
+        if (event.key === 'ArrowUp') { event.preventDefault(); setHour((state.hour + 23) % 24); }
+      });
+      el.minuteLane.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowDown') { event.preventDefault(); setMinute((state.minute + 1) % 60); }
+        if (event.key === 'ArrowUp') { event.preventDefault(); setMinute((state.minute + 59) % 60); }
+      });
+
+      laneWheel(el.hourLane, function () { return state.hour; }, setHour, 23);
+      laneWheel(el.minuteLane, function () { return state.minute; }, setMinute, 59);
+      laneSwipe(el.hourLane, function () { return state.hour; }, setHour, 23);
+      laneSwipe(el.minuteLane, function () { return state.minute; }, setMinute, 59);
+
+      document.getElementById('closeBtn').addEventListener('click', function () {
+        if (window.google && window.google.script && window.google.script.host && typeof window.google.script.host.close === 'function') {
+          window.google.script.host.close();
+          return;
+        }
+        window.location.href = './index.html';
+      });
+
+      setNext14();
+      renderCalendar();
+      buildLane(el.hourLane, 23, state.hour, setHour);
+      buildLane(el.minuteLane, 59, state.minute, setMinute);
+      syncOutput();
+      centerActive(el.hourLane);
+      centerActive(el.minuteLane);
+    })();
+  </script>
+</body>
+</html>
