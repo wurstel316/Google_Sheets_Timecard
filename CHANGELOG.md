@@ -7,6 +7,26 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Fixed quick-tools hamburger visibility and interaction so it appears and works on both desktop and mobile.
+- Why: The menu trigger did not appear reliably and desktop could not open it due viewport-gated interaction logic.
+- Files: src/UserInterface.js
+- Validation: Converted quick-tools to universal trigger/dropdown styles, removed viewport-only open guards, preserved outside-click and Escape close behavior, and confirmed diagnostics report no file errors.
+
+- Summary: Set mobile visual baseline to 200% readability and replaced the crowded mobile utility control strip with a tap-open 3-line dropdown menu.
+- Why: Mobile looked correct only at 200% scale, and persistent inline utility controls (UI scale/theme/admin buttons) consumed too much space and felt noisy on phone widths.
+- Files: src/UserInterface.js
+- Validation: Updated mobile default scale to 200 and bumped stored mobile values below that floor during init, added a 900px mobile tools breakpoint with a hamburger trigger, converted top utility controls into a tap-open drawer with outside-click/Escape close behavior, and confirmed diagnostics report no file errors.
+
+- Summary: Added a 375px-focused refinement pass for the main app screen, including narrower time pills, forced mobile recent-cards on small viewports, and stronger top-control compaction.
+- Why: The 375px screenshot still showed dense table behavior and oversized chips/actions that reduced readability and touch comfort.
+- Files: src/UserInterface.js
+- Validation: Reduced `--tc-time-pill-width`, switched utility control compaction breakpoint to `max-width: 1024px`, forced cards/hid table under `max-width: 900px`, added an extra `max-width: 390px` tightening block, wired `resize` + `orientationchange` listeners for layout mode refresh, and confirmed diagnostics report no file errors.
+
+- Summary: Implemented a cross-surface mobile sizing unification pass optimized for 390px comfort-density usage, including strict type/spacing tokens, tighter above-the-fold layout, and consistent modal control sizing.
+- Why: The main app and modal surfaces showed inconsistent text sizes, uneven control dimensions, and excess vertical/horizontal waste on phone screens.
+- Files: src/UserInterface.js, src/AddMissedTimeModalHTML.html, src/AdminModalHTML.html, src/DateTimePickerModal.html, src/ScheduleHTML.html
+- Validation: Added tokenized text/spacing/control-height scales, aligned UI-scale runtime math to a 16px baseline, enabled mobile recent-card layout by viewport width (<=768px), normalized time-pill widths and key control sizes, aligned modal breakpoints to 768px, and confirmed diagnostics report no file errors for all touched files.
+
 - Summary: Corrected Add Missed Time text scaling so rem-based modal typography follows UI scale settings.
 - Why: Text size appeared fixed across UI scale levels because font scaling was applied to body while component typography is defined in rem units.
 - Files: src/AddMissedTimeModalHTML.html

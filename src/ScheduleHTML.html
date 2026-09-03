@@ -6,6 +6,11 @@
   <title>Technique Towing – Vertical Schedule View (Rev 2.10)</title>
   <style>
     :root {
+      --text-xs: clamp(0.74rem, 2.2vw, 0.84rem);
+      --text-sm: clamp(0.82rem, 2.7vw, 0.94rem);
+      --text-md: clamp(0.92rem, 3.2vw, 1.04rem);
+      --control-sm: 2.2rem;
+      --control-md: 2.8rem;
       --bg: #0f1419;
       --card: #1a2332;
       --border: #2d3a4f;
@@ -95,8 +100,8 @@
     .sidebar-btn {
       display: block;
       width: 100%;
-      padding: 0.4rem 0.6rem;
-      font-size: 0.78rem;
+      padding: 0.52rem 0.68rem;
+      font-size: var(--text-sm);
       border-radius: 6px;
       background: var(--b);
       color: #0f1419;
@@ -104,6 +109,7 @@
       cursor: pointer;
       font-weight: 500;
       text-align: center;
+      min-height: var(--control-md);
     }
     .sidebar-btn:hover {
       filter: brightness(1.08);
@@ -159,7 +165,7 @@
       filter: brightness(1.05);
     }
     .schedule-status {
-      font-size: 0.72rem;
+      font-size: var(--text-xs);
       line-height: 1.35;
       color: var(--text-muted);
       min-height: 1em;
@@ -272,7 +278,7 @@
       letter-spacing: 0.04em;
     }
     .location-filter select {
-      width: 100%;
+      font-size: var(--text-xs);
       padding: 0.4rem 0.5rem;
       font-size: 0.78rem;
       font-weight: 500;
@@ -280,13 +286,14 @@
       border: 1px solid var(--border);
       background: #0f1419;
       color: var(--text);
-      cursor: pointer;
-      appearance: auto;
+      padding: 0.52rem 0.62rem;
+      font-size: var(--text-sm);
     }
     .location-filter select:focus {
       outline: 1px solid var(--b);
       outline-offset: 1px;
     }
+      min-height: var(--control-md);
 
     .show-deleted-toggle {
       display: flex;
@@ -1057,11 +1064,11 @@
       color: var(--o);
     }
 
-    @media (max-width: 800px) {
+    @media (max-width: 768px) {
       body { padding: 0.5rem; overflow: auto; }
       .layout { flex-direction: column; height: auto; min-height: calc(100vh - 1rem); }
       .sidebar { flex: none; width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; }
-      .sidebar-btn { width: auto; }
+      .sidebar-btn { width: auto; min-height: var(--control-md); }
       .save-block {
         flex-direction: row;
         align-items: center;

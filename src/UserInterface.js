@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.159 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.163 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -174,11 +174,30 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
         <base target="_top">
         <style>
           :root {
-            font-size: 20px;
+            font-size: 16px;
             --timecard-ui-scale-multiplier: 1;
             --timecard-picker-font-size: 1.02rem;
             --timecard-picker-cell-size: 2.1rem;
             --timecard-picker-time-font-size: 1.08rem;
+            --tc-space-2xs: 0.25rem;
+            --tc-space-xs: 0.5rem;
+            --tc-space-sm: 0.75rem;
+            --tc-space-md: 1rem;
+            --tc-space-lg: 1.5rem;
+            --tc-space-xl: 2rem;
+            --tc-radius-sm: 0.5rem;
+            --tc-radius-md: 0.75rem;
+            --tc-radius-pill: 999px;
+            --tc-text-xs: clamp(0.72rem, 2.2vw, 0.82rem);
+            --tc-text-sm: clamp(0.82rem, 2.5vw, 0.95rem);
+            --tc-text-md: clamp(0.95rem, 3.1vw, 1.08rem);
+            --tc-text-lg: clamp(1.05rem, 3.9vw, 1.22rem);
+            --tc-text-xl: clamp(1.2rem, 4.7vw, 1.42rem);
+            --tc-text-2xl: clamp(1.45rem, 5.4vw, 1.75rem);
+            --tc-control-height-sm: 2.2rem;
+            --tc-control-height-md: 2.65rem;
+            --tc-control-height-lg: 3rem;
+            --tc-time-pill-width: clamp(5.3rem, 22vw, 6.3rem);
             --tc-page-bg: #f5f5f5;
             --tc-surface: #ffffff;
             --tc-surface-muted: #f8fafc;
@@ -600,7 +619,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .container { 
             background-color: var(--tc-surface); 
-            padding: clamp(1.25rem, 4vw, 1.75rem); 
+            padding: clamp(1rem, 3.2vw, 1.5rem); 
+            padding-top: clamp(3rem, 6vw, 3.4rem);
             border-radius: clamp(0.625rem, 2vw, 0.875rem); 
             box-shadow: var(--tc-shadow); 
             width: 100%; 
@@ -612,20 +632,74 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             overflow-y: auto; 
             -webkit-overflow-scrolling: touch; 
             min-width: 0; 
-            min-height: 45rem; 
+            min-height: 40rem; 
             position: relative;
             box-sizing: border-box;
           }
           .top-left-controls {
             position: absolute;
-            top: 0.75rem;
-            left: 0.75rem;
-            width: clamp(9.8rem, 28vw, 11.4rem);
-            display: flex;
+            top: 3.05rem;
+            right: 0.55rem;
+            left: auto;
+            width: min(15rem, calc(100% - 1.1rem));
+            display: none;
             flex-direction: column;
             align-items: stretch;
-            gap: 0.35rem;
-            z-index: 8;
+            gap: var(--tc-space-xs);
+            margin: 0;
+            padding: 0.52rem;
+            border: 1px solid var(--tc-border-strong);
+            border-radius: 0.68rem;
+            background: var(--tc-surface);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.28);
+            z-index: 25;
+          }
+          .mobile-tools-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.32rem;
+            position: absolute;
+            top: 0.55rem;
+            right: 0.55rem;
+            width: auto;
+            min-width: 4.6rem;
+            max-width: none;
+            min-height: 2.2rem;
+            margin: 0;
+            padding: 0.35rem 0.58rem;
+            border-radius: 0.55rem;
+            border: 1px solid var(--tc-border-strong);
+            background: var(--tc-theme-control-bg);
+            color: var(--tc-theme-control-text);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+            z-index: 26;
+          }
+          .top-left-controls.mobile-tools-open {
+            display: flex;
+          }
+          .top-left-controls .ui-scale-controls label {
+            padding-left: 0;
+          }
+          .top-left-controls .ui-scale-stepper {
+            gap: 0.25rem;
+          }
+          .top-left-controls .ui-scale-step-btn,
+          .top-left-controls .ui-scale-value,
+          .top-left-controls .theme-mode-btn,
+          .top-left-controls #idleRefreshBar,
+          .top-left-controls .admin-top-btn {
+            width: 100%;
+            max-width: none;
+          }
+          .mobile-tools-icon {
+            font-size: 1rem;
+            line-height: 1;
+          }
+          .mobile-tools-label {
+            font-size: var(--tc-text-xs);
+            font-weight: 700;
+            line-height: 1;
           }
           .admin-top-btn {
             position: static;
@@ -695,14 +769,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 100% !important;
             max-width: none !important;
             margin: 0 !important;
-            min-height: 1.65rem;
+            min-height: var(--tc-control-height-sm);
             border-radius: 0.65rem !important;
-            padding: 0.25rem 0.45rem !important;
+            padding: 0.36rem 0.52rem !important;
             display: inline-flex;
             align-items: center;
             justify-content: space-between;
             gap: 0.4rem;
-            font-size: 0.78rem !important;
+            font-size: var(--tc-text-sm) !important;
             box-shadow: none;
           }
           .admin-in-cell {
@@ -757,7 +831,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .admin-time-pill .admin-time-label {
             font-weight: 700;
-            font-size: 0.72rem;
+            font-size: var(--tc-text-xs);
             text-transform: uppercase;
             letter-spacing: 0.02em;
           }
@@ -765,7 +839,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-family: 'Roboto Mono', monospace;
             font-variant-numeric: tabular-nums;
             font-weight: 700;
-            font-size: 0.78rem;
+            font-size: var(--tc-text-sm);
           }
           .admin-delete-btn {
             background: var(--tc-admin-delete-bg);
@@ -1526,32 +1600,32 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             color: var(--tc-holiday-detected);
           }
           h2 { 
-            font-size: clamp(1.75rem, 6vw, 2rem); 
+            font-size: var(--tc-text-2xl); 
             color: var(--tc-primary); 
-            margin: clamp(0.625rem, 2.5vw, 0.875rem) 0; 
+            margin: clamp(0.45rem, 2vw, 0.72rem) 0; 
           }
           h1 { 
-            font-size: clamp(1.5rem, 5.5vw, 1.75rem); 
+            font-size: var(--tc-text-xl); 
             color: var(--tc-text); 
-            margin: clamp(0.625rem, 2.5vw, 0.875rem) 0; 
+            margin: clamp(0.42rem, 1.9vw, 0.68rem) 0; 
           }
           p { 
-            font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
-            margin: clamp(0.875rem, 3.5vw, 1.25rem) 0; 
+            font-size: var(--tc-text-lg); 
+            margin: clamp(0.55rem, 2.2vw, 0.9rem) 0; 
             text-align: center; 
             word-break: break-word; 
             max-width: 90%; 
           }
           .status-row {
-            width: 90%;
+            width: 92%;
             max-width: 25rem;
-            margin: clamp(0.875rem, 3.5vw, 1.25rem) 0;
+            margin: clamp(0.45rem, 1.9vw, 0.75rem) 0;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: var(--tc-space-xs);
           }
           #status {
-            min-height: 2.5rem;
+            min-height: var(--tc-control-height-md);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1562,19 +1636,19 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             line-height: 1;
             display: inline-flex;
             align-items: center;
-            padding: 0.45rem 0.75rem;
+            padding: 0.5rem 0.72rem;
             border-radius: 999px;
             border: 1px solid var(--tc-status-border);
             background: var(--tc-status-bg);
             color: var(--tc-status-text);
             box-sizing: border-box;
-            font-size: clamp(1.25rem, 4.5vw, 1.5rem);
+            font-size: var(--tc-text-lg);
             font-weight: 700;
           }
           .status-refresh-btn {
-            width: 2.5rem;
-            min-width: 2.5rem;
-            height: 2.5rem;
+            width: var(--tc-control-height-md);
+            min-width: var(--tc-control-height-md);
+            height: var(--tc-control-height-md);
             padding: 0;
             margin: 0;
             margin-top: 0.1rem;
@@ -1582,7 +1656,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.25rem;
+            font-size: var(--tc-text-lg);
             line-height: 1;
             flex: 0 0 auto;
           }
@@ -1617,31 +1691,31 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             box-shadow: none;
           }
           .manual-entry-helper {
-            width: 90%;
+            width: 92%;
             max-width: 25rem;
-            margin: -0.35rem 0 0.4rem;
-            font-size: clamp(0.86rem, 2.7vw, 0.98rem);
+            margin: -0.2rem 0 0.35rem;
+            font-size: var(--tc-text-sm);
             color: var(--tc-text-muted);
             text-align: center;
             line-height: 1.2;
           }
           .clock-note-hint {
-            width: 90%;
+            width: 92%;
             max-width: 25rem;
-            margin: -0.35rem 0 0.45rem;
-            font-size: clamp(0.78rem, 2.5vw, 0.92rem);
+            margin: -0.24rem 0 0.35rem;
+            font-size: var(--tc-text-sm);
             color: var(--tc-danger);
             text-align: left;
             line-height: 1.25;
             display: none;
           }
           .employee-schedule-block {
-            width: 90%;
+            width: 92%;
             max-width: 25rem;
             display: flex;
             flex-direction: column;
-            gap: 0.42rem;
-            margin: 0.15rem 0 0.5rem;
+            gap: var(--tc-space-xs);
+            margin: 0.1rem 0 0.4rem;
           }
           .schedule-summary-pill {
             width: 100% !important;
@@ -1747,10 +1821,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             display: flex;
             flex-direction: column;
             align-items: stretch;
-            gap: 0.28rem;
+            gap: var(--tc-space-2xs);
             margin: 0;
             color: var(--tc-text-muted);
-            font-size: clamp(0.68rem, 2vw, 0.86rem);
+            font-size: var(--tc-text-xs);
           }
           .theme-mode-controls {
             width: 100%;
@@ -1759,13 +1833,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: 100%;
             max-width: none;
             margin: 0;
-            min-height: 2.1rem;
+            min-height: var(--tc-control-height-sm);
             padding: 0.4rem 0.6rem;
             border-radius: 0.5rem;
             border: 1px solid var(--tc-border-strong);
             background: var(--tc-theme-control-bg);
             color: var(--tc-theme-control-text);
-            font-size: clamp(0.68rem, 2vw, 0.86rem);
+            font-size: var(--tc-text-xs);
             font-weight: 700;
             letter-spacing: 0.01em;
             text-align: center;
@@ -1788,7 +1862,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .ui-scale-step-btn,
           .ui-scale-value {
-            min-height: 2.2rem;
+            min-height: var(--tc-control-height-sm);
             margin: 0 !important;
             padding: 0.4rem 0.5rem;
             border-radius: 0.45rem;
@@ -1798,11 +1872,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             background: var(--tc-surface-muted);
           }
           .ui-scale-step-btn {
-            width: 2.65rem !important;
-            min-width: 2.65rem;
+            width: var(--tc-control-height-sm) !important;
+            min-width: var(--tc-control-height-sm);
             background: var(--tc-surface-muted);
             color: var(--tc-primary);
-            font-size: 1.1rem;
+            font-size: var(--tc-text-md);
             font-weight: 700;
             display: inline-flex;
             align-items: center;
@@ -1815,51 +1889,53 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             width: auto;
             background: var(--tc-surface);
             color: var(--tc-text);
-            font-size: 0.95rem;
+            font-size: var(--tc-text-sm);
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             justify-content: center;
           }
           .message { 
-            font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
-            margin: clamp(0.875rem, 3.5vw, 1.25rem) 0; 
+            font-size: var(--tc-text-md); 
+            margin: clamp(0.5rem, 2vw, 0.75rem) 0; 
             text-align: center; 
             color: var(--tc-success); 
           }
           .error { 
-            font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
-            margin: clamp(0.875rem, 3.5vw, 1.25rem) 0; 
+            font-size: var(--tc-text-md); 
+            margin: clamp(0.5rem, 2vw, 0.75rem) 0; 
             text-align: center; 
             color: var(--tc-danger); 
           }
           button { 
-            margin: clamp(0.625rem, 2.5vw, 0.875rem) 0; 
-            padding: clamp(0.875rem, 3.5vw, 1.25rem); 
-            width: 90%; 
+            margin: clamp(0.45rem, 1.8vw, 0.72rem) 0; 
+            padding: clamp(0.78rem, 3.2vw, 1.02rem); 
+            width: 92%; 
             max-width: 25rem; 
             background-color: var(--tc-button-bg); 
             color: var(--tc-primary-contrast); 
             border: none; 
             border-radius: clamp(0.5rem, 1.5vw, 0.75rem); 
             cursor: pointer; 
-            font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
+            font-size: var(--tc-text-lg); 
             box-shadow: var(--tc-button-shadow); 
+            min-height: var(--tc-control-height-lg);
           }
           button:disabled { 
             background-color: var(--tc-button-disabled-bg); 
             cursor: not-allowed; 
           }
           input, textarea { 
-            margin: clamp(0.875rem, 3.5vw, 1.25rem) 0; 
-            padding: clamp(0.875rem, 3.5vw, 1.25rem); 
-            width: 90%; 
+            margin: clamp(0.6rem, 2.4vw, 0.9rem) 0; 
+            padding: clamp(0.72rem, 3vw, 0.96rem); 
+            width: 92%; 
             max-width: 25rem; 
-            font-size: clamp(1.25rem, 4.5vw, 1.5rem); 
+            font-size: var(--tc-text-lg); 
             border: 1px solid var(--tc-input-border); 
             background: var(--tc-input-bg);
             color: var(--tc-text);
             border-radius: clamp(0.5rem, 1.5vw, 0.75rem); 
+            min-height: var(--tc-control-height-lg);
           }
           input::placeholder,
           textarea::placeholder {
@@ -1945,6 +2021,22 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             max-height: min(62dvh, 34rem);
             -webkit-overflow-scrolling: touch;
           }
+          @media (max-width: 900px) {
+            .recent-entries .recent-unpaid-grid {
+              display: none;
+            }
+            .recent-cards {
+              display: block;
+              width: 100%;
+              max-width: none;
+              margin: 0;
+              padding: 0 0.2rem 0.5rem;
+              overflow-x: hidden;
+              overflow-y: auto;
+              max-height: min(62dvh, 34rem);
+              -webkit-overflow-scrolling: touch;
+            }
+          }
           body.mobile-recent-layout .recent-entries {
             width: 100%;
             padding-right: 0;
@@ -2009,7 +2101,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             border-radius: 13px;
             background: var(--tc-surface);
             box-shadow: 0 3px 10px rgba(14, 30, 58, 0.08);
-            padding: 14px 14px 12px;
+            padding: clamp(0.72rem, 2.2vw, 0.95rem) clamp(0.72rem, 2.2vw, 0.95rem) clamp(0.62rem, 2vw, 0.85rem);
             overflow: hidden;
           }
           .recent-card::before {
@@ -2075,8 +2167,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-size: 0.94rem;
           }
           .recent-card-time-pills .admin-time-pill {
-            width: clamp(5rem, 31vw, 6rem) !important;
-            min-width: clamp(5rem, 31vw, 6rem);
+            width: var(--tc-time-pill-width) !important;
+            min-width: var(--tc-time-pill-width);
             justify-content: center;
             padding: 0.29rem 0.36rem !important;
             gap: 0;
@@ -2126,11 +2218,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .recent-card-note-footer .admin-note-add-btn {
             width: auto !important;
-            min-width: 6.5rem;
-            height: 2.75rem;
-            min-height: 2.75rem;
+            min-width: 6rem;
+            height: 2.5rem;
+            min-height: 2.5rem;
             margin-top: 0 !important;
-            font-size: 1.08rem !important;
+            font-size: 0.98rem !important;
             font-weight: 700;
             padding: 0.38rem 0.85rem !important;
             border-radius: 999px;
@@ -2240,8 +2332,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
           .recent-grid .admin-time-pill.admin-time-in,
           .recent-grid .admin-time-pill.admin-time-out {
-            width: 7.1rem !important;
-            min-width: 7.1rem; 
+            width: var(--tc-time-pill-width) !important;
+            min-width: var(--tc-time-pill-width); 
           }
           .recent-grid .admin-time-pill .admin-time-label {
             font-size: 0.93rem;
@@ -2390,19 +2482,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-weight: 600;
             white-space: nowrap;
           }
-          @media (max-width: 768px) {
+          @media (max-width: 900px) {
             .top-left-controls {
-              top: 0.55rem;
-              left: 0.55rem;
-              width: clamp(9.2rem, 44vw, 10.8rem);
-              gap: 0.3rem;
+              width: min(14.8rem, calc(100% - 1.1rem));
             }
-            #idleRefreshBar {
-              border-radius: 0.8rem;
-              padding: 0.32rem 0.5rem;
-            }
-            .idle-refresh-row {
-              gap: 0.08rem;
+            .container {
+              padding-top: 3.15rem;
             }
           }
           body.idle-lock-active {
@@ -2901,35 +2986,35 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               border-radius: 0.65rem;
             }
             h1 {
-              font-size: 2.15rem;
-              margin: 0.35rem 0 0.55rem;
+              font-size: var(--tc-text-xl);
+              margin: 0.24rem 0 0.4rem;
             }
             .status-row {
-              width: 94%;
+              width: 96%;
               max-width: 30rem;
-              gap: 0.7rem;
+              gap: var(--tc-space-xs);
             }
             #status {
-              font-size: 1.25rem;
+              font-size: var(--tc-text-lg);
             }
             .status-refresh-btn {
-              width: 3rem;
-              min-width: 3rem;
-              height: 3rem;
+              width: var(--tc-control-height-lg);
+              min-width: var(--tc-control-height-lg);
+              height: var(--tc-control-height-lg);
             }
             #notes,
             input,
             textarea {
-              width: 94%;
+              width: 96%;
               max-width: 30rem;
-              font-size: 1.2rem;
-              padding: 1rem;
+              font-size: var(--tc-text-lg);
+              padding: 0.88rem;
             }
             button {
-              width: 94%;
+              width: 96%;
               max-width: 30rem;
-              font-size: 1.35rem;
-              padding: 1rem 1.1rem;
+              font-size: var(--tc-text-lg);
+              padding: 0.9rem 0.95rem;
             }
             .manual-entry-helper {
               width: 94%;
@@ -2986,8 +3071,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             .recent-unpaid-grid .admin-time-pill.admin-time-in,
             .recent-unpaid-grid .admin-time-pill.admin-time-out {
-              width: 7.5rem !important;
-              min-width: 7.5rem;
+              width: var(--tc-time-pill-width) !important;
+              min-width: var(--tc-time-pill-width);
             }
             .recent-unpaid-grid .admin-time-pill {
               min-height: 2rem;
@@ -3051,16 +3136,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               display: inline;
             }
           }
-          @media (max-width: 420px) {
+          @media (max-width: 480px) {
             .status-row {
-              width: 96%;
-              gap: 0.55rem;
+              width: 100%;
+              gap: 0.4rem;
             }
             #status {
-              font-size: 1.18rem;
+              font-size: var(--tc-text-md);
             }
             .recent-unpaid-grid {
-              font-size: 1.17rem;
+              font-size: var(--tc-text-md);
             }
             .recent-unpaid-grid th:nth-child(1),
             .recent-unpaid-grid td:nth-child(1) {
@@ -3072,8 +3157,43 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             .recent-unpaid-grid .admin-time-pill.admin-time-in,
             .recent-unpaid-grid .admin-time-pill.admin-time-out {
-              width: 7rem !important;
-              min-width: 7rem;
+              width: var(--tc-time-pill-width) !important;
+              min-width: var(--tc-time-pill-width);
+            }
+          }
+          @media (max-width: 390px) {
+            .container {
+              padding: 0.8rem 0.72rem 0.95rem;
+              min-height: 0;
+            }
+            h1 {
+              font-size: var(--tc-text-lg);
+              margin: 0.2rem 0 0.34rem;
+            }
+            .status-row,
+            button,
+            #notes,
+            input,
+            textarea,
+            .manual-entry-helper,
+            .clock-note-hint,
+            .employee-schedule-block {
+              width: 100%;
+            }
+            .recent-card-time-pills {
+              gap: 0.28rem;
+            }
+            .recent-card-time-pills .admin-time-pill .admin-time-value {
+              font-size: 0.72rem;
+            }
+            .recent-card-hours .admin-hours-pill {
+              min-height: 1.8rem;
+              padding: 0.3rem 0.45rem;
+            }
+            .recent-card-note-footer .admin-note-add-btn {
+              min-width: 5.5rem;
+              height: 2.35rem;
+              min-height: 2.35rem;
             }
           }
         </style>
@@ -3091,8 +3211,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           </div>
         </div>
         <div class="container">
-          <img src="data:image/png;base64,${LOGO_BASE64}" alt="Logo" style="height: 200px; width: auto; margin-bottom: 1rem;">
-          <div class="top-left-controls">
+          <button id="mobileToolsTrigger" class="mobile-tools-trigger" type="button" onclick="toggleMobileToolsMenu()" aria-label="Toggle quick tools menu" aria-expanded="false" aria-controls="topLeftControls"><span class="mobile-tools-icon" aria-hidden="true">☰</span><span class="mobile-tools-label">Menu</span></button>
+          <img src="data:image/png;base64,${LOGO_BASE64}" alt="Logo" style="height: clamp(120px, 22vw, 176px); width: auto; margin-bottom: 0.5rem; margin-top: 0.15rem;">
+          <div id="topLeftControls" class="top-left-controls">
             <div id="uiScaleControls" class="ui-scale-controls">
               <label for="uiScaleValue">UI Scale</label>
               <div class="ui-scale-stepper">
@@ -3493,12 +3614,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
         <script>
           const clientDebugEnabled = ${isDebugEnabled() ? 'true' : 'false'};
           const UI_SCALE_STORAGE_KEY = 'timecard_ui_scale_percent';
-          const UI_SCALE_DEFAULT_MOBILE_PERCENT = 175;
-          const UI_SCALE_DEFAULT_DESKTOP_PERCENT = 110;
+          const UI_SCALE_DEFAULT_MOBILE_PERCENT = 200;
+          const UI_SCALE_DEFAULT_DESKTOP_PERCENT = 100;
           const UI_SCALE_MIN_PERCENT = 85;
-          const UI_SCALE_MAX_PERCENT = 300;
-          const UI_SCALE_BASE_FONT_SIZE_PX = 20;
-          const UI_SCALE_PRESET_VALUES = [85, 90, 95, 100, 105, 110, 115, 120, 130, 140, 150, 175, 200, 225, 250, 275, 300];
+          const UI_SCALE_MAX_PERCENT = 240;
+          const UI_SCALE_BASE_FONT_SIZE_PX = 16;
+          const UI_SCALE_PRESET_VALUES = [85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 140, 150, 160, 175, 200, 225, 240];
+          const MOBILE_TOOLS_BREAKPOINT_PX = 900;
           const THEME_MODE_LOCAL_STORAGE_KEY = 'timecard_theme_mode';
           const ADMIN_UI_MODE_STORAGE_KEY = 'timecard_admin_ui_mode';
           const ADMIN_UI_MODE_LEGACY = 'legacy';
@@ -4165,13 +4287,62 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           function initializeUiScale() {
             const storedPercent = readStoredUiScalePercent();
-            const basePercent = storedPercent === null ? getDefaultUiScalePercent() : storedPercent;
+            const isMobileViewport = Math.max(0, Number(window.innerWidth || 0)) <= MOBILE_TOOLS_BREAKPOINT_PX;
+            let basePercent = storedPercent === null ? getDefaultUiScalePercent() : storedPercent;
+            if (isMobileViewport && basePercent < UI_SCALE_DEFAULT_MOBILE_PERCENT) {
+              basePercent = UI_SCALE_DEFAULT_MOBILE_PERCENT;
+            }
             const closestPreset = getClosestUiScalePreset(basePercent);
             const percent = setUiScalePercent(closestPreset, true);
             debugClientLog('uiScale.initialized', {
               percent,
               source: storedPercent === null ? 'device-default' : 'stored'
             });
+          }
+
+          function isMobileToolsViewport() {
+            return Math.max(0, Number(window.innerWidth || 0)) <= MOBILE_TOOLS_BREAKPOINT_PX;
+          }
+
+          function setMobileToolsMenuOpenState(isOpen) {
+            const controls = document.getElementById('topLeftControls');
+            const trigger = document.getElementById('mobileToolsTrigger');
+            if (controls) {
+              controls.classList.toggle('mobile-tools-open', !!isOpen);
+            }
+            if (trigger) {
+              trigger.setAttribute('aria-expanded', !!isOpen ? 'true' : 'false');
+            }
+          }
+
+          function closeMobileToolsMenu() {
+            setMobileToolsMenuOpenState(false);
+          }
+
+          function toggleMobileToolsMenu() {
+            const controls = document.getElementById('topLeftControls');
+            if (!controls) return;
+            const isOpen = controls.classList.contains('mobile-tools-open');
+            setMobileToolsMenuOpenState(!isOpen);
+          }
+
+          function initializeMobileToolsMenu() {
+            const controls = document.getElementById('topLeftControls');
+            const trigger = document.getElementById('mobileToolsTrigger');
+            if (!controls || !trigger) return;
+            setMobileToolsMenuOpenState(false);
+            document.addEventListener('click', function(event) {
+              const target = event && event.target;
+              if (!target) return;
+              if (controls.contains(target) || trigger.contains(target)) return;
+              closeMobileToolsMenu();
+            });
+            document.addEventListener('keydown', function(event) {
+              if (!event || event.key !== 'Escape') return;
+              closeMobileToolsMenu();
+            });
+            window.addEventListener('resize', closeMobileToolsMenu);
+            window.addEventListener('orientationchange', closeMobileToolsMenu);
           }
 
           function normalizeThemeMode(value) {
@@ -4582,12 +4753,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function isCompactRecentLayout() {
-            return getRecentLayoutDebugInfo().mobileLayout;
+            const layoutInfo = getRecentLayoutDebugInfo();
+            const viewportWidth = Math.max(0, Number(window.innerWidth || 0));
+            return layoutInfo.mobileLayout || (viewportWidth > 0 && viewportWidth <= 768);
           }
 
           function applyRecentLayoutMode() {
             const layoutInfo = getRecentLayoutDebugInfo();
-            const isMobileRecentLayout = layoutInfo.mobileLayout;
+            const viewportWidth = Math.max(0, Number(window.innerWidth || 0));
+            const isMobileRecentLayout = layoutInfo.mobileLayout || (viewportWidth > 0 && viewportWidth <= 768);
             document.body.classList.toggle('mobile-recent-layout', isMobileRecentLayout);
             const layoutDebug = document.getElementById('layoutDebug');
             if (layoutDebug) {
@@ -4976,12 +5150,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
              
              window.addEventListener('online', updateOfflineBar);
              window.addEventListener('offline', updateOfflineBar);
+             window.addEventListener('resize', applyRecentLayoutMode);
+             window.addEventListener('orientationchange', applyRecentLayoutMode);
               applyRecentLayoutMode();
              updateOfflineBar();
            }
           
           initializeThemeMode();
           initializeAdminUiMode();
+          initializeMobileToolsMenu();
           initializeOfflineDetection();
           initializeIdleRefreshManager();
           initializeUiScale();
