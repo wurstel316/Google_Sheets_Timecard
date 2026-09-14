@@ -47,6 +47,10 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html {
+      font-size: 19.2px;
+    }
+
     html, body {
       height: 100%;
     }
@@ -74,13 +78,17 @@
     /* Main layout: sidebar + schedule */
     .layout {
       display: flex;
-      gap: 0.75rem;
+      gap: 0;
       align-items: stretch;
       height: calc(100vh - 1.5rem);
     }
 
     .sidebar {
-      flex: 0 0 160px;
+      position: relative;
+      z-index: 20;
+      flex: 0 0 208px;
+      width: 208px;
+      min-width: 176px;
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -88,7 +96,78 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
+      overflow-x: hidden;
       overflow-y: auto;
+    }
+
+    .sidebar-resize-handle {
+      position: relative;
+      top: 0;
+      left: 0;
+      flex: 0 0 0.75rem;
+      width: 0.75rem;
+      height: 100%;
+      border: none;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.16);
+      cursor: col-resize;
+      z-index: 15;
+      touch-action: none;
+      opacity: 0.9;
+      transition: background 0.15s ease, opacity 0.15s ease;
+    }
+    .sidebar-resize-handle:hover,
+    .sidebar-resize-handle:focus-visible,
+    .sidebar-resize-handle.is-active {
+      background: rgba(167, 139, 250, 0.24);
+      opacity: 1;
+    }
+    .sidebar-resize-handle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 0.65rem;
+      width: 0.34rem;
+      height: calc(100% - 1.3rem);
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--border) 78%, var(--b));
+      opacity: 0.72;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .sidebar-resize-handle::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 0.28rem;
+      height: 1.55rem;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(231, 236, 243, 0.8) 0,
+        rgba(231, 236, 243, 0.8) 0.08rem,
+        transparent 0.08rem,
+        transparent 0.18rem
+      );
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .sidebar-resize-handle:hover::before,
+    .sidebar-resize-handle:focus-visible::before {
+      background: color-mix(in srgb, var(--b) 72%, var(--o));
+      opacity: 1;
+    }
+    .sidebar-resize-handle:focus-visible {
+      outline: 1px solid var(--b);
+      outline-offset: 1px;
+    }
+
+    body.is-resizing-sidebar,
+    body.is-resizing-sidebar * {
+      cursor: col-resize !important;
+      user-select: none !important;
     }
 
     .sidebar-title {
@@ -124,10 +203,17 @@
       border-bottom: 1px solid var(--border);
     }
     .sidebar-btn.save-btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
       background: var(--o);
       color: #0f1419;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.02em;
+      min-height: 3.2rem;
+      padding: 0.7rem 1rem;
     }
     .sidebar-btn.save-btn:hover {
       filter: brightness(1.1);
@@ -139,6 +225,9 @@
     .sidebar-btn.save-btn.just-saved {
       background: #16a34a;
     }
+    .sidebar-btn.save-btn.is-idle {
+      padding-right: 0.9rem;
+    }
     .sidebar-btn.save-btn:disabled:not(.is-saving) {
       opacity: 0.62;
       cursor: not-allowed;
@@ -146,6 +235,31 @@
     }
     .sidebar-btn.save-btn:disabled:not(.is-saving):hover {
       filter: saturate(0.78) brightness(0.92);
+    }
+    .save-btn-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .save-btn-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      height: 2rem;
+      padding: 0 0.38rem;
+      border-radius: 999px;
+      background: rgba(15, 20, 25, 0.18);
+      border: 1px solid rgba(15, 20, 25, 0.16);
+      font-size: 0.8rem;
+      font-weight: 800;
+      line-height: 1;
+      color: #0f1419;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+    .sidebar-btn.save-btn.is-idle .save-btn-count {
+      display: none;
     }
     .sidebar-btn.secondary {
       background: var(--b);
@@ -155,14 +269,82 @@
     .sidebar-btn.secondary:hover {
       filter: brightness(1.04);
     }
-    .theme-btn {
+    .sidebar-tools {
+      position: relative;
+      z-index: 30;
+    }
+    .schedule-tools-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      width: 100%;
+      padding: 0.5rem 0.62rem;
+      min-height: var(--control-md);
+      border-radius: 6px;
       border: 1px solid var(--border);
       background: color-mix(in srgb, var(--card) 88%, var(--header-bg));
       color: var(--text);
+      font-size: var(--text-sm);
       font-weight: 700;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      user-select: none;
     }
-    .theme-btn:hover {
+    .schedule-tools-trigger:hover,
+    .sidebar-tools.open .schedule-tools-trigger {
       filter: brightness(1.05);
+    }
+    .schedule-tools-menu {
+      position: fixed;
+      top: 0;
+      left: 0;
+      min-width: 11.5rem;
+      width: min(13.5rem, 72vw);
+      display: none;
+      flex-direction: column;
+      gap: 0.45rem;
+      z-index: 100;
+      padding: 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+      margin-top: 0;
+    }
+    .sidebar-tools.open .schedule-tools-menu {
+      display: flex;
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .sidebar-tools:hover .schedule-tools-menu {
+        display: flex;
+      }
+    }
+    .schedule-tools-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0.42rem 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: rgba(148, 163, 184, 0.09);
+      color: var(--text);
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .schedule-tools-item:hover {
+      filter: brightness(1.06);
+    }
+    .schedule-tools-item .menu-chevron {
+      font-size: 0.68rem;
+      color: var(--muted);
+      transition: transform 0.18s ease;
+    }
+    .schedule-tools-item[aria-expanded="true"] .menu-chevron {
+      transform: rotate(180deg);
+      color: var(--b);
     }
     .schedule-status {
       font-size: var(--text-xs);
@@ -288,12 +470,12 @@
       color: var(--text);
       padding: 0.52rem 0.62rem;
       font-size: var(--text-sm);
+      min-height: var(--control-md);
     }
     .location-filter select:focus {
       outline: 1px solid var(--b);
       outline-offset: 1px;
     }
-      min-height: var(--control-md);
 
     .show-deleted-toggle {
       display: flex;
@@ -312,6 +494,78 @@
       height: 0.95rem;
       accent-color: var(--b);
       cursor: pointer;
+    }
+    .show-deleted-toggle.menu-item {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.48rem;
+      background: rgba(148, 163, 184, 0.09);
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 0.74rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .auto-fill-settings-panel {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: min(24rem, 60vw);
+      min-width: 16rem;
+      display: none;
+      flex-direction: column;
+      gap: 0.45rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.5rem;
+      background: rgba(15, 20, 25, 0.96);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+      z-index: 110;
+    }
+    .auto-fill-settings-panel.open {
+      display: flex;
+    }
+    .auto-fill-profile {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 0.35rem 0.45rem;
+      align-items: center;
+    }
+    .auto-fill-workweek {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--text);
+      min-width: 2.2rem;
+    }
+    .auto-fill-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.18rem;
+      min-width: 0;
+    }
+    .auto-fill-field span {
+      font-size: 0.66rem;
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.1;
+    }
+    .auto-fill-field input {
+      width: 100%;
+      padding: 0.26rem 0.36rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: #0f1419;
+      color: var(--text);
+      font-size: 0.74rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .auto-fill-summary {
+      font-size: 0.66rem;
+      color: var(--muted);
+      line-height: 1.25;
+      margin-top: 0.05rem;
     }
 
     .type-filter {
@@ -1066,9 +1320,19 @@
 
     @media (max-width: 768px) {
       body { padding: 0.5rem; overflow: auto; }
-      .layout { flex-direction: column; height: auto; min-height: calc(100vh - 1rem); }
-      .sidebar { flex: none; width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; }
+      .layout { flex-direction: column; gap: 0.5rem; height: auto; min-height: calc(100vh - 1rem); }
+      .sidebar { flex: none; width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; position: relative; }
+      .sidebar-resize-handle { display: none; }
       .sidebar-btn { width: auto; min-height: var(--control-md); }
+      .sidebar-tools { margin-left: auto; }
+      .schedule-tools-trigger { width: auto; min-width: 4.7rem; }
+      .schedule-tools-menu { left: auto; right: 0; width: min(20rem, 92vw); }
+      .auto-fill-settings-panel {
+        position: static;
+        width: 100%;
+        min-width: 0;
+        box-shadow: none;
+      }
       .save-block {
         flex-direction: row;
         align-items: center;
@@ -1104,21 +1368,59 @@
         <h1>Employee Schedule</h1>
       </div>
 
-      <div class="save-block">
-        <button type="button" class="sidebar-btn save-btn" id="save-btn" onclick="saveSchedule()">Save</button>
-        <button type="button" class="sidebar-btn theme-btn" id="theme-toggle-btn" onclick="toggleScheduleThemeMode()">Theme: --</button>
-        <button type="button" class="sidebar-btn secondary" id="check-new-employees-btn" onclick="checkForNewEmployees()">Check for new employees</button>
-        <div class="save-timer-row" title="Auto-saves every 60 seconds">
-          <div class="timer-ring-wrap" id="timer-ring-wrap">
-            <svg class="timer-ring" viewBox="0 0 36 36" aria-hidden="true">
-              <circle class="track" cx="18" cy="18" r="15.9155"></circle>
-              <circle class="progress" id="timer-progress" cx="18" cy="18" r="15.9155"
-                stroke-dasharray="100" stroke-dashoffset="0"></circle>
-            </svg>
-            <span class="timer-count" id="save-countdown">60</span>
+      <div class="sidebar-tools" id="schedule-tools">
+        <button type="button" class="schedule-tools-trigger" id="schedule-tools-menu-trigger" aria-expanded="false" aria-controls="schedule-tools-menu" onclick="toggleScheduleToolsMenu(event)">
+          <span aria-hidden="true">☰</span>
+          <span>Tools</span>
+        </button>
+        <div class="schedule-tools-menu" id="schedule-tools-menu" aria-hidden="true">
+          <label class="show-deleted-toggle menu-item">
+            <input type="checkbox" id="show-deleted" onchange="onShowDeletedChange()">
+            Show deleted
+          </label>
+          <button type="button" class="schedule-tools-item" id="auto-fill-settings-toggle-btn" aria-expanded="false" aria-controls="auto-fill-settings-panel" onclick="toggleAutoFillSettingsPanel(event)">
+            <span>Auto-fill settings</span>
+            <span class="menu-chevron" aria-hidden="true">▾</span>
+          </button>
+          <div class="auto-fill-settings-panel" id="auto-fill-settings-panel" aria-hidden="true">
+            <div>
+              <div class="auto-fill-profile">
+                <div class="auto-fill-workweek">CA</div>
+                <label class="auto-fill-field" for="ca-before-hours">
+                  <span>Before lunch</span>
+                  <input type="number" id="ca-before-hours" min="0" max="23" step="1" inputmode="numeric">
+                </label>
+                <label class="auto-fill-field" for="ca-after-hours">
+                  <span>After lunch</span>
+                  <input type="number" id="ca-after-hours" min="0" max="23" step="1" inputmode="numeric">
+                </label>
+              </div>
+              <div class="auto-fill-summary" id="ca-auto-fill-summary"></div>
+            </div>
+            <div>
+              <div class="auto-fill-profile">
+                <div class="auto-fill-workweek">AWS</div>
+                <label class="auto-fill-field" for="aws-before-hours">
+                  <span>Before lunch</span>
+                  <input type="number" id="aws-before-hours" min="0" max="23" step="1" inputmode="numeric">
+                </label>
+                <label class="auto-fill-field" for="aws-after-hours">
+                  <span>After lunch</span>
+                  <input type="number" id="aws-after-hours" min="0" max="23" step="1" inputmode="numeric">
+                </label>
+              </div>
+              <div class="auto-fill-summary" id="aws-auto-fill-summary"></div>
+            </div>
           </div>
-          <span class="save-timer-label" id="save-timer-label">Auto-save in 60s</span>
+          <button type="button" class="sidebar-btn secondary" id="check-new-employees-btn" onclick="checkForNewEmployees()">Check for new employees</button>
         </div>
+      </div>
+
+      <div class="save-block">
+        <button type="button" class="sidebar-btn save-btn" id="save-btn" onclick="saveSchedule()">
+          <span class="save-btn-label">Save</span>
+          <span class="save-btn-count" id="save-countdown" aria-live="polite">60</span>
+        </button>
         <div class="schedule-idle-bar" id="schedule-idle-bar" aria-live="polite">
           <span class="schedule-idle-message" id="schedule-idle-message">Idle session.</span>
           <button type="button" class="schedule-idle-refresh-btn" id="schedule-idle-refresh-btn" onclick="triggerScheduleIdleRefresh(true)">Refresh now</button>
@@ -1135,10 +1437,6 @@
           <option value="">Unassigned</option>
         </select>
       </div>
-      <label class="show-deleted-toggle">
-        <input type="checkbox" id="show-deleted" onchange="onShowDeletedChange()">
-        Show deleted
-      </label>
       <div class="type-filter" id="employee-type-filter"></div>
       <div class="legend">
         <div class="legend-item">
@@ -1161,6 +1459,14 @@
       <div class="uncovered-summary" id="uncovered-summary"></div>
       <div class="employee-counts" id="employee-counts"></div>
     </aside>
+
+    <button
+      type="button"
+      class="sidebar-resize-handle"
+      id="sidebar-resize-handle"
+      aria-label="Resize sidebar"
+      title="Drag to resize sidebar"
+    ></button>
 
     <section>
       <div class="table-wrap">
@@ -1188,7 +1494,7 @@
           <span>Start time</span>
           <select id="modal-start-time"></select>
         </label>
-        <p id="modal-fill-hint" class="modal-fill-hint">Pick a start time, then choose an employee to auto-fill CA (8h) or AWS (10h). Lunch is placed in hour 6.</p>
+        <p id="modal-fill-hint" class="modal-fill-hint">Pick a start time, then choose an employee. Auto-fill hours come from CA/AWS before-lunch and after-lunch settings.</p>
         <fieldset class="modal-day-picker">
           <legend>Attempt auto-fill for other days too</legend>
           <div id="modal-day-checkboxes" class="modal-day-checkboxes"></div>
@@ -1286,52 +1592,440 @@
     let selectedEmployeeTypes = new Set();
     let hasInitializedEmployeeTypeFilter = false;
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    let currentScheduleThemeMode = "";
-
-    function normalizeThemeMode(value) {
-      const normalized = String(value || "").trim().toLowerCase();
-      return normalized === "light" || normalized === "dark" ? normalized : "";
-    }
-
-    function detectSystemThemeMode() {
-      try {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) return "light";
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return "dark";
-      } catch (_e) {}
-      return "dark";
-    }
-
-    function setScheduleThemeButtonLabel() {
-      const btn = document.getElementById("theme-toggle-btn");
-      if (!btn) return;
-      const mode = normalizeThemeMode(currentScheduleThemeMode) || "dark";
-      const nextLabel = mode === "dark" ? "Light" : "Dark";
-      btn.textContent = mode === "dark" ? "Theme: Dark" : "Theme: Light";
-      btn.setAttribute("aria-label", "Switch to " + nextLabel + " mode");
-      btn.title = "Switch to " + nextLabel + " mode";
-    }
-
-    function applyScheduleThemeMode(mode, persistServer) {
-      const resolved = normalizeThemeMode(mode) || "dark";
-      currentScheduleThemeMode = resolved;
-      document.documentElement.setAttribute("data-theme", resolved);
-      setScheduleThemeButtonLabel();
-      if (persistServer === true && window.google && google.script && google.script.run) {
-        google.script.run.withFailureHandler(function () {}).saveUserThemePreference(resolved);
+    const DEFAULT_SCHEDULE_SETTINGS = Object.freeze({
+      autoFill: {
+        CA: { hoursBeforeLunch: 5, hoursAfterLunch: 2 },
+        AWS: { hoursBeforeLunch: 5, hoursAfterLunch: 4 }
       }
-      return resolved;
+    });
+    let scheduleSettings = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_SETTINGS));
+    let scheduleToolsMenuPinned = false;
+    let autoFillSettingsPanelOpen = false;
+    const SIDEBAR_WIDTH_STORAGE_KEY = "scheduleSidebarWidthPx";
+    const SIDEBAR_DEFAULT_WIDTH_PX = 208;
+    const SIDEBAR_MIN_WIDTH_PX = 176;
+    const SIDEBAR_MAX_WIDTH_PX = 560;
+
+    function getSidebarElement() {
+      return document.querySelector(".sidebar");
     }
 
-    function initializeScheduleThemeMode() {
-      const initial = normalizeThemeMode(document.documentElement.getAttribute("data-theme"));
-      const resolved = initial || detectSystemThemeMode() || "dark";
-      applyScheduleThemeMode(resolved, false);
+    function canResizeSidebar() {
+      return !!(window.matchMedia && window.matchMedia("(min-width: 769px)").matches);
     }
 
-    function toggleScheduleThemeMode() {
-      const current = normalizeThemeMode(currentScheduleThemeMode) || "dark";
-      const next = current === "dark" ? "light" : "dark";
-      applyScheduleThemeMode(next, true);
+    function getSidebarMaxWidthPx() {
+      const viewportCap = Math.floor(window.innerWidth * 0.55);
+      return Math.max(SIDEBAR_MIN_WIDTH_PX, Math.min(SIDEBAR_MAX_WIDTH_PX, viewportCap));
+    }
+
+    function clampSidebarWidthPx(widthPx) {
+      const n = Number(widthPx);
+      if (!Number.isFinite(n)) return SIDEBAR_DEFAULT_WIDTH_PX;
+      const rounded = Math.round(n);
+      return Math.max(SIDEBAR_MIN_WIDTH_PX, Math.min(getSidebarMaxWidthPx(), rounded));
+    }
+
+    function getSavedSidebarWidthPx() {
+      try {
+        const raw = window.localStorage ? localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY) : "";
+        const parsed = Number(raw);
+        if (!Number.isFinite(parsed)) return null;
+        return clampSidebarWidthPx(parsed);
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function setSidebarWidthPx(widthPx, shouldPersist) {
+      const sidebar = getSidebarElement();
+      if (!sidebar) return;
+      const clamped = clampSidebarWidthPx(widthPx);
+      sidebar.style.flexBasis = clamped + "px";
+      sidebar.style.width = clamped + "px";
+      if (shouldPersist !== false) {
+        try {
+          if (window.localStorage) {
+            localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
+          }
+        } catch (error) {
+          // Ignore localStorage failures (private mode / quota / blocked).
+        }
+      }
+      scaleTableToFit();
+    }
+
+    function applySidebarWidthForViewport() {
+      const sidebar = getSidebarElement();
+      if (!sidebar) return;
+      if (!canResizeSidebar()) {
+        sidebar.style.flexBasis = "";
+        sidebar.style.width = "";
+        return;
+      }
+      const saved = getSavedSidebarWidthPx();
+      const nextWidth = saved == null ? SIDEBAR_DEFAULT_WIDTH_PX : saved;
+      setSidebarWidthPx(nextWidth, false);
+    }
+
+    function initializeSidebarResize() {
+      const sidebar = getSidebarElement();
+      const handle = document.getElementById("sidebar-resize-handle");
+      if (!sidebar || !handle) return;
+
+      const dragState = { active: false, startX: 0, startWidth: 0 };
+
+      function onDragMove(event) {
+        if (!dragState.active) return;
+        event.preventDefault();
+        const delta = event.clientX - dragState.startX;
+        setSidebarWidthPx(dragState.startWidth + delta, false);
+      }
+
+      function stopDrag() {
+        if (!dragState.active) return;
+        dragState.active = false;
+        document.body.classList.remove("is-resizing-sidebar");
+        handle.classList.remove("is-active");
+        setSidebarWidthPx(sidebar.getBoundingClientRect().width, true);
+        window.removeEventListener("pointermove", onDragMove);
+        window.removeEventListener("pointerup", stopDrag);
+        window.removeEventListener("pointercancel", stopDrag);
+      }
+
+      handle.addEventListener("pointerdown", function (event) {
+        if (!canResizeSidebar()) return;
+        event.preventDefault();
+        dragState.active = true;
+        dragState.startX = event.clientX;
+        dragState.startWidth = sidebar.getBoundingClientRect().width;
+        document.body.classList.add("is-resizing-sidebar");
+        handle.classList.add("is-active");
+        window.addEventListener("pointermove", onDragMove);
+        window.addEventListener("pointerup", stopDrag);
+        window.addEventListener("pointercancel", stopDrag);
+      });
+
+      window.addEventListener("resize", function () {
+        if (dragState.active) return;
+        if (!canResizeSidebar()) {
+          sidebar.style.flexBasis = "";
+          sidebar.style.width = "";
+          scaleTableToFit();
+          return;
+        }
+        const currentWidth = sidebar.getBoundingClientRect().width || SIDEBAR_DEFAULT_WIDTH_PX;
+        setSidebarWidthPx(currentWidth, true);
+      });
+
+      applySidebarWidthForViewport();
+    }
+
+    function normalizeAutoFillHours(value, fallback) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return fallback;
+      return Math.max(0, Math.min(23, Math.floor(parsed)));
+    }
+
+    function normalizeAutoFillProfile(profile, fallbackProfile) {
+      const source = profile && typeof profile === "object" ? profile : {};
+      const fallback = fallbackProfile && typeof fallbackProfile === "object" ? fallbackProfile : { hoursBeforeLunch: 5, hoursAfterLunch: 2 };
+      let hoursBeforeLunch = normalizeAutoFillHours(source.hoursBeforeLunch, fallback.hoursBeforeLunch);
+      let hoursAfterLunch = normalizeAutoFillHours(source.hoursAfterLunch, fallback.hoursAfterLunch);
+      if (hoursBeforeLunch + 1 + hoursAfterLunch > 24) {
+        hoursAfterLunch = Math.max(0, 23 - hoursBeforeLunch);
+      }
+      if (hoursBeforeLunch + 1 + hoursAfterLunch > 24) {
+        hoursBeforeLunch = 23;
+        hoursAfterLunch = 0;
+      }
+      return { hoursBeforeLunch: hoursBeforeLunch, hoursAfterLunch: hoursAfterLunch };
+    }
+
+    function normalizeScheduleSettings(value) {
+      const source = value && typeof value === "object" ? value : {};
+      const autoFillSource = source.autoFill && typeof source.autoFill === "object" ? source.autoFill : source;
+      return {
+        autoFill: {
+          CA: normalizeAutoFillProfile(autoFillSource.CA, DEFAULT_SCHEDULE_SETTINGS.autoFill.CA),
+          AWS: normalizeAutoFillProfile(autoFillSource.AWS, DEFAULT_SCHEDULE_SETTINGS.autoFill.AWS)
+        }
+      };
+    }
+
+    function getAutoFillConfigByWorkweek(workweek) {
+      const key = String(workweek || "").trim().toUpperCase() === "AWS" ? "AWS" : "CA";
+      const profile = normalizeAutoFillProfile(
+        scheduleSettings && scheduleSettings.autoFill ? scheduleSettings.autoFill[key] : null,
+        DEFAULT_SCHEDULE_SETTINGS.autoFill[key]
+      );
+      const durationHours = profile.hoursBeforeLunch + 1 + profile.hoursAfterLunch;
+      return {
+        workweek: key,
+        hoursBeforeLunch: profile.hoursBeforeLunch,
+        hoursAfterLunch: profile.hoursAfterLunch,
+        lunchIndex: profile.hoursBeforeLunch,
+        durationHours: durationHours
+      };
+    }
+
+    function getAutoFillDurationByWorkweek(workweek) {
+      return getAutoFillConfigByWorkweek(workweek).durationHours;
+    }
+
+    function formatAutoFillSummary(workweek) {
+      const cfg = getAutoFillConfigByWorkweek(workweek);
+      return `${cfg.durationHours}h total (${cfg.hoursBeforeLunch}h before lunch, lunch, ${cfg.hoursAfterLunch}h after)`;
+    }
+
+    function positionScheduleToolsMenu() {
+      const trigger = document.getElementById("schedule-tools-menu-trigger");
+      const menu = document.getElementById("schedule-tools-menu");
+      if (!trigger || !menu) return;
+      const triggerRect = trigger.getBoundingClientRect();
+      const menuWidth = menu.offsetWidth || 208;
+      const menuHeight = menu.offsetHeight || 180;
+      const left = Math.min(triggerRect.left + 4, window.innerWidth - menuWidth - 12);
+      const top = Math.min(triggerRect.bottom + 8, window.innerHeight - menuHeight - 12);
+      menu.style.left = left + "px";
+      menu.style.top = top + "px";
+    }
+
+    function positionAutoFillSettingsPanel() {
+      const panel = document.getElementById("auto-fill-settings-panel");
+      const menu = document.getElementById("schedule-tools-menu");
+      if (!panel || !menu) return;
+      const menuRect = menu.getBoundingClientRect();
+      const panelWidth = panel.offsetWidth || 340;
+      const panelHeight = panel.offsetHeight || 220;
+      const left = Math.min(menuRect.right + 10, window.innerWidth - panelWidth - 12);
+      const top = Math.min(menuRect.top, window.innerHeight - panelHeight - 12);
+      panel.style.left = left + "px";
+      panel.style.top = top + "px";
+    }
+
+    function setScheduleToolsMenuOpen(isOpen) {
+      const wrap = document.getElementById("schedule-tools");
+      const trigger = document.getElementById("schedule-tools-menu-trigger");
+      const menu = document.getElementById("schedule-tools-menu");
+      if (!wrap || !trigger || !menu) return;
+      const open = !!isOpen;
+      wrap.classList.toggle("open", open);
+      trigger.setAttribute("aria-expanded", open ? "true" : "false");
+      menu.setAttribute("aria-hidden", open ? "false" : "true");
+      if (open) {
+        positionScheduleToolsMenu();
+      }
+      if (!open) {
+        scheduleToolsMenuPinned = false;
+      }
+    }
+
+    function closeScheduleToolsMenu(forceClose) {
+      if (!forceClose && scheduleToolsMenuPinned) return;
+      setScheduleToolsMenuOpen(false);
+    }
+
+    function toggleScheduleToolsMenu(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const wrap = document.getElementById("schedule-tools");
+      if (!wrap) return;
+      const isOpen = wrap.classList.contains("open");
+      if (isOpen && scheduleToolsMenuPinned) {
+        scheduleToolsMenuPinned = false;
+        setScheduleToolsMenuOpen(false);
+        return;
+      }
+      scheduleToolsMenuPinned = true;
+      setScheduleToolsMenuOpen(true);
+    }
+
+    function setAutoFillSettingsPanelOpen(isOpen) {
+      const panel = document.getElementById("auto-fill-settings-panel");
+      const toggleBtn = document.getElementById("auto-fill-settings-toggle-btn");
+      if (!panel || !toggleBtn) return;
+      autoFillSettingsPanelOpen = !!isOpen;
+      panel.classList.toggle("open", autoFillSettingsPanelOpen);
+      panel.setAttribute("aria-hidden", autoFillSettingsPanelOpen ? "false" : "true");
+      toggleBtn.setAttribute("aria-expanded", autoFillSettingsPanelOpen ? "true" : "false");
+      if (autoFillSettingsPanelOpen) {
+        positionAutoFillSettingsPanel();
+      }
+    }
+
+    function toggleAutoFillSettingsPanel(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      const next = !autoFillSettingsPanelOpen;
+      setAutoFillSettingsPanelOpen(next);
+      if (next) {
+        renderAutoFillSettingsPanel();
+      }
+    }
+
+    function renderAutoFillSettingsPanel() {
+      const caBefore = document.getElementById("ca-before-hours");
+      const caAfter = document.getElementById("ca-after-hours");
+      const awsBefore = document.getElementById("aws-before-hours");
+      const awsAfter = document.getElementById("aws-after-hours");
+      if (!caBefore || !caAfter || !awsBefore || !awsAfter) return;
+
+      const caCfg = getAutoFillConfigByWorkweek("CA");
+      const awsCfg = getAutoFillConfigByWorkweek("AWS");
+      caBefore.value = String(caCfg.hoursBeforeLunch);
+      caAfter.value = String(caCfg.hoursAfterLunch);
+      awsBefore.value = String(awsCfg.hoursBeforeLunch);
+      awsAfter.value = String(awsCfg.hoursAfterLunch);
+
+      const caSummary = document.getElementById("ca-auto-fill-summary");
+      const awsSummary = document.getElementById("aws-auto-fill-summary");
+      if (caSummary) caSummary.textContent = formatAutoFillSummary("CA");
+      if (awsSummary) awsSummary.textContent = formatAutoFillSummary("AWS");
+    }
+
+    function applyAutoFillSettingsFromInputs() {
+      const fields = {
+        caBefore: document.getElementById("ca-before-hours"),
+        caAfter: document.getElementById("ca-after-hours"),
+        awsBefore: document.getElementById("aws-before-hours"),
+        awsAfter: document.getElementById("aws-after-hours")
+      };
+      if (!fields.caBefore || !fields.caAfter || !fields.awsBefore || !fields.awsAfter) return;
+
+      const toValidInt = function (value) {
+        const raw = String(value == null ? "" : value).trim();
+        if (!/^\d+$/.test(raw)) return null;
+        const parsed = Number(raw);
+        if (!Number.isInteger(parsed) || parsed < 0 || parsed > 23) return null;
+        return parsed;
+      };
+
+      const nextCA = {
+        hoursBeforeLunch: toValidInt(fields.caBefore.value),
+        hoursAfterLunch: toValidInt(fields.caAfter.value)
+      };
+      const nextAWS = {
+        hoursBeforeLunch: toValidInt(fields.awsBefore.value),
+        hoursAfterLunch: toValidInt(fields.awsAfter.value)
+      };
+      if (nextCA.hoursBeforeLunch == null || nextCA.hoursAfterLunch == null || nextAWS.hoursBeforeLunch == null || nextAWS.hoursAfterLunch == null) {
+        setScheduleStatus("Auto-fill settings must be whole numbers from 0 to 23.", true);
+        renderAutoFillSettingsPanel();
+        return;
+      }
+
+      if ((nextCA.hoursBeforeLunch + 1 + nextCA.hoursAfterLunch) > 24 || (nextAWS.hoursBeforeLunch + 1 + nextAWS.hoursAfterLunch) > 24) {
+        setScheduleStatus("Auto-fill settings cannot exceed 24 total hours including lunch.", true);
+        renderAutoFillSettingsPanel();
+        return;
+      }
+
+      const nextSettings = normalizeScheduleSettings({ autoFill: { CA: nextCA, AWS: nextAWS } });
+      const previous = JSON.stringify(scheduleSettings || {});
+      const incoming = JSON.stringify(nextSettings);
+      if (previous === incoming) {
+        renderAutoFillSettingsPanel();
+        return;
+      }
+
+      scheduleSettings = nextSettings;
+      markScheduleDirty();
+      renderAutoFillSettingsPanel();
+      setScheduleStatus("Auto-fill settings updated.", false);
+      updateModalFillHint();
+    }
+
+    function initializeAutoFillSettingsPanel() {
+      ["ca-before-hours", "ca-after-hours", "aws-before-hours", "aws-after-hours"].forEach(function (id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener("change", applyAutoFillSettingsFromInputs);
+      });
+      setAutoFillSettingsPanelOpen(false);
+      renderAutoFillSettingsPanel();
+    }
+
+    function initializeScheduleToolsMenu() {
+      const wrap = document.getElementById("schedule-tools");
+      const trigger = document.getElementById("schedule-tools-menu-trigger");
+      const menu = document.getElementById("schedule-tools-menu");
+      const panel = document.getElementById("auto-fill-settings-panel");
+      if (!wrap || !trigger || !menu || !panel) return;
+
+      const hoverCloseTimer = { id: null };
+      const scheduleMenuArea = function (target) {
+        return !!(target && (target.closest("#schedule-tools") || target.closest("#schedule-tools-menu") || target.closest("#auto-fill-settings-panel") || target.closest("#auto-fill-settings-toggle-btn")));
+      };
+      const scheduleMenuHoverClose = function () {
+        if (hoverCloseTimer.id) {
+          clearTimeout(hoverCloseTimer.id);
+        }
+        hoverCloseTimer.id = setTimeout(function () {
+          if (!scheduleToolsMenuPinned && !autoFillSettingsPanelOpen) {
+            setScheduleToolsMenuOpen(false);
+          }
+        }, 120);
+      };
+      const scheduleMenuHoverKeepOpen = function () {
+        if (hoverCloseTimer.id) {
+          clearTimeout(hoverCloseTimer.id);
+          hoverCloseTimer.id = null;
+        }
+        if (!scheduleToolsMenuPinned) {
+          setScheduleToolsMenuOpen(true);
+        }
+      };
+
+      const isWithinScheduleMenu = function (target) {
+        return !!(target && (target.closest("#schedule-tools") || target.closest("#schedule-tools-menu") || target.closest("#auto-fill-settings-panel") || target.closest("#auto-fill-settings-toggle-btn")));
+      };
+
+      const supportsHover = !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
+      if (supportsHover) {
+        wrap.addEventListener("mouseenter", scheduleMenuHoverKeepOpen);
+        wrap.addEventListener("mouseleave", scheduleMenuHoverClose);
+        menu.addEventListener("mouseenter", scheduleMenuHoverKeepOpen);
+        menu.addEventListener("mouseleave", scheduleMenuHoverClose);
+        panel.addEventListener("mouseenter", scheduleMenuHoverKeepOpen);
+        panel.addEventListener("mouseleave", function () {
+          if (!scheduleToolsMenuPinned) {
+            scheduleMenuHoverClose();
+          }
+        });
+      }
+
+      document.addEventListener("click", function (event) {
+        if (!isWithinScheduleMenu(event.target)) {
+          setAutoFillSettingsPanelOpen(false);
+          closeScheduleToolsMenu(true);
+        }
+      });
+      window.addEventListener("resize", function () {
+        if (document.getElementById("schedule-tools-menu").classList.contains("open") || document.getElementById("schedule-tools").classList.contains("open")) {
+          positionScheduleToolsMenu();
+        }
+        if (document.getElementById("auto-fill-settings-panel").classList.contains("open")) {
+          positionAutoFillSettingsPanel();
+        }
+        setAutoFillSettingsPanelOpen(false);
+        closeScheduleToolsMenu(true);
+      });
+      window.addEventListener("orientationchange", function () {
+        if (document.getElementById("schedule-tools-menu").classList.contains("open") || document.getElementById("schedule-tools").classList.contains("open")) {
+          positionScheduleToolsMenu();
+        }
+        if (document.getElementById("auto-fill-settings-panel").classList.contains("open")) {
+          positionAutoFillSettingsPanel();
+        }
+        setAutoFillSettingsPanelOpen(false);
+        closeScheduleToolsMenu(true);
+      });
+      setScheduleToolsMenuOpen(false);
     }
 
     function getWorkweekForEmployee(email) {
@@ -1368,10 +2062,12 @@
       if (!hint || !startSelect) return;
       const startBlock = formatHourAsTimeBlock(startSelect.value);
       if (workweek === "CA" || workweek === "AWS") {
-        const hours = getAutoFillDurationByWorkweek(workweek);
-        hint.textContent = `Start ${formatTimeBlockLabel(startBlock)}. ${workweek} auto-fills ${hours} hours, sets lunch in hour 6, and rolls into next day if needed.`;
+        const cfg = getAutoFillConfigByWorkweek(workweek);
+        hint.textContent = `Start ${formatTimeBlockLabel(startBlock)}. ${workweek} auto-fills ${cfg.durationHours} hours: ${cfg.hoursBeforeLunch} before lunch, lunch, ${cfg.hoursAfterLunch} after, and rolls into next day if needed.`;
       } else {
-        hint.textContent = `Start ${formatTimeBlockLabel(startBlock)}. CA auto-fills 8 hours, AWS auto-fills 10 hours, with lunch in hour 6.`;
+        const caCfg = getAutoFillConfigByWorkweek("CA");
+        const awsCfg = getAutoFillConfigByWorkweek("AWS");
+        hint.textContent = `Start ${formatTimeBlockLabel(startBlock)}. CA: ${caCfg.durationHours}h (${caCfg.hoursBeforeLunch}+lunch+${caCfg.hoursAfterLunch}). AWS: ${awsCfg.durationHours}h (${awsCfg.hoursBeforeLunch}+lunch+${awsCfg.hoursAfterLunch}).`;
       }
     }
 
@@ -1409,7 +2105,7 @@
       }
     }
 
-    function applyAutoFillForStartDay(employeeEmail, startDayName, startHour, durationHours) {
+    function applyAutoFillForStartDay(employeeEmail, startDayName, startHour, durationHours, lunchIndex) {
       const startIndex = WEEK_DAYS.indexOf(startDayName);
       if (startIndex < 0) return;
 
@@ -1418,7 +2114,7 @@
         const dayOffset = Math.floor(absoluteHour / 24);
         const hour = ((absoluteHour % 24) + 24) % 24;
         const targetDay = WEEK_DAYS[(startIndex + dayOffset) % WEEK_DAYS.length];
-        const status = i === 5 ? "L" : "O";
+        const status = i === lunchIndex ? "L" : "O";
         const timeBlock = formatHourAsTimeBlock(hour);
         setScheduleStatusWithoutRender(employeeEmail, targetDay, timeBlock, status);
       }
@@ -1443,9 +2139,9 @@
       }
 
       const workweek = getWorkweekForEmployee(employeeEmail);
-      const duration = getAutoFillDurationByWorkweek(workweek);
+      const cfg = getAutoFillConfigByWorkweek(workweek);
       checkedDays.forEach(dayName => {
-        applyAutoFillForStartDay(employeeEmail, dayName, startHour, duration);
+        applyAutoFillForStartDay(employeeEmail, dayName, startHour, cfg.durationHours, cfg.lunchIndex);
       });
 
       markScheduleDirty();
@@ -1547,16 +2243,19 @@
       const payload = state && typeof state === "object" ? state : {};
       const active = Array.isArray(payload.Employee_data) ? payload.Employee_data : [];
       EmployeeSchedule = active.map(normalizeEmployeeRecord).sort((a, b) => getEmployeeEmail(a).localeCompare(getEmployeeEmail(b)));
+      scheduleSettings = normalizeScheduleSettings(payload.settings);
       if (Object.prototype.hasOwnProperty.call(payload, "deleted_employee_data")) {
         setDeletedScheduleState(payload.deleted_employee_data);
         hasLoadedDeletedEmployees = true;
       }
+      renderAutoFillSettingsPanel();
     }
 
     function buildScheduleStatePayload() {
       return {
         schemaVersion: 1,
         updatedAt: new Date().toISOString(),
+        settings: normalizeScheduleSettings(scheduleSettings),
         Employee_data: (EmployeeSchedule || []).map(normalizeEmployeeRecord),
         deleted_employee_data: (DeletedEmployeeSchedule || []).map(normalizeEmployeeRecord),
         includeDeletedData: hasLoadedDeletedEmployees
@@ -2881,6 +3580,8 @@
     if (e.key === "Escape") {
       closeAddEmployeeModal();
       closeAllEmpMenus();
+      setAutoFillSettingsPanelOpen(false);
+      closeScheduleToolsMenu(true);
     }
   });
   // Click outside any employee menu closes them
@@ -3049,6 +3750,7 @@
     const btn = document.getElementById("save-btn");
     if (!btn) return;
     btn.disabled = !hasUnsavedChanges;
+    btn.classList.toggle("is-idle", !hasUnsavedChanges);
   }
 
   function markScheduleDirty() {
@@ -3062,32 +3764,24 @@
   }
 
   /**
-   * Update the circular progress ring + label from autoSaveRemaining.
-   * Ring uses path-length style: stroke-dasharray="100", offset 0 = full,
-   * offset 100 = empty. Progress depletes as time runs out.
+   * Update the save button counter from autoSaveRemaining.
+   * Simplified UI: no extra text, just a clean Save action with a countdown
+   * bubble once a change is pending.
    */
   function updateAutoSaveUI() {
+    const btn = document.getElementById("save-btn");
     const countEl = document.getElementById("save-countdown");
-    const labelEl = document.getElementById("save-timer-label");
-    const progressEl = document.getElementById("timer-progress");
-    if (!countEl || !labelEl || !progressEl) return;
+    if (!btn || !countEl) return;
 
     if (!hasUnsavedChanges) {
-      countEl.textContent = "-";
-      labelEl.textContent = "Waiting for changes";
-      progressEl.style.strokeDashoffset = "100";
+      countEl.textContent = "";
+      btn.classList.add("is-idle");
       return;
     }
 
     const sec = Math.max(0, autoSaveRemaining);
     countEl.textContent = String(sec);
-    labelEl.textContent = sec === 0
-      ? "Saving…"
-      : ("Auto-save in " + sec + "s");
-
-    // Deplete ring: remaining fraction → dashoffset
-    const pct = (sec / AUTO_SAVE_INTERVAL_SEC) * 100;
-    progressEl.style.strokeDashoffset = String(100 - pct);
+    btn.classList.remove("is-idle");
   }
 
   /**
@@ -3154,7 +3848,6 @@
    */
   function saveSchedule() {
     const btn = document.getElementById("save-btn");
-    const ringWrap = document.getElementById("timer-ring-wrap");
 
     if (scheduleSaveInFlight) {
       return;
@@ -3168,21 +3861,22 @@
     scheduleSaveInFlight = true;
     setScheduleIdleBar(false, "");
 
-    // Visual feedback while "saving"
     if (btn) {
       btn.classList.add("is-saving");
       btn.disabled = true;
-      btn.textContent = "Saving…";
+      btn.querySelector(".save-btn-label").textContent = "Saving";
+      btn.querySelector(".save-btn-count").textContent = "";
     }
-    if (ringWrap) ringWrap.classList.add("is-saving");
 
     if (!(window.google && google.script && google.script.run)) {
       scheduleSaveInFlight = false;
       if (btn) {
         btn.classList.remove("is-saving");
-        btn.textContent = "Save";
+        btn.querySelector(".save-btn-label").textContent = "Save";
+        if (!hasUnsavedChanges) {
+          btn.querySelector(".save-btn-count").textContent = "";
+        }
       }
-      if (ringWrap) ringWrap.classList.remove("is-saving");
       setSaveButtonState();
       alert("Unable to save: Apps Script bridge is not available.");
       return;
@@ -3196,9 +3890,9 @@
         if (!result || result.success !== true) {
           if (btn) {
             btn.classList.remove("is-saving");
-            btn.textContent = "Save";
+            btn.querySelector(".save-btn-label").textContent = "Save";
+            updateAutoSaveUI();
           }
-          if (ringWrap) ringWrap.classList.remove("is-saving");
           setSaveButtonState();
           setScheduleStatus((result && result.message) ? result.message : "Failed to save schedule.", true);
           alert((result && result.message) ? result.message : "Failed to save schedule.");
@@ -3215,9 +3909,9 @@
       if (btn) {
         btn.classList.remove("is-saving");
         btn.classList.add("just-saved");
-        btn.textContent = "Saved";
+        btn.querySelector(".save-btn-label").textContent = "Saved";
+        btn.querySelector(".save-btn-count").textContent = "";
       }
-      if (ringWrap) ringWrap.classList.remove("is-saving");
       setScheduleStatus((result && result.message) ? result.message : "Schedule saved.", false);
 
       hasUnsavedChanges = false;
@@ -3226,11 +3920,11 @@
       resetAutoSaveCountdown();
       setSaveButtonState();
 
-      // Return button label to "Save" after a short acknowledgement
       setTimeout(function () {
         if (btn) {
           btn.classList.remove("just-saved");
-          btn.textContent = "Save";
+          btn.querySelector(".save-btn-label").textContent = "Save";
+          updateAutoSaveUI();
         }
       }, 900);
       })
@@ -3238,9 +3932,9 @@
         scheduleSaveInFlight = false;
         if (btn) {
           btn.classList.remove("is-saving");
-          btn.textContent = "Save";
+          btn.querySelector(".save-btn-label").textContent = "Save";
+          updateAutoSaveUI();
         }
-        if (ringWrap) ringWrap.classList.remove("is-saving");
         setSaveButtonState();
         setScheduleStatus((err && err.message) ? err.message : "Failed to save schedule.", true);
         alert((err && err.message) ? err.message : "Failed to save schedule.");
@@ -3373,7 +4067,9 @@
   }
 
   // Run on HTML load (script is at end of body, so DOM is ready)
-  initializeScheduleThemeMode();
+  initializeSidebarResize();
+  initializeScheduleToolsMenu();
+  initializeAutoFillSettingsPanel();
   initializeScheduleIdleManager();
   populateLiveSchedule();
 

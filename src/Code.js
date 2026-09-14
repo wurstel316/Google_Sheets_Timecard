@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.163 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.224 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -842,7 +842,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.163';
+const SCRIPT_VERSION = '2.2.2-push.224';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -855,6 +855,10 @@ const SCHEDULE_SETTINGS_HEADERS = ['Key', 'Value', 'Updated At', 'Updated By'];
 const SCHEDULE_STATE_KEY = 'schedule_state_json';
 const SCHEDULE_DELETED_STATE_KEY = 'schedule_deleted_employees_json';
 const SCHEDULE_STATE_SCHEMA_VERSION = 1;
+const DEFAULT_SCHEDULE_AUTOFILL_SETTINGS = Object.freeze({
+    CA: Object.freeze({ hoursBeforeLunch: 5, hoursAfterLunch: 2 }),
+    AWS: Object.freeze({ hoursBeforeLunch: 5, hoursAfterLunch: 4 })
+});
 const USER_THEME_MODE_KEY = 'ui_theme_mode';
 /**
  * @typedef {Object} AWSConfigEntry
@@ -3676,8 +3680,46 @@ function normalizeScheduleEmployeeRecord_(employee, keepDeletedMeta = false) {
     }
     return normalized;
 }
+function normalizeScheduleAutoFillProfile_(profile, fallbackProfile) {
+    const source = profile && typeof profile === 'object' ? profile : {};
+    const fallback = fallbackProfile && typeof fallbackProfile === 'object'
+        ? fallbackProfile
+        : { hoursBeforeLunch: 5, hoursAfterLunch: 2 };
+    const rawBefore = Number(source.hoursBeforeLunch);
+    const rawAfter = Number(source.hoursAfterLunch);
+    let hoursBeforeLunch = Number.isFinite(rawBefore) ? Math.floor(rawBefore) : Number(fallback.hoursBeforeLunch);
+    let hoursAfterLunch = Number.isFinite(rawAfter) ? Math.floor(rawAfter) : Number(fallback.hoursAfterLunch);
+    hoursBeforeLunch = Math.max(0, Math.min(23, Number.isFinite(hoursBeforeLunch) ? hoursBeforeLunch : 5));
+    hoursAfterLunch = Math.max(0, Math.min(23, Number.isFinite(hoursAfterLunch) ? hoursAfterLunch : 2));
+    if (hoursBeforeLunch + 1 + hoursAfterLunch > 24) {
+        hoursAfterLunch = Math.max(0, 23 - hoursBeforeLunch);
+    }
+    if (hoursBeforeLunch + 1 + hoursAfterLunch > 24) {
+        hoursBeforeLunch = 23;
+        hoursAfterLunch = 0;
+    }
+    return {
+        hoursBeforeLunch: hoursBeforeLunch,
+        hoursAfterLunch: hoursAfterLunch
+    };
+}
+function normalizeScheduleSettings_(settings) {
+    const source = settings && typeof settings === 'object' ? settings : {};
+    const autoFillSource = source.autoFill && typeof source.autoFill === 'object' ? source.autoFill : source;
+    return {
+        autoFill: {
+            CA: normalizeScheduleAutoFillProfile_(autoFillSource.CA, DEFAULT_SCHEDULE_AUTOFILL_SETTINGS.CA),
+            AWS: normalizeScheduleAutoFillProfile_(autoFillSource.AWS, DEFAULT_SCHEDULE_AUTOFILL_SETTINGS.AWS)
+        }
+    };
+}
 function normalizeScheduleState_(rawState) {
     const source = rawState && typeof rawState === 'object' ? rawState : {};
+    const settingsSource = source.settings && typeof source.settings === 'object'
+        ? source.settings
+        : source.scheduleSettings && typeof source.scheduleSettings === 'object'
+            ? source.scheduleSettings
+            : {};
     const activeSource = Array.isArray(source.Employee_data)
         ? source.Employee_data
         : Array.isArray(source.employee_data)
@@ -3714,6 +3756,7 @@ function normalizeScheduleState_(rawState) {
     return {
         schemaVersion: Number(source.schemaVersion) || SCHEDULE_STATE_SCHEMA_VERSION,
         updatedAt: updatedAt,
+        settings: normalizeScheduleSettings_(settingsSource),
         Employee_data: Array.from(activeMap.values()).sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail)),
         deleted_employee_data: Array.from(deletedMap.values()).sort((a, b) => a.EmployeeEmail.localeCompare(b.EmployeeEmail))
     };
@@ -3752,6 +3795,7 @@ function buildScheduleStateFromStoredParts_(activeState, deletedState) {
     return {
         schemaVersion: Number(activeNormalized.schemaVersion) || Number(deletedNormalized.schemaVersion) || SCHEDULE_STATE_SCHEMA_VERSION,
         updatedAt: String(activeNormalized.updatedAt || deletedNormalized.updatedAt || new Date().toISOString()).trim(),
+        settings: normalizeScheduleSettings_(activeNormalized.settings),
         Employee_data: activeNormalized.Employee_data,
         deleted_employee_data: filteredDeleted
     };
@@ -3787,6 +3831,7 @@ function writeStoredScheduleState_(state, options = {}) {
     const activePayload = {
         schemaVersion: normalized.schemaVersion,
         updatedAt: normalized.updatedAt,
+        settings: normalizeScheduleSettings_(normalized.settings),
         Employee_data: normalized.Employee_data
     };
     let deletedPayload;
@@ -4028,6 +4073,7 @@ function fetchScheduleToolData() {
         state: {
             schemaVersion: activeState.schemaVersion,
             updatedAt: activeState.updatedAt,
+            settings: activeState.settings,
             Employee_data: activeState.Employee_data
         },
         deletedDataIncluded: false
@@ -4047,6 +4093,7 @@ function saveScheduleToolData(schedulePayload) {
                 state: {
                     schemaVersion: savedState.schemaVersion,
                     updatedAt: savedState.updatedAt,
+                    settings: savedState.settings,
                     Employee_data: savedState.Employee_data
                 },
                 deletedDataIncluded: false

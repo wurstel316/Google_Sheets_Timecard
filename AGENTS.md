@@ -154,6 +154,11 @@ Current code continues to implement California rules with AWS-specific adjustmen
 - Close and clean up state before opening a new modal.
 - Use the current modal patterns instead of adding ad hoc navigation/reload flows.
 - When the payroll export completion path is involved, follow the existing admin preview modal clean-up flow and refresh the active admin data after closing the preview.
+- Treat modal scroll lock as centralized state: whenever a modal opens or closes, call the shared lock updater immediately (do not rely on individual CSS or one-off toggles).
+- Modal visibility checks for lock state should use computed visibility, not only inline `style.display`, so nested/stacked modal flows cannot leave the page locked.
+- When no tracked modal is visible, explicitly clear lock classes and any temporary `overflow`/`overscroll` inline styles on both `html` and `body`.
+- For iframe-based modals, avoid fixed desktop width/height caps; derive host/frame size from UI scale and clamp with viewport-based limits so modal footprint scales with typography.
+- Keep host and iframe sizing in sync (parent container and iframe should grow/shrink together) to avoid "scaled text but fixed shell" regressions.
 
 ## Common Pitfalls and Troubleshooting
 

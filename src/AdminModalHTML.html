@@ -40,6 +40,7 @@
     }
 
     * { box-sizing: border-box; }
+    html { font-size: 19.2px; }
     body {
       margin: 0;
       min-height: 100vh;
@@ -47,6 +48,11 @@
       color: var(--ink);
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       padding: 0;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+      overscroll-behavior: none;
     }
 
     .admin-shell {
@@ -134,6 +140,76 @@
       flex-wrap: nowrap;
       overflow-x: auto;
       padding-bottom: 1px;
+    }
+
+    .timeline-legend {
+      margin-top: 7px;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      overflow-x: auto;
+      padding-bottom: 1px;
+      font-size: var(--text-xs);
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--panel) 82%, var(--accent) 18%);
+      color: var(--ink);
+      padding: 0.28rem 0.55rem;
+      white-space: nowrap;
+      line-height: 1.15;
+      font-weight: 600;
+    }
+
+    .legend-item.deleted {
+      text-decoration: line-through;
+      text-decoration-thickness: 0.12rem;
+      text-decoration-color: rgba(255, 132, 148, 0.9);
+    }
+
+    .legend-swatch {
+      position: relative;
+      flex: 0 0 auto;
+      width: 0.95rem;
+      height: 0.95rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.35);
+      background: #6db7ff;
+    }
+
+    .legend-swatch.out { background: #8cc4ff; }
+    .legend-swatch.warn { background: var(--warn); }
+    .legend-swatch.bad { background: var(--bad); }
+    .legend-swatch.deleted { background: rgba(255, 132, 148, 0.8); }
+    .legend-swatch.pending { background: rgba(255, 255, 255, 0.32); }
+
+    .legend-swatch.line::after {
+      content: '';
+      position: absolute;
+      left: 0.1rem;
+      right: 0.1rem;
+      top: 50%;
+      height: 2px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background: rgba(171,199,232,0.9);
+    }
+
+    .legend-swatch.line.open::after {
+      background: rgba(114,186,255,0.95);
+    }
+
+    .legend-swatch.line.warn::after {
+      background: rgba(255,213,137,0.95);
+    }
+
+    .legend-swatch.line.deleted::after {
+      background: rgba(255, 132, 148, 0.92);
     }
 
     .active-period-banner {
@@ -230,6 +306,10 @@
       background: var(--panel-2);
     }
 
+    .admin-shell.modal-open .content {
+      overflow: hidden;
+    }
+
     .employee {
       border: 1px solid var(--line-soft);
       border-radius: 10px;
@@ -291,7 +371,8 @@
 
     .sync-pill.ok { color: var(--ok); border-color: rgba(112,223,172,0.6); background: rgba(112,223,172,0.16); }
     .sync-pill.bad { color: var(--bad); border-color: rgba(255,135,156,0.6); background: rgba(255,135,156,0.16); }
-    .sync-pill.warn { color: var(--warn); border-color: rgba(255,213,137,0.6); background: rgba(255,213,137,0.16); }
+    .sync-pill.warn { color: #5f4200; border-color: rgba(172,121,22,0.72); background: rgba(255,224,151,0.72); }
+    .sync-pill.no-data { color: #365170; border-color: rgba(107,138,172,0.66); background: rgba(210,224,241,0.72); }
 
     .day { border-bottom: 1px solid #45556f; }
     .day:last-child { border-bottom: none; }
@@ -313,17 +394,23 @@
 
     .day-verify-btn {
       border: 1px solid #4f6887;
-      background: #254161;
-      color: #d8e8fb;
+      background: #2a4e7c;
+      color: #e0edff;
       border-radius: 999px;
       padding: 5px 9px;
       font-size: 0.78rem;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
     }
 
-    .day-verify-btn.on { border-color: rgba(112,223,172,0.6); background: rgba(112,223,172,0.16); color: var(--ok); }
+    .day-verify-btn.on {
+      border-color: rgba(112,223,172,0.7);
+      background: rgba(112,223,172,0.22);
+      color: var(--ok);
+      box-shadow: inset 0 0 0 1px rgba(112,223,172,0.18);
+    }
 
     .day-total {
       font-size: 0.88rem;
@@ -429,6 +516,8 @@
     .dot.out { background: #8cc4ff; }
     .dot.bad { background: var(--bad); box-shadow: 0 0 0 3px rgba(255,135,156,0.25); }
     .dot.warn { background: var(--warn); box-shadow: 0 0 0 3px rgba(255,213,137,0.28); }
+    .dot.unknown { background: #a7b8cd; box-shadow: 0 0 0 3px rgba(167,184,205,0.25); }
+    .dot.open { background: var(--ok); box-shadow: 0 0 0 3px rgba(112,223,172,0.26); }
     .dot.pending { opacity: 0.55; cursor: wait; }
 
     .dot::after {
@@ -450,7 +539,9 @@
     }
 
     .dot-line.warn-row { background: rgba(255,213,137,0.78); }
+    .dot-line.unknown-row { background: rgba(167,184,205,0.8); }
     .dot-line.deleted-row { background: rgba(255, 132, 148, 0.5); }
+    .dot-line.open-row { background: rgba(112,223,172,0.82); }
 
     .rows-list { display: grid; gap: 6px; }
 
@@ -460,7 +551,46 @@
       border-radius: 8px;
       padding: 8px;
       display: grid;
+      gap: 6px;
+    }
+
+    .entry-note-group {
+      border: 1px solid #57739a;
+      background: #1f3047;
+      border-radius: 10px;
+      padding: 8px;
+      display: grid;
       gap: 8px;
+    }
+
+    .entry-note-head {
+      display: inline-flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .entry-note-pill {
+      border: 1px solid #7ea6d3;
+      background: #2d4a6d;
+      color: #e8f3ff;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      max-width: calc(100% - 2rem);
+    }
+
+    .entry-note-pill.raw {
+      background: #4a627b;
+      border-color: #98b3d4;
+      color: #f0f6ff;
     }
 
     .note-grid {
@@ -470,22 +600,20 @@
     }
 
     .day-note-item {
-      border: 1px solid #4b5f7f;
+      border: 1px solid #607b9e;
       border-radius: 8px;
-      background: #24354d;
-      padding: 7px 8px;
+      background: #2b415f;
+      padding: 5px 8px;
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
+      grid-template-columns: 1fr;
+      gap: 4px;
+      align-items: start;
     }
 
     .day-note-item.composer {
       border-style: dashed;
       background: #29425f;
     }
-
-    .row-actions { display: inline-flex; gap: 0.35rem; align-items: center; }
 
     .day-note-line {
       line-height: 1.25;
@@ -565,6 +693,11 @@
       justify-content: center;
       cursor: pointer;
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+    }
+
+    .entry-note-head .admin-note-add-btn {
+      margin: 0;
+      margin-left: auto;
     }
 
     .admin-note-add-btn[disabled] {
@@ -678,6 +811,10 @@
 
     .modal-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
 
+    .modal-actions .edit-hold-action-btn {
+      margin-left: auto;
+    }
+
     .edit-hold-action-btn {
       position: relative;
       overflow: visible;
@@ -788,12 +925,13 @@
     @media (max-width: 768px) {
       .day-head { grid-template-columns: 1fr; }
       .note-grid { grid-template-columns: 1fr; }
-      .day-note-item { grid-template-columns: 1fr auto; }
+      .day-note-item { grid-template-columns: 1fr; }
       .head {
         padding: 0.6rem;
       }
       .toolbar,
-      .switches {
+      .switches,
+      .timeline-legend {
         gap: 0.45rem;
       }
     }
@@ -804,9 +942,6 @@
     <header class="head">
       <div class="head-top">
         <h1>Admin View <span class="sub" id="periodLabel"></span></h1>
-        <div class="row-actions">
-          <button class="btn alt" id="modeBtn" type="button">Switch to Legacy</button>
-        </div>
       </div>
 
       <div class="toolbar">
@@ -821,6 +956,16 @@
         <label class="switch"><input id="showDeleted" type="checkbox"><span class="switch-track"></span><span class="switch-label">Show deleted rows</span></label>
         <label class="switch"><input id="showActiveOnly" type="checkbox" checked><span class="switch-track"></span><span class="switch-label">Show only active pay period</span></label>
         <label class="switch"><input id="autoCollapse" type="checkbox"><span class="switch-track"></span><span class="switch-label">Auto-collapse verified days</span></label>
+      </div>
+
+      <div class="timeline-legend" aria-label="Timeline legend">
+        <span class="legend-item" title="Punch is valid and within the normal expected time range."><span class="legend-swatch"></span>Valid</span>
+        <span class="legend-item" title="Punch needs review; max clock anchor delta is 16 to 30 minutes."><span class="legend-swatch warn"></span>Warning</span>
+        <span class="legend-item" title="Punch is out of sync; max clock anchor delta is greater than 30 minutes."><span class="legend-swatch bad"></span>Sync</span>
+        <span class="legend-item" title="Schedule or time anchors are missing/invalid so sync could not be scored."><span class="legend-swatch" style="background:#a7b8cd;"></span>Unknown</span>
+        <span class="legend-item" title="Entry is still open with no clock-out; sync scoring is deferred."><span class="legend-swatch" style="background:var(--ok);"></span>Open</span>
+        <span class="legend-item deleted" title="This row is deleted and excluded from the active timeline."><span class="legend-swatch deleted"></span>Deleted</span>
+        <span class="legend-item" title="This punch is still saving and its final state is pending."><span class="legend-swatch pending"></span>Saving</span>
       </div>
 
       <div class="active-period-banner" id="activePayPeriodBanner"></div>
@@ -864,9 +1009,10 @@
       <label class="field"><span>Clock Out</span><span class="field-input-with-trigger"><input type="datetime-local" id="editClockOut" class="edit-datetime-input"><button type="button" class="field-calendar-trigger" id="editClockOutPickerBtn" aria-label="Choose edit clock out date and time" title="Choose date and time">&#128197;</button></span></label>
       <p class="range-note" id="editRangeInfo">Allowed range: -</p>
       <div id="editNotesList" class="edit-note-list"></div>
-      <label class="field"><span>Add note</span><textarea id="editAddNoteInput" maxlength="150" placeholder="Write a quick note..."></textarea></label>
+      <label class="field"><span>Add note (required for time edits)</span><textarea id="editAddNoteInput" maxlength="150" placeholder="Write a quick note..."></textarea></label>
       <div class="modal-actions">
-        <button class="btn alt" id="editAddNoteBtn" type="button">Save Note</button>
+        <button class="btn" id="editApply" type="button">Apply</button>
+        <button class="btn alt" data-close="adminTimeEditModal">Cancel</button>
         <button class="btn alt edit-hold-action-btn edit-delete-btn" id="editDeleteRestoreBtn" type="button" title="Hold 3 seconds to delete">
           <span class="edit-hold-asset">
             <svg class="edit-hold-ring" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
@@ -876,8 +1022,6 @@
             <span class="edit-action-icon" id="editDeleteRestoreIcon" aria-hidden="true">&#128465;&#65039;</span>
           </span>
         </button>
-        <button class="btn" id="editApply" type="button">Apply</button>
-        <button class="btn alt" data-close="adminTimeEditModal">Cancel</button>
       </div>
     </div>
   </div>
@@ -916,7 +1060,12 @@
       tempRowSeed: -1,
       refreshInFlight: false,
       refreshQueued: false,
-      refreshQueuedMessage: ''
+      refreshQueuedMessage: '',
+      autoCollapseResetArmed: false,
+      collapsePrefs: {
+        users: {},
+        days: {}
+      }
     };
 
     const el = {
@@ -970,6 +1119,51 @@
       const d = new Date(Number(ms));
       if (Number.isNaN(d.getTime())) return '';
       return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getDate()).padStart(2, '0') + '/' + d.getFullYear();
+    }
+
+    function getUserCollapsePrefKey(email) {
+      return String(email || '').trim().toLowerCase();
+    }
+
+    function getDayCollapsePrefKey(email, dayKey) {
+      return getUserCollapsePrefKey(email) + '|' + String(dayKey || '');
+    }
+
+    function hasManualCollapsePreference(map, key) {
+      return Object.prototype.hasOwnProperty.call(map, key);
+    }
+
+    function setManualUserCollapsed(email, collapsed) {
+      const key = getUserCollapsePrefKey(email);
+      if (!key) return;
+      state.collapsePrefs.users[key] = collapsed === true;
+    }
+
+    function setManualDayCollapsed(email, dayKey, collapsed) {
+      const key = getDayCollapsePrefKey(email, dayKey);
+      if (!key) return;
+      state.collapsePrefs.days[key] = collapsed === true;
+    }
+
+    function clearManualCollapseOverrides() {
+      state.collapsePrefs.users = {};
+      state.collapsePrefs.days = {};
+    }
+
+    function resolveUserCollapsed(email) {
+      const key = getUserCollapsePrefKey(email);
+      if (!key) return false;
+      if (!hasManualCollapsePreference(state.collapsePrefs.users, key)) return false;
+      return state.collapsePrefs.users[key] === true;
+    }
+
+    function resolveDayCollapsed(email, day) {
+      const dayKey = day && day.key ? day.key : '';
+      const prefKey = getDayCollapsePrefKey(email, dayKey);
+      if (hasManualCollapsePreference(state.collapsePrefs.days, prefKey)) {
+        return state.collapsePrefs.days[prefKey] === true;
+      }
+      return state.autoCollapse && isDayFullyVerified(day);
     }
 
     function getAddMissedTimeAllowedBoundsMs() {
@@ -1043,6 +1237,38 @@
       const d = new Date(iso || '');
       if (Number.isNaN(d.getTime())) return '--:--';
       return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function formatAdminAuditTimestamp(dateObj) {
+      const d = dateObj instanceof Date ? dateObj : new Date();
+      const h = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const y = d.getFullYear();
+      return h + ':' + mi + ' ' + m + '/' + day + '/' + y;
+    }
+
+    function buildAdminTimeEditedNote() {
+      const actorLocalPart = String(state.context.currentUserEmail || '').split('@')[0] || 'unknown';
+      return 'Time edited by ' + actorLocalPart + ' at ' + formatAdminAuditTimestamp(new Date());
+    }
+
+    function isSameMinuteIso(aIso, bIso) {
+      const aMs = toMs(aIso);
+      const bMs = toMs(bIso);
+      const aValid = Number.isFinite(aMs);
+      const bValid = Number.isFinite(bMs);
+      if (!aValid && !bValid) return true;
+      if (!aValid || !bValid) return false;
+      return Math.floor(aMs / 60000) === Math.floor(bMs / 60000);
+    }
+
+    function refreshOpenEditModalNotesForRow(row) {
+      if (!state.editTarget) return;
+      const target = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
+      if (target !== row) return;
+      renderEditNotes(row);
     }
 
     function toLocalInputValue(iso) {
@@ -1154,6 +1380,12 @@
       return String(notesText || '').split(';').map((x) => x.trim()).filter((x) => x.length > 0);
     }
 
+    function formatEntryTimeRangeLabel(row, useRawTimes) {
+      const startIso = useRawTimes ? (row.rawClockIn || '') : (row.effectiveClockIn || row.rawClockIn || '');
+      const endIso = useRawTimes ? (row.rawClockOut || '') : (row.effectiveClockOut || row.rawClockOut || '');
+      return formatClock12(startIso) + ' to ' + formatClock12(endIso);
+    }
+
     function escapeHtml(value) {
       return String(value || '')
         .replace(/&/g, '&amp;')
@@ -1185,27 +1417,66 @@
       }).filter(Boolean);
     }
 
+    // Status classification contract:
+    // - State statuses: deleted, saving, open, unknown.
+    // - Timing statuses: ok, warn, bad.
+    // - Priority order: deleted -> saving -> open -> unknown -> timing.
+    // - Timing thresholds: ok <= 15, warn 16-30, bad > 30.
+    const SYNC_OK_MAX_MINUTES = 15;
+    const SYNC_WARN_MAX_MINUTES = 30;
+
     function evaluateSync(entry) {
       const snapshot = entry.scheduleSnapshot || {};
       const segments = Array.isArray(snapshot.segments) ? snapshot.segments : [];
-      if (!segments.length) return { status: 'warn' };
+      if (!segments.length) return { status: 'unknown', reason: 'no_segments' };
 
       const clockInDate = new Date(entry.effectiveClockIn || entry.rawClockIn || '');
       const clockOutDate = new Date(entry.effectiveClockOut || entry.rawClockOut || '');
-      if (Number.isNaN(clockInDate.getTime()) || Number.isNaN(clockOutDate.getTime())) return { status: 'warn' };
+      if (Number.isNaN(clockInDate.getTime()) || Number.isNaN(clockOutDate.getTime())) return { status: 'unknown', reason: 'invalid_clock_time' };
 
       const inMin = (clockInDate.getHours() * 60) + clockInDate.getMinutes();
       const outMin = (clockOutDate.getHours() * 60) + clockOutDate.getMinutes();
 
       const starts = segments.map((s) => Number(s.startHour) * 60).filter(Number.isFinite);
       const ends = segments.map((s) => Number(s.endHourExclusive) * 60).filter(Number.isFinite);
-      if (!starts.length || !ends.length) return { status: 'warn' };
+      if (!starts.length || !ends.length) return { status: 'unknown', reason: 'invalid_segment_bounds' };
 
       const minDelta = (value, list) => list.reduce((best, cur) => Math.min(best, Math.abs(value - cur)), Number.MAX_SAFE_INTEGER);
       const inDelta = minDelta(inMin, starts);
       const outDelta = minDelta(outMin, ends);
-      const bad = inDelta > 15 || outDelta > 15;
-      return { status: bad ? 'bad' : 'ok', inDelta, outDelta };
+      const maxDelta = Math.max(inDelta, outDelta);
+      if (maxDelta <= SYNC_OK_MAX_MINUTES) {
+        return { status: 'ok', inDelta, outDelta, maxDelta, reason: 'ok_delta' };
+      }
+      if (maxDelta <= SYNC_WARN_MAX_MINUTES) {
+        return { status: 'warn', inDelta, outDelta, maxDelta, reason: 'warn_delta' };
+      }
+      return { status: 'bad', inDelta, outDelta, maxDelta, reason: 'bad_delta' };
+    }
+
+    function getRowStatusForRender(row) {
+      if (row && row.deleted) return 'deleted';
+      if (row && row.pending) return 'saving';
+      const hasClockOut = !!(row && (row.effectiveClockOut || row.rawClockOut));
+      if (!hasClockOut) return 'open';
+      return row && row.status ? row.status : 'unknown';
+    }
+
+    function getStatusTooltipText(row) {
+      const status = getRowStatusForRender(row);
+      if (status === 'deleted') return 'Deleted row';
+      if (status === 'saving') return 'Saving in progress';
+      if (status === 'open') return 'Open entry: clock-out missing; sync scoring deferred';
+      if (status === 'unknown') return 'Unknown: schedule or time anchors unavailable';
+      const inDelta = Number(row && row.syncInDelta);
+      const outDelta = Number(row && row.syncOutDelta);
+      const maxDelta = Number(row && row.syncMaxDelta);
+      if (!Number.isFinite(inDelta) || !Number.isFinite(outDelta) || !Number.isFinite(maxDelta)) {
+        return status === 'bad' ? 'Out of sync' : (status === 'warn' ? 'Warning' : 'Valid');
+      }
+      if (status === 'bad') return 'Out of sync: max delta ' + maxDelta + 'm (in ' + inDelta + 'm, out ' + outDelta + 'm)';
+      if (status === 'warn') return 'Warning: max delta ' + maxDelta + 'm (in ' + inDelta + 'm, out ' + outDelta + 'm)';
+      return 'Valid: max delta ' + maxDelta + 'm (in ' + inDelta + 'm, out ' + outDelta + 'm)';
     }
 
     function normalizeEntry(entry) {
@@ -1229,9 +1500,33 @@
         entryType: String(entry.entryType || 'worked'),
         scheduleSnapshot: entry.scheduleSnapshot || {},
         status: statusInfo.status,
+        syncInDelta: Number.isFinite(statusInfo.inDelta) ? statusInfo.inDelta : null,
+        syncOutDelta: Number.isFinite(statusInfo.outDelta) ? statusInfo.outDelta : null,
+        syncMaxDelta: Number.isFinite(statusInfo.maxDelta) ? statusInfo.maxDelta : null,
+        syncReason: String(statusInfo.reason || ''),
         pending: false,
         collapsed: false
       };
+    }
+
+    function recomputeEntryDerivedState(entry) {
+      if (!entry) return;
+
+      const inIso = entry.effectiveClockIn || entry.rawClockIn || '';
+      const outIso = entry.effectiveClockOut || entry.rawClockOut || '';
+      const inMs = toMs(inIso);
+      const outMs = toMs(outIso);
+
+      if (Number.isFinite(inMs) && Number.isFinite(outMs) && outMs > inMs) {
+        entry.hours = (outMs - inMs) / 3600000;
+      }
+
+      const syncInfo = evaluateSync(entry);
+      entry.status = syncInfo && syncInfo.status ? syncInfo.status : 'unknown';
+      entry.syncInDelta = Number.isFinite(syncInfo && syncInfo.inDelta) ? syncInfo.inDelta : null;
+      entry.syncOutDelta = Number.isFinite(syncInfo && syncInfo.outDelta) ? syncInfo.outDelta : null;
+      entry.syncMaxDelta = Number.isFinite(syncInfo && syncInfo.maxDelta) ? syncInfo.maxDelta : null;
+      entry.syncReason = String((syncInfo && syncInfo.reason) || '');
     }
 
     function cloneEntryForRollback(entry) {
@@ -1251,7 +1546,11 @@
         deleted: entry.deleted === true,
         entryType: String(entry.entryType || 'worked'),
         scheduleSnapshot: entry.scheduleSnapshot || {},
-        status: String(entry.status || 'warn'),
+        status: String(entry.status || 'unknown'),
+        syncInDelta: Number.isFinite(entry.syncInDelta) ? Number(entry.syncInDelta) : null,
+        syncOutDelta: Number.isFinite(entry.syncOutDelta) ? Number(entry.syncOutDelta) : null,
+        syncMaxDelta: Number.isFinite(entry.syncMaxDelta) ? Number(entry.syncMaxDelta) : null,
+        syncReason: String(entry.syncReason || ''),
         pending: entry.pending === true,
         collapsed: entry.collapsed === true
       };
@@ -1287,7 +1586,7 @@
         if (!state.showDeleted && entry.deleted) return;
         if (state.showOnlyActive && !isInActivePayPeriod(entry.effectiveClockIn)) return;
         const email = entry.email || 'unknown';
-        if (!grouped[email]) grouped[email] = { email, label: email, collapsed: false, days: {} };
+        if (!grouped[email]) grouped[email] = { email, label: email, collapsed: resolveUserCollapsed(email), days: {} };
         const key = getDayKey(entry.effectiveClockIn || entry.rawClockIn);
         if (!grouped[email].days[key]) {
           grouped[email].days[key] = {
@@ -1311,6 +1610,7 @@
             mapSegmentsFromSnapshot(row.scheduleSnapshot).forEach((seg) => segmentMap.push(seg));
           });
           day.timeline = segmentMap;
+          day.collapsed = resolveDayCollapsed(user.email, day);
         });
       });
 
@@ -1335,19 +1635,74 @@
     function userSummary(user) {
       let total = 0;
       let ok = 0;
+      let bad = 0;
+      let warn = 0;
+      let unknown = 0;
+      let open = 0;
+      let saving = 0;
+      let scored = 0;
       user.days.forEach((d) => {
         d.rows.forEach((r) => {
+          if (r.deleted) return;
           total += 1;
-          if (r.status === 'ok') ok += 1;
+          const status = getRowStatusForRender(r);
+          if (status === 'ok') ok += 1;
+          if (status === 'bad') bad += 1;
+          if (status === 'warn') warn += 1;
+          if (status === 'unknown') unknown += 1;
+          if (status === 'open') open += 1;
+          if (status === 'saving') saving += 1;
+          if (status === 'ok' || status === 'warn' || status === 'bad') scored += 1;
         });
       });
-      return { ok, total };
+      let summaryClass = 'ok';
+      if (total === 0) {
+        summaryClass = 'no-data';
+      } else if (bad > 0) {
+        summaryClass = 'bad';
+      } else if (warn > 0) {
+        summaryClass = 'warn';
+      } else if (unknown > 0 && scored === 0) {
+        summaryClass = 'no-data';
+      } else if (unknown > 0) {
+        summaryClass = 'warn';
+      }
+
+      let summaryText = 'No visible rows';
+      if (total > 0) {
+        summaryText = scored > 0
+          ? (ok + '/' + scored + ' punches in sync')
+          : 'No sync-scored punches';
+        const suffix = [];
+        if (unknown > 0) suffix.push('+' + unknown + ' unknown');
+        if (open > 0) suffix.push('+' + open + ' open');
+        if (saving > 0) suffix.push('+' + saving + ' saving');
+        if (suffix.length) summaryText += ' | ' + suffix.join(', ');
+      }
+
+      return { ok, total, summaryClass, summaryText };
     }
 
-    function openModal(id) { document.getElementById(id).classList.add('open'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    function updateModalScrollLock() {
+      const anyOverlayOpen = !!document.querySelector('.overlay.open');
+      document.body.classList.toggle('modal-open', anyOverlayOpen);
+      if (el.root) {
+        el.root.classList.toggle('modal-open', anyOverlayOpen);
+      }
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+      updateModalScrollLock();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+      updateModalScrollLock();
+    }
 
     function renderDayTimeline(day, uIdx, dIdx) {
+      const nowPoint = clockToPercent(new Date().toISOString());
       const expected = day.timeline.map((seg) => {
         const typeMap = { 'O': 'duty', 'B': 'backup', 'L': 'lunch' };
         const segmentType = typeMap[seg.status] || '';
@@ -1356,19 +1711,33 @@
       }).join('');
       const dots = day.rows.map((row, rIdx) => {
         const inPoint = clockToPercent(row.effectiveClockIn || row.rawClockIn);
-        const outPoint = clockToPercent(row.effectiveClockOut || row.rawClockOut);
+        const hasClockOut = !!(row.effectiveClockOut || row.rawClockOut);
+        const outPoint = hasClockOut ? clockToPercent(row.effectiveClockOut || row.rawClockOut) : nowPoint;
         const left = Math.min(inPoint, outPoint);
         const width = Math.abs(outPoint - inPoint);
-        const warnClass = row.status === 'warn' ? ' warn-row' : '';
+        const status = getRowStatusForRender(row);
+        const tooltip = escapeHtml(getStatusTooltipText(row));
+        const warnClass = status === 'warn' ? ' warn-row' : '';
+        const unknownClass = status === 'unknown' ? ' unknown-row' : '';
         const deletedClass = row.deleted ? ' deleted-row' : '';
-        const inBad = row.status === 'bad' ? ' bad' : '';
-        const outBad = row.status === 'bad' ? ' bad' : '';
+        const openClass = hasClockOut ? '' : ' open-row';
+        const inBad = status === 'bad' ? ' bad' : '';
+        const outBad = status === 'bad' ? ' bad' : '';
+        const inWarn = status === 'warn' ? ' warn' : '';
+        const outWarn = status === 'warn' ? ' warn' : '';
+        const inUnknown = status === 'unknown' ? ' unknown' : '';
+        const outUnknown = status === 'unknown' ? ' unknown' : '';
+        const inOpen = status === 'open' ? ' open' : '';
+        const outOpen = status === 'open' ? ' open' : '';
         const pendingClass = row.pending ? ' pending' : '';
         const pendingAttr = row.pending ? ' disabled aria-disabled="true" title="Saving..."' : '';
+        const outDot = hasClockOut
+          ? '<button class="dot out' + outBad + outWarn + outUnknown + outOpen + pendingClass + '" style="left:' + outPoint + '%; top:35px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockOut || row.rawClockOut) + '" title="' + tooltip + '"' + pendingAttr + '></button>'
+          : '';
         return '' +
-          '<span class="dot-line' + warnClass + deletedClass + '" style="left:' + left + '%; width:' + width + '%; top:41px;"></span>' +
-          '<button class="dot in' + inBad + (row.status === 'warn' ? ' warn' : '') + pendingClass + '" style="left:' + inPoint + '%; top:35px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockIn || row.rawClockIn) + '"' + pendingAttr + '></button>' +
-          '<button class="dot out' + outBad + (row.status === 'warn' ? ' warn' : '') + pendingClass + '" style="left:' + outPoint + '%; top:35px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockOut || row.rawClockOut) + '"' + pendingAttr + '></button>';
+          '<span class="dot-line' + warnClass + unknownClass + deletedClass + openClass + '" style="left:' + left + '%; width:' + width + '%; top:41px;"></span>' +
+          '<button class="dot in' + inBad + inWarn + inUnknown + inOpen + pendingClass + '" style="left:' + inPoint + '%; top:35px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockIn || row.rawClockIn) + '" title="' + tooltip + '"' + pendingAttr + '></button>' +
+          outDot;
       }).join('');
 
       return '' +
@@ -1393,56 +1762,51 @@
     }
 
     function renderRowsList(day, uIdx, dIdx) {
-      const noteRows = [];
-      day.rows.forEach((row, rIdx) => {
-        const notes = splitNotes(row.notes);
-        notes.forEach((text) => {
-          noteRows.push({ text, rowIndex: rIdx, pending: row.pending, deleted: row.deleted });
-        });
-      });
-
-      const fallbackRowIndex = day.rows.findIndex((row) => !row.deleted);
-      if (!noteRows.length) {
-        noteRows.push({
-          text: 'No notes',
-          rowIndex: fallbackRowIndex >= 0 ? fallbackRowIndex : 0,
-          pending: false,
-          deleted: fallbackRowIndex < 0,
-          empty: true
-        });
-      }
-
       const composer = state.inlineNoteComposer;
-      const composerOpenForDay = !!composer && composer.u === uIdx && composer.d === dIdx;
+      const groups = day.rows.map((row, rIdx) => {
+        const notes = splitNotes(row.notes);
+        const composerOpenForRow = !!composer && composer.u === uIdx && composer.d === dIdx && composer.r === rIdx;
+        const inLabel = formatClock12(row.effectiveClockIn || row.rawClockIn);
+        const outLabel = row.effectiveClockOut || row.rawClockOut
+          ? formatClock12(row.effectiveClockOut || row.rawClockOut)
+          : '--:--';
 
-      const rows = noteRows.map((noteRow, noteIdx) => {
-        const addNoteBtn = noteRow.deleted
+        const addNoteBtn = row.deleted
           ? '<button class="admin-note-add-btn" title="No editable row available" disabled>+</button>'
-          : noteRow.pending
+          : row.pending
             ? '<button class="admin-note-add-btn" title="Saving row..." disabled>+</button>'
-          : '<button class="admin-note-add-btn" title="Add note" data-action="note-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + noteRow.rowIndex + '" data-note-index="' + noteIdx + '">+</button>';
-        const textClass = noteRow.empty
-          ? 'day-note-line empty'
-          : ('day-note-line' + (String(noteRow.text || '').length > 90 ? ' long' : ''));
-        let rowHtml = '' +
-          '<div class="day-note-item">' +
-            '<div class="' + textClass + '">' + escapeHtml(noteRow.text) + '</div>' +
-            '<div class="row-actions">' + addNoteBtn + '</div>' +
-          '</div>';
-        if (composerOpenForDay && composer.afterNoteIndex === noteIdx) {
-          rowHtml += '' +
+            : '<button class="admin-note-add-btn" title="Add note" data-action="note-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-note-index="-1">+</button>';
+
+        const noteRows = notes.length
+          ? notes.map((text) => {
+              const textClass = 'day-note-line' + (String(text || '').length > 90 ? ' long' : '');
+              return '<div class="day-note-item"><div class="' + textClass + '">' + escapeHtml(text) + '</div></div>';
+            }).join('')
+          : '<div class="day-note-item"><div class="day-note-line empty">No notes</div></div>';
+
+        const composerHtml = composerOpenForRow
+          ? '' +
             '<div class="day-note-item composer">' +
               '<textarea id="inlineDayNoteInput" class="inline-note-input" maxlength="150" placeholder="Type note...">' + escapeHtml(composer.text || '') + '</textarea>' +
               '<div class="inline-note-actions">' +
                 '<button class="inline-note-btn" type="button" data-action="inline-note-save">Save</button>' +
                 '<button class="inline-note-btn" type="button" data-action="inline-note-cancel">Cancel</button>' +
               '</div>' +
-            '</div>';
-        }
-        return rowHtml;
+            '</div>'
+          : '';
+
+        return '' +
+          '<div class="entry-note-group">' +
+            '<div class="entry-note-head">' +
+              '<span class="entry-note-pill">Entry ' + (rIdx + 1) + ' | ' + inLabel + ' to ' + outLabel + '</span>' +
+              (state.showRawTimes ? '<span class="entry-note-pill raw">Raw Times | ' + escapeHtml(formatEntryTimeRangeLabel(row, true)) + '</span>' : '') +
+              addNoteBtn +
+            '</div>' +
+            '<div class="note-grid">' + noteRows + composerHtml + '</div>' +
+          '</div>';
       }).join('');
 
-      return '<div class="rows-list"><div class="notes-group"><div class="note-grid">' + rows + '</div></div></div>';
+      return '<div class="rows-list"><div class="notes-group">' + groups + '</div></div>';
     }
 
     function render() {
@@ -1452,14 +1816,13 @@
       const out = [];
       state.users.forEach((user, uIdx) => {
         const summary = userSummary(user);
-        const summaryClass = summary.total === 0 ? 'warn' : (summary.ok === summary.total ? 'ok' : 'bad');
-        const summaryText = summary.total === 0 ? 'No visible rows' : (summary.ok + '/' + summary.total + ' punches in sync');
+        const summaryClass = summary.summaryClass;
+        const summaryText = summary.summaryText;
         out.push('<article class="employee">');
         out.push('<div class="employee-head"><span class="employee-label"><button class="collapse-btn" data-action="toggle-user" data-user="' + uIdx + '">' + (user.collapsed ? '+' : '-') + '</button><span>&#128100; ' + user.label + '</span></span><span class="sync-pill ' + summaryClass + '">' + summaryText + '</span></div>');
 
         if (!user.collapsed) {
           user.days.forEach((day, dIdx) => {
-            if (state.autoCollapse && isDayFullyVerified(day)) day.collapsed = true;
             const dayVerified = isDayFullyVerified(day);
             const dayHasPending = day.rows.some((row) => row.pending === true);
             const dayTotal = day.rows.reduce((sum, row) => sum + Number(row.hours || 0), 0);
@@ -1670,7 +2033,7 @@
         note: '',
         preloadDateTimePicker: true,
         closeHostOnCancel: false,
-        closeHostOnSubmit: false,
+        closeHostOnSubmit: true,
         conflictContext: {
           openEntryStartMs: getOpenEntryStartForEmail(user.email, null),
           conflictIntervals: collectConflictIntervalsForEmail(user.email, null)
@@ -1889,7 +2252,9 @@
       document.querySelectorAll('[data-action="toggle-user"]').forEach((btn) => {
         btn.onclick = () => {
           const u = Number(btn.dataset.user);
-          state.users[u].collapsed = !state.users[u].collapsed;
+          const user = state.users[u];
+          const nextCollapsed = !user.collapsed;
+          setManualUserCollapsed(user.email, nextCollapsed);
           render();
         };
       });
@@ -1898,7 +2263,10 @@
         btn.onclick = () => {
           const u = Number(btn.dataset.user);
           const d = Number(btn.dataset.day);
-          state.users[u].days[d].collapsed = !state.users[u].days[d].collapsed;
+          const user = state.users[u];
+          const day = user.days[d];
+          const nextCollapsed = !day.collapsed;
+          setManualDayCollapsed(user.email, day.key, nextCollapsed);
           render();
         };
       });
@@ -2072,19 +2440,27 @@
       return sameMinute ? '' : candidateIso;
     }
 
-    function saveRowUpdate(row, payload, successMessage) {
+    function saveRowUpdate(row, payload, successMessage, options) {
       if (row.pending) return;
+      const opts = options || {};
       const previousState = {
         notes: row.notes,
         deleted: row.deleted,
         modifiedClockIn: row.modifiedClockIn,
         modifiedClockOut: row.modifiedClockOut,
         effectiveClockIn: row.effectiveClockIn,
-        effectiveClockOut: row.effectiveClockOut
+        effectiveClockOut: row.effectiveClockOut,
+        status: row.status,
+        syncInDelta: row.syncInDelta,
+        syncOutDelta: row.syncOutDelta,
+        syncMaxDelta: row.syncMaxDelta,
+        syncReason: row.syncReason,
+        hours: row.hours
       };
 
       if (Object.prototype.hasOwnProperty.call(payload, 'notes')) {
         row.notes = String(payload.notes || '');
+        refreshOpenEditModalNotesForRow(row);
       }
       if (Object.prototype.hasOwnProperty.call(payload, 'deleted')) {
         row.deleted = payload.deleted === true;
@@ -2098,6 +2474,12 @@
         row.effectiveClockOut = payload.modifiedClockOutISO || row.rawClockOut || '';
       }
 
+      recomputeEntryDerivedState(row);
+
+      if (opts.closeModalOptimistically === true) {
+        closeModal('adminTimeEditModal');
+      }
+
       row.pending = true;
       render();
       setStatus(successMessage ? (successMessage.replace(/\.$/, '') + '...') : 'Saving update...');
@@ -2107,45 +2489,48 @@
             row.pending = false;
             render();
             setStatus(successMessage || 'Entry updated.');
-            closeModal('adminTimeEditModal');
+            if (opts.closeModalOptimistically !== true) {
+              closeModal('adminTimeEditModal');
+            }
             return;
           }
           row.notes = previousState.notes;
+          refreshOpenEditModalNotesForRow(row);
           row.deleted = previousState.deleted;
           row.modifiedClockIn = previousState.modifiedClockIn;
           row.modifiedClockOut = previousState.modifiedClockOut;
           row.effectiveClockIn = previousState.effectiveClockIn;
           row.effectiveClockOut = previousState.effectiveClockOut;
+          row.status = previousState.status;
+          row.syncInDelta = previousState.syncInDelta;
+          row.syncOutDelta = previousState.syncOutDelta;
+          row.syncMaxDelta = previousState.syncMaxDelta;
+          row.syncReason = previousState.syncReason;
+          row.hours = previousState.hours;
           row.pending = false;
           render();
           setStatus(result && result.message ? result.message : 'Update failed.');
         })
         .withFailureHandler((err) => {
           row.notes = previousState.notes;
+          refreshOpenEditModalNotesForRow(row);
           row.deleted = previousState.deleted;
           row.modifiedClockIn = previousState.modifiedClockIn;
           row.modifiedClockOut = previousState.modifiedClockOut;
           row.effectiveClockIn = previousState.effectiveClockIn;
           row.effectiveClockOut = previousState.effectiveClockOut;
+          row.status = previousState.status;
+          row.syncInDelta = previousState.syncInDelta;
+          row.syncOutDelta = previousState.syncOutDelta;
+          row.syncMaxDelta = previousState.syncMaxDelta;
+          row.syncReason = previousState.syncReason;
+          row.hours = previousState.hours;
           row.pending = false;
           render();
           setStatus((err && err.message) ? err.message : 'Update failed.');
         })
         .adminSaveEntryUpdate(row.rowIndex, Object.assign({ entryId: row.entryId }, payload));
     }
-
-    document.getElementById('editAddNoteBtn').addEventListener('click', () => {
-      if (!state.editTarget) return;
-      const row = getRow(state.editTarget.u, state.editTarget.d, state.editTarget.r);
-      const note = String(document.getElementById('editAddNoteInput').value || '').trim();
-      if (!note) {
-        setStatus('Note cannot be empty.');
-        return;
-      }
-      const merged = row.notes ? row.notes + '; ' + note : note;
-      saveRowUpdate(row, { notes: merged }, 'Note saved.');
-      document.getElementById('editAddNoteInput').value = '';
-    });
 
     document.getElementById('editApply').addEventListener('click', () => {
       if (!state.editTarget) return;
@@ -2179,7 +2564,52 @@
       }
       const modifiedClockInISO = normalizeModifiedAgainstRaw(inIso, row.rawClockIn);
       const modifiedClockOutISO = normalizeModifiedAgainstRaw(outIso, row.rawClockOut);
-      saveRowUpdate(row, { modifiedClockInISO, modifiedClockOutISO }, 'Time edits applied.');
+
+      const currentEffectiveIn = row.effectiveClockIn || row.rawClockIn || '';
+      const currentEffectiveOut = row.effectiveClockOut || row.rawClockOut || '';
+      const nextEffectiveIn = modifiedClockInISO || row.rawClockIn || '';
+      const nextEffectiveOut = modifiedClockOutISO || row.rawClockOut || '';
+      const timeEdited = !isSameMinuteIso(currentEffectiveIn, nextEffectiveIn) || !isSameMinuteIso(currentEffectiveOut, nextEffectiveOut);
+
+      const editNoteInput = document.getElementById('editAddNoteInput');
+      const enteredNote = String((editNoteInput && editNoteInput.value) || '').trim();
+      if (timeEdited && !enteredNote) {
+        setStatus('Note is required for time edits.');
+        if (editNoteInput) editNoteInput.focus();
+        return;
+      }
+
+      let nextNotes = String(row.notes || '').trim();
+      if (enteredNote) {
+        nextNotes = nextNotes ? (nextNotes + '; ' + enteredNote) : enteredNote;
+      }
+
+      if (!timeEdited && !enteredNote) {
+        setStatus('No changes to apply.');
+        return;
+      }
+
+      let successMessage = timeEdited ? 'Time edits applied.' : 'Note saved.';
+      if (timeEdited) {
+        const timeEditAuditNote = buildAdminTimeEditedNote();
+        nextNotes = nextNotes ? (nextNotes + '; ' + timeEditAuditNote) : timeEditAuditNote;
+      }
+
+      saveRowUpdate(
+        row,
+        {
+          modifiedClockInISO,
+          modifiedClockOutISO,
+          notes: nextNotes,
+          clientAppendedTimeEditNote: timeEdited
+        },
+        successMessage,
+        { closeModalOptimistically: true }
+      );
+
+      if (editNoteInput) {
+        editNoteInput.value = '';
+      }
     });
 
     function setEditHoldVisualState(isHolding) {
@@ -2273,16 +2703,27 @@
     document.getElementById('btnReports').addEventListener('click', () => hostCall('openMoreReportsModal'));
     // Parent modal already owns close controls; keep iframe UI single-frame.
 
-    document.getElementById('modeBtn').addEventListener('click', () => {
-      hostCall('setAdminUiMode', 'legacy');
-      hostCall('openLegacyAdminView');
-      closeSelf();
-    });
-
     el.showRaw.addEventListener('change', () => { state.showRawTimes = el.showRaw.checked; render(); });
     el.showDeleted.addEventListener('change', () => { state.showDeleted = el.showDeleted.checked; render(); });
     el.showActiveOnly.addEventListener('change', () => { state.showOnlyActive = el.showActiveOnly.checked; render(); });
-    el.autoCollapse.addEventListener('change', () => { state.autoCollapse = el.autoCollapse.checked; render(); });
+    el.autoCollapse.addEventListener('change', () => {
+      const wasEnabled = state.autoCollapse === true;
+      const nextEnabled = el.autoCollapse.checked === true;
+
+      if (wasEnabled && !nextEnabled) {
+        state.autoCollapseResetArmed = true;
+      }
+
+      if (!wasEnabled && nextEnabled) {
+        if (state.autoCollapseResetArmed) {
+          clearManualCollapseOverrides();
+        }
+        state.autoCollapseResetArmed = false;
+      }
+
+      state.autoCollapse = nextEnabled;
+      render();
+    });
 
     function initializeContext() {
       const ctx = hostCall('getAdminContext') || {};

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Notes Containment V3 - Hybrid Grid</title>
+  <title>Notes Containment V3 - Entry Groups</title>
   <style>
     :root {
       --bg: #172538;
@@ -11,8 +11,13 @@
       --line: #4f6a8b;
       --ink: #deebfc;
       --muted: #9fb4d0;
-      --note: #2d4360;
+      --group: #1f3047;
+      --group-line: #57739a;
+      --note: #2b415f;
       --note-line: #607b9e;
+      --entry-pill-bg: #2d4a6d;
+      --entry-pill-line: #7ea6d3;
+      --entry-pill-ink: #e8f3ff;
       --add-bg: #315f72;
       --add-line: #6999b5;
       --add-ink: #ebf9ff;
@@ -46,7 +51,35 @@
       border-radius: 12px;
       padding: 10px;
       display: grid;
+      gap: 6px;
+    }
+
+    .entry-group {
+      border: 1px solid var(--group-line);
+      background: var(--group);
+      border-radius: 10px;
+      padding: 8px;
+      display: grid;
       gap: 8px;
+    }
+
+    .entry-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .entry-pill {
+      border: 1px solid var(--entry-pill-line);
+      background: var(--entry-pill-bg);
+      color: var(--entry-pill-ink);
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
     }
 
     .note-grid {
@@ -61,7 +94,7 @@
       border-radius: 8px;
       padding: 7px 8px;
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr;
       gap: 8px;
       align-items: center;
       min-height: 38px;
@@ -102,7 +135,7 @@
       color: var(--muted);
     }
 
-    .add-btn {
+    .entry-add-btn {
       width: 1.65rem;
       height: 1.65rem;
       border-radius: 999px;
@@ -113,6 +146,7 @@
       cursor: pointer;
       padding: 0;
       flex: 0 0 auto;
+      margin-left: auto;
     }
 
     .tile-actions {
@@ -138,43 +172,77 @@
       font-size: 0.82rem;
       padding-left: 2px;
     }
+
+    @media (max-width: 720px) {
+      .note-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="wrap">
     <section class="head">
-      <h1>V3: Hybrid Grid</h1>
-      <p class="sub">One large day box with compact two-column note tiles; long notes span naturally.</p>
+      <h1>V3: Entry Grouped Notes</h1>
+      <p class="sub">Notes are grouped by time entry row. Each entry has one add-note button beside its row label and time.</p>
     </section>
 
-    <section class="notes-box" aria-label="Day notes hybrid grid">
-      <div class="note-grid" id="noteGrid">
-        <div class="note-tile"><div class="note-text">Verified by sam at 13:30 09/01/2026</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
-        <div class="note-tile"><div class="note-text">Time edited by sam at 16:43 09/01/2026</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
-        <div class="note-tile"><div class="note-text long">Customer changed lunch timing due to field call. Vendor gate delay added 12 minutes at end of route.</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
-        <div class="note-tile"><div class="note-text">No notes</div><button class="add-btn" type="button" title="Add inline note">+</button></div>
+    <section class="notes-box" aria-label="Day notes grouped by entry row">
+      <div class="entry-group" data-entry-group="1">
+        <div class="entry-head">
+          <span class="entry-pill">Entry 1 | 07:58 AM to 12:01 PM</span>
+          <button class="entry-add-btn" type="button" title="Add note to Entry 1" aria-label="Add note to Entry 1">+</button>
+        </div>
+        <div class="note-grid" data-note-grid="1">
+          <div class="note-tile"><div class="note-text">Verified by sam at 13:30 09/01/2026</div></div>
+          <div class="note-tile"><div class="note-text">Time edited by sam at 16:43 09/01/2026</div></div>
+          <div class="note-tile"><div class="note-text long">Customer changed lunch timing due to field call. Vendor gate delay added 12 minutes at end of route.</div></div>
+        </div>
+      </div>
+
+      <div class="entry-group" data-entry-group="2">
+        <div class="entry-head">
+          <span class="entry-pill">Entry 2 | 12:35 PM to 05:21 PM</span>
+          <button class="entry-add-btn" type="button" title="Add note to Entry 2" aria-label="Add note to Entry 2">+</button>
+        </div>
+        <div class="note-grid" data-note-grid="2">
+          <div class="note-tile"><div class="note-text">No notes</div></div>
+        </div>
       </div>
     </section>
 
-    <div class="foot">Density profile: balanced compactness and readability, strongest desktop/mobile adaptability.</div>
+    <div class="foot">Alignment with Admin modal: notes are now grouped by entry row and separated in-order for the day timeline.</div>
   </main>
 
   <script>
     (function setupInlineComposer() {
-      const grid = document.getElementById('noteGrid');
-      if (!grid) return;
+      const groupNodes = Array.from(document.querySelectorAll('[data-entry-group]'));
+      if (!groupNodes.length) return;
 
-      function bindAddButtons(scope) {
-        const root = scope || grid;
-        root.querySelectorAll('.add-btn').forEach((btn) => {
-          if (btn.dataset.bound === '1') return;
-          btn.dataset.bound = '1';
-          btn.addEventListener('click', () => openComposerAfter(btn.closest('.note-tile')));
-        });
+      function getGridForGroup(group) {
+        if (!group) return null;
+        return group.querySelector('[data-note-grid]');
       }
 
       function closeComposer(tile) {
         if (tile && tile.parentNode) tile.parentNode.removeChild(tile);
+      }
+
+      function closeAnyComposer() {
+        const existing = document.querySelector('.note-tile.composer');
+        if (existing) closeComposer(existing);
+      }
+
+      function bindAddButtons(scope) {
+        const root = scope || document;
+        root.querySelectorAll('.entry-add-btn').forEach((btn) => {
+          if (btn.dataset.bound === '1') return;
+          btn.dataset.bound = '1';
+          btn.addEventListener('click', () => {
+            const group = btn.closest('[data-entry-group]');
+            openComposerForGroup(group);
+          });
+        });
       }
 
       function saveComposer(tile, input) {
@@ -188,22 +256,17 @@
         const textEl = document.createElement('div');
         textEl.className = 'note-text' + (text.length > 90 ? ' long' : '');
         textEl.textContent = text;
-        const addBtn = document.createElement('button');
-        addBtn.className = 'add-btn';
-        addBtn.type = 'button';
-        addBtn.title = 'Add inline note';
-        addBtn.textContent = '+';
         noteTile.appendChild(textEl);
-        noteTile.appendChild(addBtn);
         tile.parentNode.insertBefore(noteTile, tile.nextSibling);
-        bindAddButtons(noteTile);
         closeComposer(tile);
       }
 
-      function openComposerAfter(anchorTile) {
-        if (!anchorTile || !anchorTile.parentNode) return;
-        const existing = grid.querySelector('.note-tile.composer');
-        if (existing) closeComposer(existing);
+      function openComposerForGroup(group) {
+        if (!group) return;
+        const targetGrid = getGridForGroup(group);
+        if (!targetGrid) return;
+
+        closeAnyComposer();
 
         const composer = document.createElement('div');
         composer.className = 'note-tile composer';
@@ -228,7 +291,7 @@
         composer.appendChild(input);
         composer.appendChild(actions);
 
-        anchorTile.parentNode.insertBefore(composer, anchorTile.nextSibling);
+        targetGrid.appendChild(composer);
         input.focus();
 
         saveBtn.addEventListener('click', () => saveComposer(composer, input));
@@ -246,7 +309,7 @@
         });
       }
 
-      bindAddButtons();
+      bindAddButtons(document);
     })();
   </script>
 </body>

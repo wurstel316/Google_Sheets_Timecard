@@ -230,6 +230,18 @@
       background: rgba(255,135,156,0.16);
     }
 
+    .sync-pill.warn {
+      color: var(--warn);
+      border-color: rgba(255,213,137,0.6);
+      background: rgba(255,213,137,0.16);
+    }
+
+    .sync-pill.no-data {
+      color: #c5d6ec;
+      border-color: rgba(150, 173, 201, 0.56);
+      background: rgba(150, 173, 201, 0.14);
+    }
+
     .day {
       border-bottom: 1px solid #45556f;
     }
@@ -423,6 +435,32 @@
       animation: pulse 1.8s infinite;
     }
 
+    .punch.warn {
+      background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(255, 213, 137, 0.25);
+    }
+
+    .punch.unknown {
+      background: #a5b2c7;
+      box-shadow: 0 0 0 3px rgba(165, 178, 199, 0.22);
+    }
+
+    .punch.open {
+      background: #89c8ff;
+      box-shadow: 0 0 0 3px rgba(137, 200, 255, 0.25);
+    }
+
+    .punch.saving {
+      opacity: 0.62;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
+    }
+
+    .punch.deleted {
+      background: #cf8f9d;
+      opacity: 0.84;
+      box-shadow: 0 0 0 3px rgba(207, 143, 157, 0.2);
+    }
+
     .punch::after {
       content: attr(data-label);
       position: absolute;
@@ -503,6 +541,30 @@
       color: var(--warn);
       border-color: rgba(255,213,137,0.6);
       background: rgba(255,213,137,0.16);
+    }
+
+    .status.unknown {
+      color: #d0ddf0;
+      border-color: rgba(166, 183, 209, 0.6);
+      background: rgba(166, 183, 209, 0.16);
+    }
+
+    .status.open {
+      color: #9fd8ff;
+      border-color: rgba(123, 188, 232, 0.64);
+      background: rgba(123, 188, 232, 0.2);
+    }
+
+    .status.saving {
+      color: #e5eef8;
+      border-color: rgba(203, 217, 233, 0.6);
+      background: rgba(203, 217, 233, 0.18);
+    }
+
+    .status.deleted {
+      color: #f0bcc8;
+      border-color: rgba(221, 153, 170, 0.62);
+      background: rgba(200, 117, 142, 0.2);
     }
 
     .row-actions {
@@ -890,10 +952,13 @@
     <div class="content" id="timelineBoard"></div>
 
     <footer class="legend">
-      <span><span class="dot" style="background:var(--ok)"></span>OK = every anchor is within +/-15 minutes</span>
-      <span><span class="dot" style="background:var(--bad)"></span>OUT = at least one anchor exceeds +/-15 minutes</span>
-      <span><span class="dot" style="background:var(--warn)"></span>CHECK = missing schedule snippet for that punch</span>
-      <span><span class="dot" style="background:#f2d48a"></span>Delete action uses 3-second hold-to-confirm flow</span>
+      <span><span class="dot" style="background:var(--ok)"></span>Valid: max delta up to 15 minutes</span>
+      <span><span class="dot" style="background:var(--warn)"></span>Warning: max delta 16 to 30 minutes</span>
+      <span><span class="dot" style="background:var(--bad)"></span>Out of Sync: max delta over 30 minutes</span>
+      <span><span class="dot" style="background:#a5b2c7"></span>Unknown: missing schedule or invalid time anchors</span>
+      <span><span class="dot" style="background:#89c8ff"></span>Open: clock-out missing, sync deferred</span>
+      <span><span class="dot" style="background:#d6e3f3"></span>Saving: row update in progress</span>
+      <span><span class="dot" style="background:#cf8f9d"></span>Deleted: hidden unless Show deleted rows is on</span>
     </footer>
   </section>
 
@@ -1022,8 +1087,8 @@
           days: [
             {
               key: 'alex|2026-08-18',
-              label: '08-18-2026 (Tue - 8.01Hrs)',
-              total: 8.01,
+              label: '08-18-2026 (Tue - 18.13Hrs)',
+              total: 18.13,
               inActivePeriod: true,
               collapsed: false,
               timeline: [
@@ -1039,15 +1104,13 @@
                   rawOut: '2026-08-18T12:48:04-07:00',
                   inPoint: 13.0,
                   outPoint: 37.5,
-                  inBad: false,
-                  outBad: false,
                   hours: 4.78,
                   schedule: 'Sched: IN 08:00 -> OUT 12:45 (Morning shift)',
-                  delta: '+1m / +3m',
-                  status: 'ok',
+                  inDeltaMinutes: 1,
+                  outDeltaMinutes: 3,
                   verified: true,
                   deleted: false,
-                  notes: ['No notes'],
+                  notes: ['OK sample: max delta under 15 minutes.'],
                   pending: false
                 },
                 {
@@ -1058,16 +1121,48 @@
                   rawOut: '2026-08-18T17:06:31-07:00',
                   inPoint: 58.6,
                   outPoint: 78.0,
-                  inBad: true,
-                  outBad: false,
                   hours: 3.24,
                   schedule: 'Sched: IN 01:30 -> OUT 05:00 (Afternoon shift)',
-                  delta: '+22m / +6m',
-                  status: 'bad',
+                  inDeltaMinutes: 22,
+                  outDeltaMinutes: 6,
                   verified: false,
                   deleted: false,
-                  notes: ['No notes'],
+                  notes: ['Warning sample: max delta between 16 and 30 minutes.'],
                   pending: false
+                },
+                {
+                  id: 'a3',
+                  clockIn: '06:04 PM',
+                  clockOut: '10:15 PM',
+                  rawIn: '2026-08-18T18:04:00-07:00',
+                  rawOut: '2026-08-18T22:15:00-07:00',
+                  inPoint: 75.3,
+                  outPoint: 93.5,
+                  hours: 4.18,
+                  schedule: 'Sched: IN 06:00 -> OUT 09:20 (OT sample)',
+                  inDeltaMinutes: 4,
+                  outDeltaMinutes: 55,
+                  verified: false,
+                  deleted: false,
+                  notes: ['Out-of-sync sample: max delta exceeds 30 minutes.'],
+                  pending: false
+                },
+                {
+                  id: 'a4',
+                  clockIn: '10:59 PM',
+                  clockOut: '11:58 PM',
+                  rawIn: '2026-08-18T22:59:00-07:00',
+                  rawOut: '2026-08-18T23:58:00-07:00',
+                  inPoint: 95.8,
+                  outPoint: 99.2,
+                  hours: 0.98,
+                  schedule: 'Sched: IN 11:00 -> OUT 12:00 (Pending save sample)',
+                  inDeltaMinutes: 1,
+                  outDeltaMinutes: 2,
+                  verified: false,
+                  deleted: false,
+                  notes: ['Saving sample: pending state should override timing class.'],
+                  pending: true
                 }
               ]
             }
@@ -1080,8 +1175,8 @@
           days: [
             {
               key: 'jordan|2026-08-21',
-              label: '08-21-2026 (Fri - 15.35Hrs)',
-              total: 15.35,
+              label: '08-21-2026 (Fri - 17.74Hrs)',
+              total: 17.74,
               inActivePeriod: true,
               collapsed: false,
               timeline: [
@@ -1097,12 +1192,10 @@
                   rawOut: '2026-08-21T11:32:33-07:00',
                   inPoint: 12.5,
                   outPoint: 30.9,
-                  inBad: false,
-                  outBad: false,
                   hours: 3.53,
                   schedule: 'Sched: IN 08:00 -> OUT 11:30 (Morning shift)',
-                  delta: '0m / +2m',
-                  status: 'ok',
+                  inDeltaMinutes: 0,
+                  outDeltaMinutes: 2,
                   verified: true,
                   deleted: false,
                   notes: ['No notes'],
@@ -1116,12 +1209,10 @@
                   rawOut: '2026-08-21T23:59:00-07:00',
                   inPoint: 44.6,
                   outPoint: 93.8,
-                  inBad: false,
-                  outBad: true,
                   hours: 11.81,
                   schedule: 'Sched: IN 12:00 -> OUT 10:00 (Extended shift)',
-                  delta: '+11m / +119m',
-                  status: 'bad',
+                  inDeltaMinutes: 11,
+                  outDeltaMinutes: 119,
                   verified: false,
                   deleted: false,
                   notes: ['Auto clock-out after 14 hours.', 'Entry crossed midnight and was auto-split.'],
@@ -1135,15 +1226,47 @@
                   rawOut: '2026-08-22T04:26:00-07:00',
                   inPoint: 0,
                   outPoint: 9,
-                  inBad: false,
-                  outBad: false,
                   hours: 4.43,
                   schedule: 'Sched: No overnight shift found for this snippet',
-                  delta: 'N/A',
-                  status: 'warn',
+                  hasSchedule: false,
                   verified: false,
                   deleted: false,
-                  notes: ['No notes'],
+                  notes: ['Unknown sample: missing schedule segments.'],
+                  pending: false
+                },
+                {
+                  id: 'j5',
+                  clockIn: '09:44 PM',
+                  clockOut: '--:--',
+                  rawIn: '2026-08-21T21:44:00-07:00',
+                  rawOut: '',
+                  inPoint: 90.6,
+                  outPoint: null,
+                  hours: 0.00,
+                  schedule: 'Sched: IN 09:30 -> OUT 11:30 (Open row sample)',
+                  inDeltaMinutes: 14,
+                  outDeltaMinutes: null,
+                  open: true,
+                  verified: false,
+                  deleted: false,
+                  notes: ['Open sample: clock-out missing so sync is deferred.'],
+                  pending: false
+                },
+                {
+                  id: 'j6',
+                  clockIn: '04:18 PM',
+                  clockOut: '06:16 PM',
+                  rawIn: '2026-08-21T16:18:00-07:00',
+                  rawOut: '2026-08-21T18:16:00-07:00',
+                  inPoint: 67.9,
+                  outPoint: 76.1,
+                  hours: 1.97,
+                  schedule: 'Sched: IN 04:00 -> OUT 06:00 (Mid drift sample)',
+                  inDeltaMinutes: 18,
+                  outDeltaMinutes: 16,
+                  verified: false,
+                  deleted: false,
+                  notes: ['Warning sample: both anchors over 15, max within 30.'],
                   pending: false
                 }
               ]
@@ -1166,15 +1289,49 @@
                   rawOut: '2026-08-16T16:07:00-07:00',
                   inPoint: 25.8,
                   outPoint: 56.2,
-                  inBad: false,
-                  outBad: false,
                   hours: 6.0,
                   schedule: 'Sched: IN 10:00 -> OUT 04:00 (Outside active period)',
-                  delta: '+7m / +7m',
-                  status: 'ok',
+                  inDeltaMinutes: 7,
+                  outDeltaMinutes: 7,
                   verified: true,
                   deleted: false,
                   notes: ['Outside active period sample row'],
+                  pending: false
+                }
+              ]
+            }
+          ]
+        },
+        {
+          email: 'casey@shop.com',
+          label: 'Casey P.',
+          collapsed: false,
+          days: [
+            {
+              key: 'casey|2026-08-20',
+              label: '08-20-2026 (Thu - 7.48Hrs)',
+              total: 7.48,
+              inActivePeriod: true,
+              collapsed: false,
+              timeline: [
+                { start: 50, width: 31.25, label: 'Expected 12:00-07:30' }
+              ],
+              rows: [
+                {
+                  id: 'c1',
+                  clockIn: '12:02 PM',
+                  clockOut: '07:30 PM',
+                  rawIn: '2026-08-20T12:02:00-07:00',
+                  rawOut: '2026-08-20T19:30:00-07:00',
+                  inPoint: 50.1,
+                  outPoint: 81.3,
+                  hours: 7.48,
+                  schedule: 'Sched: IN 12:00 -> OUT 07:30 (Deleted sample)',
+                  inDeltaMinutes: 2,
+                  outDeltaMinutes: 0,
+                  verified: false,
+                  deleted: true,
+                  notes: ['Deleted sample row. Toggle Show deleted rows to reveal.'],
                   pending: false
                 }
               ]
@@ -1201,10 +1358,76 @@
       setTimeout(() => el.toast.classList.remove('show'), 1600);
     }
 
+    // Status classification contract for mock validation:
+    // - State statuses: deleted, saving, open, unknown.
+    // - Timing statuses: ok, warn, bad.
+    // - Priority: deleted -> saving -> open -> unknown -> timing.
+    // - Timing thresholds: ok <= 15, warn 16-30, bad > 30.
+    // - no-data is summary-only and never used as a row status.
+    const STATUS_THRESHOLDS = {
+      okMaxDeltaMinutes: 15,
+      warnMaxDeltaMinutes: 30
+    };
+
+    function classifyTimingStatus(inDeltaMinutes, outDeltaMinutes) {
+      if (!Number.isFinite(inDeltaMinutes) || !Number.isFinite(outDeltaMinutes)) {
+        return { status: 'unknown', maxDeltaMinutes: null };
+      }
+      const maxDeltaMinutes = Math.max(Math.abs(inDeltaMinutes), Math.abs(outDeltaMinutes));
+      if (maxDeltaMinutes <= STATUS_THRESHOLDS.okMaxDeltaMinutes) {
+        return { status: 'ok', maxDeltaMinutes };
+      }
+      if (maxDeltaMinutes <= STATUS_THRESHOLDS.warnMaxDeltaMinutes) {
+        return { status: 'warn', maxDeltaMinutes };
+      }
+      return { status: 'bad', maxDeltaMinutes };
+    }
+
+    function getRowRenderState(row) {
+      if (row.deleted) return { status: 'deleted', reason: 'Deleted row excluded from active sync scoring.' };
+      if (row.pending) return { status: 'saving', reason: 'Row update currently saving.' };
+      if (row.open === true || !row.rawOut || row.clockOut === '--:--') {
+        return { status: 'open', reason: 'Clock-out missing; sync deferred.' };
+      }
+
+      if (row.hasSchedule === false) {
+        return { status: 'unknown', reason: 'No schedule segments available for this row.' };
+      }
+
+      const inDeltaMinutes = Number(row.inDeltaMinutes);
+      const outDeltaMinutes = Number(row.outDeltaMinutes);
+      const timing = classifyTimingStatus(inDeltaMinutes, outDeltaMinutes);
+      if (timing.status === 'unknown') {
+        return { status: 'unknown', reason: 'Invalid or missing timing anchors.' };
+      }
+
+      return {
+        status: timing.status,
+        inDeltaMinutes,
+        outDeltaMinutes,
+        maxDeltaMinutes: timing.maxDeltaMinutes,
+        reason: 'max delta ' + timing.maxDeltaMinutes + 'm (in ' + inDeltaMinutes + 'm, out ' + outDeltaMinutes + 'm)'
+      };
+    }
+
     function statusText(status) {
       if (status === 'ok') return 'OK';
+      if (status === 'warn') return 'WARN';
       if (status === 'bad') return 'OUT';
+      if (status === 'unknown') return 'UNKNOWN';
+      if (status === 'open') return 'OPEN';
+      if (status === 'saving') return 'SAVING';
+      if (status === 'deleted') return 'DELETED';
       return 'CHECK';
+    }
+
+    function formatDeltaText(rowState) {
+      if (!Number.isFinite(rowState.inDeltaMinutes) || !Number.isFinite(rowState.outDeltaMinutes)) {
+        return 'N/A';
+      }
+      const inLabel = (rowState.inDeltaMinutes >= 0 ? '+' : '') + rowState.inDeltaMinutes + 'm';
+      const outLabel = (rowState.outDeltaMinutes >= 0 ? '+' : '') + rowState.outDeltaMinutes + 'm';
+      return inLabel + ' / ' + outLabel;
     }
 
     function countVisibleRows() {
@@ -1228,17 +1451,54 @@
     }
 
     function userSummary(user) {
-      let total = 0;
-      let ok = 0;
+      const counts = {
+        total: 0,
+        ok: 0,
+        warn: 0,
+        bad: 0,
+        unknown: 0,
+        open: 0,
+        saving: 0,
+        deleted: 0,
+        scored: 0
+      };
+
       user.days.forEach((d) => {
         if (state.showOnlyActive && !d.inActivePeriod) return;
         d.rows.forEach((r) => {
           if (!state.showDeleted && r.deleted) return;
-          total += 1;
-          if (r.status === 'ok') ok += 1;
+          const rowState = getRowRenderState(r);
+          counts.total += 1;
+          if (Object.prototype.hasOwnProperty.call(counts, rowState.status)) {
+            counts[rowState.status] += 1;
+          }
+          if (rowState.status === 'ok' || rowState.status === 'warn' || rowState.status === 'bad') {
+            counts.scored += 1;
+          }
         });
       });
-      return { ok, total };
+
+      let summaryClass = 'ok';
+      if (counts.total === 0) {
+        summaryClass = 'no-data';
+      } else if (counts.bad > 0) {
+        summaryClass = 'bad';
+      } else if (counts.warn > 0 || counts.unknown > 0) {
+        summaryClass = 'warn';
+      }
+
+      let summaryText = 'No visible rows';
+      if (counts.total > 0) {
+        const denominator = counts.scored > 0 ? counts.scored : 0;
+        summaryText = counts.ok + '/' + denominator + ' punches in sync';
+        const suffix = [];
+        if (counts.unknown > 0) suffix.push('+' + counts.unknown + ' unknown');
+        if (counts.open > 0) suffix.push('+' + counts.open + ' open');
+        if (counts.saving > 0) suffix.push('+' + counts.saving + ' saving');
+        if (suffix.length) summaryText += ' | ' + suffix.join(', ');
+      }
+
+      return { counts, summaryClass, summaryText };
     }
 
     function renderTimelineSegments(day) {
@@ -1258,8 +1518,8 @@
         if (!visibleDays.length) return;
 
         const summary = userSummary(user);
-        const summaryClass = summary.total === 0 ? 'warn' : (summary.ok === summary.total ? 'ok' : 'bad');
-        const summaryText = summary.total === 0 ? 'No visible rows' : (summary.ok + '/' + summary.total + ' punches in sync');
+        const summaryClass = summary.summaryClass;
+        const summaryText = summary.summaryText;
 
         out.push('<article class="employee">');
         out.push(
@@ -1288,6 +1548,10 @@
               day.rows.forEach((row, rIdx) => {
                 if (!state.showDeleted && row.deleted) return;
 
+                const rowState = getRowRenderState(row);
+                const inPunchClass = rowState.status === 'ok' ? '' : (' ' + rowState.status);
+                const outPunchClass = rowState.status === 'ok' ? '' : (' ' + rowState.status);
+
                 const classes = ['timeline-card'];
                 if (row.deleted) classes.push('deleted');
                 if (row.pending) classes.push('pending');
@@ -1315,8 +1579,10 @@
                 out.push('<div class="timeline"><div class="ticks"><span>07:00</span><span>09:00</span><span>11:00</span><span>01:00</span><span>03:00</span><span>05:00</span><span>07:00</span><span>09:00</span></div>');
                 out.push('<div class="track-grid">');
                 out.push(renderTimelineSegments(day));
-                out.push('<div class="punch ' + (row.inBad ? 'bad' : '') + '" style="left:' + row.inPoint + '%;" data-label="' + row.clockIn + ' IN"></div>');
-                out.push('<div class="punch ' + (row.outBad ? 'bad' : '') + '" style="left:' + row.outPoint + '%;" data-label="' + row.clockOut + ' OUT"></div>');
+                out.push('<div class="punch' + inPunchClass + '" style="left:' + row.inPoint + '%;" data-label="' + row.clockIn + ' IN" title="' + rowState.reason + '"></div>');
+                if (Number.isFinite(row.outPoint)) {
+                  out.push('<div class="punch' + outPunchClass + '" style="left:' + row.outPoint + '%;" data-label="' + row.clockOut + ' OUT" title="' + rowState.reason + '"></div>');
+                }
                 out.push('</div></div>');
 
                 out.push('<div class="raw">Raw IN: ' + row.rawIn + ' | Raw OUT: ' + row.rawOut + '</div>');
@@ -1324,8 +1590,8 @@
                 out.push(
                   '<div class="detail">' +
                     '<span class="schedule-snippet">' + row.schedule + '</span>' +
-                    '<span class="delta">' + row.delta + '</span>' +
-                    '<span class="status ' + row.status + '">' + statusText(row.status) + '</span>' +
+                    '<span class="delta">' + formatDeltaText(rowState) + '</span>' +
+                    '<span class="status ' + rowState.status + '" title="' + rowState.reason + '">' + statusText(rowState.status) + '</span>' +
                     '<span style="text-align:right;color:#9db3cd;">' + (row.deleted ? 'Deleted row' : 'Active row') + '</span>' +
                   '</div>'
                 );

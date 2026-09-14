@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.163 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.224 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -174,7 +174,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
         <base target="_top">
         <style>
           :root {
-            font-size: 16px;
+            font-size: 19.2px;
             --timecard-ui-scale-multiplier: 1;
             --timecard-picker-font-size: 1.02rem;
             --timecard-picker-cell-size: 2.1rem;
@@ -1221,6 +1221,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             flex-direction: column;
             gap: 0.55rem;
             margin-top: 0.65rem;
+            width: 100%;
+            box-sizing: border-box;
           }
           .admin-dayboard-head {
             display: flex;
@@ -1413,10 +1415,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .admin-dayboard-session-arrow {
             color: var(--tc-dayboard-arrow);
           }
-          @media (max-width: 900px) {
-            .admin-dayboard-lane {
-              grid-template-columns: 10rem minmax(0, 1fr);
-            }
+          body.mobile-layout .admin-dayboard-lane {
+            grid-template-columns: 10rem minmax(0, 1fr);
           }
           .admin-preview-grid {
             width: 100%;
@@ -2007,10 +2007,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .recent-cards {
             display: none;
           }
-          body.mobile-recent-layout .recent-unpaid-grid {
+          body.mobile-layout .recent-unpaid-grid {
             display: none;
           }
-          body.mobile-recent-layout .recent-cards {
+          body.mobile-layout .recent-cards {
             display: block;
             width: 100%;
             max-width: none;
@@ -2021,38 +2021,22 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             max-height: min(62dvh, 34rem);
             -webkit-overflow-scrolling: touch;
           }
-          @media (max-width: 900px) {
-            .recent-entries .recent-unpaid-grid {
-              display: none;
-            }
-            .recent-cards {
-              display: block;
-              width: 100%;
-              max-width: none;
-              margin: 0;
-              padding: 0 0.2rem 0.5rem;
-              overflow-x: hidden;
-              overflow-y: auto;
-              max-height: min(62dvh, 34rem);
-              -webkit-overflow-scrolling: touch;
-            }
-          }
-          body.mobile-recent-layout .recent-entries {
+          body.mobile-layout .recent-entries {
             width: 100%;
             padding-right: 0;
             overflow: visible;
           }
-          body.mobile-recent-layout .recent-entries-header,
-          body.mobile-recent-layout .recent-day-group,
-          body.mobile-recent-layout .recent-day-entries,
-          body.mobile-recent-layout .recent-card,
-          body.mobile-recent-layout .recent-card-top,
-          body.mobile-recent-layout .recent-card-top-left,
-          body.mobile-recent-layout .recent-card-notes {
+          body.mobile-layout .recent-entries-header,
+          body.mobile-layout .recent-day-group,
+          body.mobile-layout .recent-day-entries,
+          body.mobile-layout .recent-card,
+          body.mobile-layout .recent-card-top,
+          body.mobile-layout .recent-card-top-left,
+          body.mobile-layout .recent-card-notes {
             width: 100%;
             box-sizing: border-box;
           }
-          body.mobile-recent-layout .recent-card {
+          body.mobile-layout .recent-card {
             max-width: none;
           }
           .recent-day-group {
@@ -2482,13 +2466,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             font-weight: 600;
             white-space: nowrap;
           }
-          @media (max-width: 900px) {
-            .top-left-controls {
-              width: min(14.8rem, calc(100% - 1.1rem));
-            }
-            .container {
-              padding-top: 3.15rem;
-            }
+          body.mobile-layout .top-left-controls {
+            width: min(14.8rem, calc(100% - 1.1rem));
+          }
+          body.mobile-layout .container {
+            padding-top: 3.15rem;
           }
           body.idle-lock-active {
             overflow: hidden;
@@ -2562,15 +2544,55 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             padding: 1rem;
             z-index: 1000;
           }
+          html.timecard-modal-open,
           body.timecard-modal-open {
             overflow: hidden;
             overscroll-behavior: none;
           }
           #adminViewModal {
             z-index: 1000;
+            padding: 0;
+            align-items: stretch;
+            justify-content: stretch;
+          }
+          #adminModalHtmlModal {
+            z-index: 1250;
+            padding: 0;
+            align-items: stretch;
+            justify-content: stretch;
+          }
+          #moreReportsModal {
+            z-index: 1150;
+          }
+          #scheduleToolModal {
+            z-index: 1200;
+            padding: 0;
+            align-items: stretch;
+            justify-content: stretch;
+          }
+          #adminViewModal .modal-content,
+          #adminModalHtmlModal .modal-content,
+          #scheduleToolModal .modal-content {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-height: none !important;
+            border-radius: 0 !important;
+          }
+          #adminViewModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+          }
+          .admin-grid-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
           }
           #manualEntryModal {
             z-index: 1100;
+          }
+          #addMissedTimeModal {
+            z-index: 1270;
           }
           #dateTimePickerModal {
             z-index: 1300;
@@ -2974,227 +2996,165 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             overflow-y: auto;
             margin-top: 0.25rem;
           }
-          @media (max-width: 680px) {
-            .archive-range-grid {
-              grid-template-columns: 1fr;
-            }
-            body {
-              font-size: 1.2rem;
-            }
-            .container {
-              padding: 1rem 0.9rem 1.1rem;
-              border-radius: 0.65rem;
-            }
-            h1 {
-              font-size: var(--tc-text-xl);
-              margin: 0.24rem 0 0.4rem;
-            }
-            .status-row {
-              width: 96%;
-              max-width: 30rem;
-              gap: var(--tc-space-xs);
-            }
-            #status {
-              font-size: var(--tc-text-lg);
-            }
-            .status-refresh-btn {
-              width: var(--tc-control-height-lg);
-              min-width: var(--tc-control-height-lg);
-              height: var(--tc-control-height-lg);
-            }
-            #notes,
-            input,
-            textarea {
-              width: 96%;
-              max-width: 30rem;
-              font-size: var(--tc-text-lg);
-              padding: 0.88rem;
-            }
-            button {
-              width: 96%;
-              max-width: 30rem;
-              font-size: var(--tc-text-lg);
-              padding: 0.9rem 0.95rem;
-            }
-            .manual-entry-helper {
-              width: 94%;
-              max-width: 30rem;
-              font-size: 1rem;
-              margin: -0.3rem 0 0.55rem;
-            }
-            .entries {
-              margin-top: 1.25rem;
-            }
-            .recent-entries {
-              margin-top: 1.75rem;
-              padding-right: 0;
-              width: 100%;
-            }
-            .recent-entries h3 {
-              font-size: 1.25rem;
-              margin-bottom: 0.35rem;
-            }
-            .recent-entries .entries-subtitle {
-              font-size: 1rem;
-              margin-bottom: 0.9rem;
-            }
-            .recent-unpaid-grid {
-              font-size: 1.25rem;
-            }
-            .recent-unpaid-grid th,
-            .recent-unpaid-grid td {
-              padding: 0.55rem 0.45rem;
-            }
-            .recent-unpaid-grid th:nth-child(1),
-            .recent-unpaid-grid td:nth-child(1) {
-              width: 9.6rem;
-            }
-            .recent-unpaid-grid th:nth-child(2),
-            .recent-unpaid-grid td:nth-child(2) {
-              width: 4.6rem;
-            }
-            .recent-unpaid-grid th:nth-child(3),
-            .recent-unpaid-grid td:nth-child(3) {
-              width: auto;
-            }
-            .recent-unpaid-grid th:nth-child(4),
-            .recent-unpaid-grid td:nth-child(4) {
-              width: 2.7rem;
-              padding-right: 0.35rem;
-            }
-            .recent-unpaid-grid .recent-time-stack {
-              gap: 0.42rem;
-            }
-            .recent-unpaid-grid .admin-in-cell,
-            .recent-unpaid-grid .recent-time-out-row {
-              gap: 0.4rem;
-            }
-            .recent-unpaid-grid .admin-time-pill.admin-time-in,
-            .recent-unpaid-grid .admin-time-pill.admin-time-out {
-              width: var(--tc-time-pill-width) !important;
-              min-width: var(--tc-time-pill-width);
-            }
-            .recent-unpaid-grid .admin-time-pill {
-              min-height: 2rem;
-              padding: 0.38rem 0.55rem !important;
-            }
-            .recent-unpaid-grid .admin-time-pill .admin-time-label {
-              font-size: 1rem;
-            }
-            .recent-unpaid-grid .admin-time-pill .admin-time-value {
-              font-size: 1.1rem;
-            }
-            .recent-unpaid-grid .admin-hours-pill {
-              min-height: 4rem;
-              min-width: 4.9rem;
-              padding: 0.26rem 0.45rem;
-            }
-            .recent-unpaid-grid .admin-hours-pill-value {
-              font-size: 1.2rem;
-            }
-            .recent-unpaid-grid .admin-hours-pill-unit {
-              font-size: 1rem;
-            }
-            .recent-unpaid-grid .admin-note-line {
-              font-size: 1.06rem;
-              padding: 0.34rem 0.45rem;
-            }
-            .recent-unpaid-grid .admin-note-add-btn {
-              width: auto !important;
-              min-width: 7.8rem;
-              height: 2.94rem;
-              min-height: 2.94rem;
-              padding: 0.38rem 0.85rem !important;
-              font-size: 1.18rem !important;
-            }
-            .recent-unpaid-grid .admin-verify-toggle,
-            .recent-unpaid-grid .recent-out-marker {
-              width: 1.4rem !important;
-              min-width: 1.4rem;
-              height: 1.4rem;
-              min-height: 1.4rem;
-            }
-            body.mobile-recent-layout .recent-cards {
-              padding-left: 0;
-              padding-right: 0;
-            }
-            #archiveReviewModal .modal-actions button {
-              max-width: none;
-            }
-            .archive-table .admin-time-pill.admin-time-in,
-            .archive-table .admin-time-pill.admin-time-out {
-              width: 6.5rem !important;
-              min-width: 6.5rem;
-            }
-            .archive-entries {
-              max-height: 46vh;
-            }
-            .layout-debug-label-desktop {
-              display: none;
-            }
-            .layout-debug-label-mobile {
-              display: inline;
-            }
+          body.mobile-layout .archive-range-grid {
+            grid-template-columns: 1fr;
           }
-          @media (max-width: 480px) {
-            .status-row {
-              width: 100%;
-              gap: 0.4rem;
-            }
-            #status {
-              font-size: var(--tc-text-md);
-            }
-            .recent-unpaid-grid {
-              font-size: var(--tc-text-md);
-            }
-            .recent-unpaid-grid th:nth-child(1),
-            .recent-unpaid-grid td:nth-child(1) {
-              width: 9.1rem;
-            }
-            .recent-unpaid-grid th:nth-child(2),
-            .recent-unpaid-grid td:nth-child(2) {
-              width: 4.3rem;
-            }
-            .recent-unpaid-grid .admin-time-pill.admin-time-in,
-            .recent-unpaid-grid .admin-time-pill.admin-time-out {
-              width: var(--tc-time-pill-width) !important;
-              min-width: var(--tc-time-pill-width);
-            }
+          body.mobile-layout {
+            font-size: 1.2rem;
           }
-          @media (max-width: 390px) {
-            .container {
-              padding: 0.8rem 0.72rem 0.95rem;
-              min-height: 0;
-            }
-            h1 {
-              font-size: var(--tc-text-lg);
-              margin: 0.2rem 0 0.34rem;
-            }
-            .status-row,
-            button,
-            #notes,
-            input,
-            textarea,
-            .manual-entry-helper,
-            .clock-note-hint,
-            .employee-schedule-block {
-              width: 100%;
-            }
-            .recent-card-time-pills {
-              gap: 0.28rem;
-            }
-            .recent-card-time-pills .admin-time-pill .admin-time-value {
-              font-size: 0.72rem;
-            }
-            .recent-card-hours .admin-hours-pill {
-              min-height: 1.8rem;
-              padding: 0.3rem 0.45rem;
-            }
-            .recent-card-note-footer .admin-note-add-btn {
-              min-width: 5.5rem;
-              height: 2.35rem;
-              min-height: 2.35rem;
-            }
+          body.mobile-layout .container {
+            padding: 1rem 0.9rem 1.1rem;
+            border-radius: 0.65rem;
+          }
+          body.mobile-layout h1 {
+            font-size: var(--tc-text-xl);
+            margin: 0.24rem 0 0.4rem;
+          }
+          body.mobile-layout .status-row {
+            width: 96%;
+            max-width: 30rem;
+            gap: var(--tc-space-xs);
+          }
+          body.mobile-layout #status {
+            font-size: var(--tc-text-lg);
+          }
+          body.mobile-layout .status-refresh-btn {
+            width: var(--tc-control-height-lg);
+            min-width: var(--tc-control-height-lg);
+            height: var(--tc-control-height-lg);
+          }
+          body.mobile-layout #notes,
+          body.mobile-layout input,
+          body.mobile-layout textarea {
+            width: 96%;
+            max-width: 30rem;
+            font-size: var(--tc-text-lg);
+            padding: 0.88rem;
+          }
+          body.mobile-layout button {
+            width: 96%;
+            max-width: 30rem;
+            font-size: var(--tc-text-lg);
+            padding: 0.9rem 0.95rem;
+          }
+          body.mobile-layout .manual-entry-helper {
+            width: 94%;
+            max-width: 30rem;
+            font-size: 1rem;
+            margin: -0.3rem 0 0.55rem;
+          }
+          body.mobile-layout .entries {
+            margin-top: 1.25rem;
+          }
+          body.mobile-layout .recent-entries {
+            margin-top: 1.75rem;
+            padding-right: 0;
+            width: 100%;
+          }
+          body.mobile-layout .recent-entries h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.35rem;
+          }
+          body.mobile-layout .recent-entries .entries-subtitle {
+            font-size: 1rem;
+            margin-bottom: 0.9rem;
+          }
+          body.mobile-layout .recent-unpaid-grid {
+            font-size: 1.25rem;
+          }
+          body.mobile-layout .recent-unpaid-grid th,
+          body.mobile-layout .recent-unpaid-grid td {
+            padding: 0.55rem 0.45rem;
+          }
+          body.mobile-layout .recent-unpaid-grid th:nth-child(1),
+          body.mobile-layout .recent-unpaid-grid td:nth-child(1) {
+            width: 9.6rem;
+          }
+          body.mobile-layout .recent-unpaid-grid th:nth-child(2),
+          body.mobile-layout .recent-unpaid-grid td:nth-child(2) {
+            width: 4.6rem;
+          }
+          body.mobile-layout .recent-unpaid-grid th:nth-child(3),
+          body.mobile-layout .recent-unpaid-grid td:nth-child(3) {
+            width: auto;
+          }
+          body.mobile-layout .recent-unpaid-grid th:nth-child(4),
+          body.mobile-layout .recent-unpaid-grid td:nth-child(4) {
+            width: 2.7rem;
+            padding-right: 0.35rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .recent-time-stack {
+            gap: 0.42rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-in-cell,
+          body.mobile-layout .recent-unpaid-grid .recent-time-out-row {
+            gap: 0.4rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-time-pill.admin-time-in,
+          body.mobile-layout .recent-unpaid-grid .admin-time-pill.admin-time-out {
+            width: var(--tc-time-pill-width) !important;
+            min-width: var(--tc-time-pill-width);
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-time-pill {
+            min-height: 2rem;
+            padding: 0.38rem 0.55rem !important;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-time-pill .admin-time-label {
+            font-size: 1rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-time-pill .admin-time-value {
+            font-size: 1.1rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-hours-pill {
+            min-height: 4rem;
+            min-width: 4.9rem;
+            padding: 0.26rem 0.45rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-hours-pill-value {
+            font-size: 1.2rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-hours-pill-unit {
+            font-size: 1rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-note-line {
+            font-size: 1.06rem;
+            padding: 0.34rem 0.45rem;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-note-add-btn {
+            width: auto !important;
+            min-width: 7.8rem;
+            height: 2.94rem;
+            min-height: 2.94rem;
+            padding: 0.38rem 0.85rem !important;
+            font-size: 1.18rem !important;
+          }
+          body.mobile-layout .recent-unpaid-grid .admin-verify-toggle,
+          body.mobile-layout .recent-unpaid-grid .recent-out-marker {
+            width: 1.4rem !important;
+            min-width: 1.4rem;
+            height: 1.4rem;
+            min-height: 1.4rem;
+          }
+          body.mobile-layout .recent-cards {
+            padding-left: 0;
+            padding-right: 0;
+          }
+          body.mobile-layout #archiveReviewModal .modal-actions button {
+            max-width: none;
+          }
+          body.mobile-layout .archive-table .admin-time-pill.admin-time-in,
+          body.mobile-layout .archive-table .admin-time-pill.admin-time-out {
+            width: 6.5rem !important;
+            min-width: 6.5rem;
+          }
+          body.mobile-layout .archive-entries {
+            max-height: 46vh;
+          }
+          body.mobile-layout .layout-debug-label-desktop {
+            display: none;
+          }
+          body.mobile-layout .layout-debug-label-mobile {
+            display: inline;
           }
         </style>
       </head>
@@ -3225,13 +3185,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             <div class="theme-mode-controls">
               <button id="themeModeToggleBtn" type="button" class="theme-mode-btn" onclick="toggleThemeMode()" aria-live="polite">Theme: --</button>
             </div>
+            <div class="theme-mode-controls">
+              <button id="layoutModeOverrideBtn" type="button" class="theme-mode-btn" onclick="toggleLayoutModeOverride()" aria-live="polite">Layout: Auto</button>
+            </div>
             <div id="idleRefreshBar" aria-live="polite">
               <div class="idle-refresh-row">
                 <span id="idleRefreshAuto" class="idle-refresh-line">Auto Refresh -- min</span>
                 <span id="idleRefreshLock" class="idle-refresh-line">Lock -- min</span>
               </div>
             </div>
-            ${canAccessAdminView ? '<button id="adminUiModeBtn" class="admin-top-btn" type="button" onclick="toggleAdminUiMode()">Admin UI: Legacy</button>' : ''}
             ${canAccessAdminView ? '<button class="admin-top-btn" onclick="showAdminView()">Admin View</button>' : ''}
           </div>
           <h1>Welcome ${email}!</h1>
@@ -3383,7 +3345,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           </div>
 
           <div id="adminViewModal" class="modal" style="display: none;">
-            <div class="modal-content admin-modal-content" style="width:min(64.8rem,96vw);">
+            <div class="modal-content admin-modal-content" style="width:100vw; height:100vh; padding:0.95rem; overflow:hidden; position:relative; border-radius:0;">
               <button class="admin-close-btn" type="button" aria-label="Close admin view" title="Close" onclick="hideAdminView()">&#10005;</button>
               <h3>Admin View <span class="admin-title-sub">(Active pay period: ${activePayPeriodStartDateStr} to ${activePayPeriodEndDateStr})</span></h3>
               <div class="admin-toolbar-row">
@@ -3415,7 +3377,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 </label>
               </div>
               <div id="adminLoadMsg" class="info">Loading...</div>
-              <div style="overflow:auto; max-height:60vh;">
+              <div class="admin-grid-scroll">
                 <table class="admin-grid">
                   <tbody id="adminEntriesBody"></tbody>
                 </table>
@@ -3431,23 +3393,23 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           </div>
 
           <div id="scheduleToolModal" class="modal" style="display: none;">
-            <div class="modal-content admin-modal-content" style="width:min(98vw,120rem); height:min(96vh,78rem); padding:0; overflow:hidden; position:relative;">
+            <div class="modal-content admin-modal-content" style="width:100vw; height:100vh; padding:0; overflow:hidden; position:relative; border-radius:0;">
               <button class="admin-close-btn" type="button" aria-label="Close schedule tool" title="Close" onclick="closeScheduleToolModal()">&#10005;</button>
               <iframe id="scheduleToolFrame" title="Schedule Tool" style="width:100%; height:100%; border:0; background:var(--tc-surface);"></iframe>
             </div>
           </div>
 
           <div id="adminModalHtmlModal" class="modal" style="display: none;">
-            <div class="modal-content admin-modal-content" style="width:min(98vw,120rem); height:min(96vh,78rem); padding:0; overflow:hidden; position:relative;">
+            <div class="modal-content admin-modal-content" style="width:100vw; height:100vh; padding:0; overflow:hidden; position:relative; border-radius:0;">
               <button class="admin-close-btn" type="button" aria-label="Close admin timeline view" title="Close" onclick="closeAdminModalHtml()">&#10005;</button>
               <iframe id="adminModalHtmlFrame" title="Admin Timeline View" style="width:100%; height:100%; border:0; background:var(--tc-surface);"></iframe>
             </div>
           </div>
 
           <div id="dateTimePickerModal" class="modal" style="display: none;">
-            <div class="modal-content admin-modal-content" style="width:min(56rem,96vw); height:min(44rem,92vh); padding:0; overflow:hidden; position:relative;">
+            <div class="modal-content admin-modal-content" style="width:auto; max-width:calc(100vw - 0.5rem); max-height:calc(100vh - 0.5rem); height:auto; min-height:0; padding:0; overflow:visible; position:relative; background:transparent; box-shadow:none; border:0; border-radius:0; display:block;">
               <button class="admin-close-btn" type="button" aria-label="Close date time picker" title="Close" onclick="closeDateTimePickerModal()">&#10005;</button>
-              <iframe id="dateTimePickerFrame" title="Date Time Picker" style="width:100%; height:100%; border:0; background:var(--tc-surface);"></iframe>
+              <iframe id="dateTimePickerFrame" title="Date Time Picker" style="width:calc(100vw - 0.5rem); height:calc(100vh - 0.5rem); min-height:22rem; max-height:calc(100vh - 0.5rem); border:0; background:transparent; display:block; overflow:hidden;"></iframe>
             </div>
           </div>
 
@@ -3618,11 +3580,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           const UI_SCALE_DEFAULT_DESKTOP_PERCENT = 100;
           const UI_SCALE_MIN_PERCENT = 85;
           const UI_SCALE_MAX_PERCENT = 240;
-          const UI_SCALE_BASE_FONT_SIZE_PX = 16;
+          const UI_SCALE_BASE_FONT_SIZE_PX = 19.2;
           const UI_SCALE_PRESET_VALUES = [85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 140, 150, 160, 175, 200, 225, 240];
-          const MOBILE_TOOLS_BREAKPOINT_PX = 900;
           const THEME_MODE_LOCAL_STORAGE_KEY = 'timecard_theme_mode';
+          const LAYOUT_OVERRIDE_STORAGE_KEY = 'timecard_layout_override';
+          const LAYOUT_OVERRIDE_AUTO = 'auto';
+          const LAYOUT_OVERRIDE_MOBILE = 'mobile';
+          const LAYOUT_OVERRIDE_DESKTOP = 'desktop';
           const ADMIN_UI_MODE_STORAGE_KEY = 'timecard_admin_ui_mode';
+          // Legacy admin-mode compatibility block. Remove this whole section once
+          // the timeline admin modal is the only supported admin surface.
           const ADMIN_UI_MODE_LEGACY = 'legacy';
           const ADMIN_UI_MODE_TIMELINE = 'timeline';
           const INITIAL_THEME_MODE_FROM_SERVER = ${JSON.stringify((function () {
@@ -3696,6 +3663,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let idleLockActive = false;
           let idleLockMode = '';
           let currentThemeMode = '';
+          let currentLayoutModeOverride = LAYOUT_OVERRIDE_AUTO;
           let dateTimePickerPromiseResolve = null;
           let dateTimePickerPromiseReject = null;
           let dateTimePickerOpenOptions = null;
@@ -3732,33 +3700,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
-          function updateAdminUiModeToggleButton() {
-            const btn = document.getElementById('adminUiModeBtn');
-            if (!btn) return;
-            const isTimeline = normalizeAdminUiMode(adminUiMode) === ADMIN_UI_MODE_TIMELINE;
-            btn.innerText = isTimeline ? 'Admin UI: Timeline' : 'Admin UI: Legacy';
-            btn.title = isTimeline ? 'Switch to legacy admin UI' : 'Switch to timeline admin UI';
-          }
-
           function setAdminUiMode(mode, shouldPersist) {
             adminUiMode = normalizeAdminUiMode(mode);
             if (shouldPersist !== false) {
               persistAdminUiMode(adminUiMode);
             }
-            updateAdminUiModeToggleButton();
             return adminUiMode;
           }
 
           function initializeAdminUiMode() {
-            setAdminUiMode(readStoredAdminUiMode(), false);
-          }
-
-          function toggleAdminUiMode() {
-            const nextMode = normalizeAdminUiMode(adminUiMode) === ADMIN_UI_MODE_TIMELINE
-              ? ADMIN_UI_MODE_LEGACY
-              : ADMIN_UI_MODE_TIMELINE;
-            setAdminUiMode(nextMode, true);
-            setUiResultMessage('Admin UI mode set to ' + (nextMode === ADMIN_UI_MODE_TIMELINE ? 'Timeline' : 'Legacy') + '.', false, 2200);
+            setAdminUiMode(ADMIN_UI_MODE_TIMELINE, false);
           }
 
           function isAdminModalHtmlEnabled() {
@@ -4124,6 +4075,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'flex';
             }
+            updateDatePickerModalScrollLock();
           }
 
           function closeEmployeeScheduleModal() {
@@ -4131,6 +4083,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'none';
             }
+            updateDatePickerModalScrollLock();
           }
 
           function formatCompactStatusText(statusText) {
@@ -4192,9 +4145,77 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
           }
 
+          function normalizeLayoutModeOverride(value) {
+            const normalized = String(value || '').trim().toLowerCase();
+            if (normalized === LAYOUT_OVERRIDE_MOBILE || normalized === LAYOUT_OVERRIDE_DESKTOP) {
+              return normalized;
+            }
+            return LAYOUT_OVERRIDE_AUTO;
+          }
+
+          function readStoredLayoutModeOverride() {
+            try {
+              return normalizeLayoutModeOverride(window.localStorage.getItem(LAYOUT_OVERRIDE_STORAGE_KEY));
+            } catch (_e) {
+              return LAYOUT_OVERRIDE_AUTO;
+            }
+          }
+
+          function persistLayoutModeOverride(mode) {
+            const normalized = normalizeLayoutModeOverride(mode);
+            try {
+              if (normalized === LAYOUT_OVERRIDE_AUTO) {
+                window.localStorage.removeItem(LAYOUT_OVERRIDE_STORAGE_KEY);
+              } else {
+                window.localStorage.setItem(LAYOUT_OVERRIDE_STORAGE_KEY, normalized);
+              }
+            } catch (_e) {
+              // No-op when storage is unavailable.
+            }
+          }
+
+          function getLayoutModeOverrideLabel(mode) {
+            const normalized = normalizeLayoutModeOverride(mode);
+            if (normalized === LAYOUT_OVERRIDE_MOBILE) return 'Force Mobile';
+            if (normalized === LAYOUT_OVERRIDE_DESKTOP) return 'Force Desktop';
+            return 'Auto';
+          }
+
+          function updateLayoutModeOverrideButton() {
+            const btn = document.getElementById('layoutModeOverrideBtn');
+            if (!btn) return;
+            const mode = normalizeLayoutModeOverride(currentLayoutModeOverride);
+            btn.innerText = 'Layout: ' + getLayoutModeOverrideLabel(mode);
+            btn.title = 'Layout override: ' + getLayoutModeOverrideLabel(mode);
+          }
+
+          function setLayoutModeOverride(mode, shouldPersist) {
+            currentLayoutModeOverride = normalizeLayoutModeOverride(mode);
+            if (shouldPersist !== false) {
+              persistLayoutModeOverride(currentLayoutModeOverride);
+            }
+            updateLayoutModeOverrideButton();
+            applyRecentLayoutMode();
+            return currentLayoutModeOverride;
+          }
+
+          function initializeLayoutModeOverride() {
+            const storedMode = readStoredLayoutModeOverride();
+            setLayoutModeOverride(storedMode, false);
+          }
+
+          function toggleLayoutModeOverride() {
+            const currentMode = normalizeLayoutModeOverride(currentLayoutModeOverride);
+            const nextMode = currentMode === LAYOUT_OVERRIDE_AUTO
+              ? LAYOUT_OVERRIDE_MOBILE
+              : (currentMode === LAYOUT_OVERRIDE_MOBILE ? LAYOUT_OVERRIDE_DESKTOP : LAYOUT_OVERRIDE_AUTO);
+            setLayoutModeOverride(nextMode, true);
+            setUiResultMessage('Layout override set to ' + getLayoutModeOverrideLabel(nextMode) + '.', false, 2200);
+          }
+
           function getDefaultUiScalePercent() {
-            const layoutInfo = getRecentLayoutDebugInfo();
-            return layoutInfo.mobileLayout ? UI_SCALE_DEFAULT_MOBILE_PERCENT : UI_SCALE_DEFAULT_DESKTOP_PERCENT;
+            const layoutState = getResponsiveLayoutState();
+            return layoutState.mobileLayout ? UI_SCALE_DEFAULT_MOBILE_PERCENT : UI_SCALE_DEFAULT_DESKTOP_PERCENT;
           }
 
           function clampUiScalePercent(value) {
@@ -4287,7 +4308,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           function initializeUiScale() {
             const storedPercent = readStoredUiScalePercent();
-            const isMobileViewport = Math.max(0, Number(window.innerWidth || 0)) <= MOBILE_TOOLS_BREAKPOINT_PX;
+            const isMobileViewport = getResponsiveLayoutState().mobileLayout === true;
             let basePercent = storedPercent === null ? getDefaultUiScalePercent() : storedPercent;
             if (isMobileViewport && basePercent < UI_SCALE_DEFAULT_MOBILE_PERCENT) {
               basePercent = UI_SCALE_DEFAULT_MOBILE_PERCENT;
@@ -4301,7 +4322,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           }
 
           function isMobileToolsViewport() {
-            return Math.max(0, Number(window.innerWidth || 0)) <= MOBILE_TOOLS_BREAKPOINT_PX;
+            return getResponsiveLayoutState().mobileLayout;
           }
 
           function setMobileToolsMenuOpenState(isOpen) {
@@ -4731,16 +4752,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const hasTouch = Number(navigator.maxTouchPoints || 0) > 0;
             const coarsePointer = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
             const noHover = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
-            let source = 'fallback';
-            let mobileLayout = false;
-
-            if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean') {
-              mobileLayout = navigator.userAgentData.mobile;
-              source = 'uaData.mobile';
-            } else if (hasTouch && (coarsePointer || noHover)) {
-              mobileLayout = true;
-              source = 'touch+capability';
-            }
+            const mobileLayout = hasTouch && (coarsePointer || noHover);
+            const source = mobileLayout ? 'touch+capability' : 'desktop+capability';
 
             return {
               mobileLayout,
@@ -4752,21 +4765,45 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             };
           }
 
-          function isCompactRecentLayout() {
+          function getResponsiveLayoutState() {
             const layoutInfo = getRecentLayoutDebugInfo();
-            const viewportWidth = Math.max(0, Number(window.innerWidth || 0));
-            return layoutInfo.mobileLayout || (viewportWidth > 0 && viewportWidth <= 768);
+            const overrideMode = normalizeLayoutModeOverride(currentLayoutModeOverride);
+            const mobileLayout = overrideMode === LAYOUT_OVERRIDE_MOBILE
+              ? true
+              : (overrideMode === LAYOUT_OVERRIDE_DESKTOP ? false : layoutInfo.mobileLayout);
+            const source = overrideMode === LAYOUT_OVERRIDE_AUTO ? layoutInfo.source : ('override-' + overrideMode);
+
+            return {
+              mobileLayout: !!mobileLayout,
+              source: source,
+              overrideMode: overrideMode,
+              userAgentDataMobile: layoutInfo.userAgentDataMobile,
+              hasTouch: layoutInfo.hasTouch,
+              coarsePointer: layoutInfo.coarsePointer,
+              noHover: layoutInfo.noHover
+            };
+          }
+
+          function applyResponsiveLayoutClasses() {
+            const state = getResponsiveLayoutState();
+            document.body.classList.toggle('mobile-layout', state.mobileLayout);
+            document.body.classList.toggle('desktop-layout', !state.mobileLayout);
+            document.documentElement.setAttribute('data-layout-mode', state.mobileLayout ? 'mobile' : 'desktop');
+            return state;
           }
 
           function applyRecentLayoutMode() {
-            const layoutInfo = getRecentLayoutDebugInfo();
-            const viewportWidth = Math.max(0, Number(window.innerWidth || 0));
-            const isMobileRecentLayout = layoutInfo.mobileLayout || (viewportWidth > 0 && viewportWidth <= 768);
-            document.body.classList.toggle('mobile-recent-layout', isMobileRecentLayout);
+            const layoutState = applyResponsiveLayoutClasses();
             const layoutDebug = document.getElementById('layoutDebug');
             if (layoutDebug) {
-              // layoutDebug.innerText = 'Layout: ' + (isMobileRecentLayout ? 'mobile recent cards' : 'desktop recent table') + ' | source=' + layoutInfo.source + ' | uaDataMobile=' + (layoutInfo.userAgentDataMobile ? 'yes' : 'no') + ' | hasTouch=' + (layoutInfo.hasTouch ? 'yes' : 'no') + ' | coarse=' + (layoutInfo.coarsePointer ? 'yes' : 'no') + ' | noHover=' + (layoutInfo.noHover ? 'yes' : 'no');
+              // layoutDebug.innerText = 'Layout: ' + (layoutState.mobileLayout ? 'mobile' : 'desktop') + ' | source=' + layoutState.source + ' | uaDataMobile=' + (layoutState.userAgentDataMobile ? 'yes' : 'no') + ' | hasTouch=' + (layoutState.hasTouch ? 'yes' : 'no') + ' | coarse=' + (layoutState.coarsePointer ? 'yes' : 'no') + ' | noHover=' + (layoutState.noHover ? 'yes' : 'no');
             }
+          }
+
+          function initializeResponsiveLayoutManager() {
+            window.addEventListener('resize', applyRecentLayoutMode);
+            window.addEventListener('orientationchange', applyRecentLayoutMode);
+            applyRecentLayoutMode();
           }
 
           function debugClientLog(eventName, payload) {
@@ -5150,8 +5187,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
              
              window.addEventListener('online', updateOfflineBar);
              window.addEventListener('offline', updateOfflineBar);
-             window.addEventListener('resize', applyRecentLayoutMode);
-             window.addEventListener('orientationchange', applyRecentLayoutMode);
               applyRecentLayoutMode();
              updateOfflineBar();
            }
@@ -5159,6 +5194,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           initializeThemeMode();
           initializeAdminUiMode();
           initializeMobileToolsMenu();
+          initializeLayoutModeOverride();
+          initializeResponsiveLayoutManager();
           initializeOfflineDetection();
           initializeIdleRefreshManager();
           initializeUiScale();
@@ -5798,11 +5835,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             showLegacyAdminView();
           }
 
+          // Future cleanup target: this legacy modal fallback should disappear
+          // after the timeline admin modal is stable in all environments.
           function showLegacyAdminView() {
             document.getElementById('adminViewModal').style.display = 'flex';
             const periodToggle = document.getElementById('adminShowOnlyActivePayPeriod');
             adminShowOnlyActivePayPeriod = !(periodToggle && periodToggle.checked === false);
             loadAdminEntries();
+            updateDatePickerModalScrollLock();
           }
 
           function hideAdminView() {
@@ -5811,6 +5851,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               legacyModal.style.display = 'none';
             }
             closeAdminModalHtml();
+            updateDatePickerModalScrollLock();
           }
 
           function formatAdminDateForInput(iso) {
@@ -6113,6 +6154,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 }
                 frame.srcdoc = buildMoreReportsFrameHtml(html || '');
                 modal.style.display = 'flex';
+                updateDatePickerModalScrollLock();
                 if (msg) msg.innerText = 'Create Report loaded.';
               })
               .withFailureHandler((error) => {
@@ -6132,6 +6174,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'none';
             }
+            updateDatePickerModalScrollLock();
           }
 
           function openScheduleToolModal() {
@@ -6152,6 +6195,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 }
                 frame.srcdoc = buildScheduleToolFrameHtml(html || '');
                 modal.style.display = 'flex';
+                updateDatePickerModalScrollLock();
                 if (msg) msg.innerText = 'Schedule Tool loaded.';
               })
               .withFailureHandler((error) => {
@@ -6171,6 +6215,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'none';
             }
+            updateDatePickerModalScrollLock();
           }
 
           function openAdminModalHtml() {
@@ -6191,12 +6236,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 }
                 frame.srcdoc = buildAdminModalFrameHtml(html || '');
                 modal.style.display = 'flex';
+                updateDatePickerModalScrollLock();
                 if (msg) msg.innerText = 'Admin timeline view loaded.';
               })
               .withFailureHandler((error) => {
                 const message = (error && error.message) ? error.message : 'Unable to load Admin timeline view.';
                 if (msg) msg.innerText = message;
-                alert(message);
+                // Future cleanup target: once legacy admin mode is removed entirely,
+                // replace this fallback with a direct error surface or retry flow.
+                showLegacyAdminView();
               })
               .getAdminModalDialogHtml(currentThemeMode);
           }
@@ -6210,6 +6258,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'none';
             }
+            updateDatePickerModalScrollLock();
           }
 
           function resolveDateTimePickerRequest(value) {
@@ -6254,9 +6303,63 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'none';
             }
+            updateDatePickerModalScrollLock();
             if (shouldResolveAsNull) {
               resolveDateTimePickerRequest(null);
             }
+          }
+
+          function applyDateTimePickerHostLayout(isMobileLayout) {
+            const modal = document.getElementById('dateTimePickerModal');
+            const frame = document.getElementById('dateTimePickerFrame');
+            const host = frame && frame.parentElement ? frame.parentElement : null;
+            if (!modal || !frame || !host) return;
+
+            const rawScalePercent = dateTimePickerOpenOptions && isFinite(Number(dateTimePickerOpenOptions.uiScalePercent))
+              ? Number(dateTimePickerOpenOptions.uiScalePercent)
+              : getCurrentUiScalePercentForPicker();
+            const uiScalePercent = Math.min(200, Math.max(85, Math.round(rawScalePercent)));
+            const tunedPickerPercent = uiScalePercent >= 100
+              ? (100 + ((uiScalePercent - 100) * 0.5))
+              : (100 - ((100 - uiScalePercent) * 0.65));
+            const modalScalePercent = Math.min(165, Math.max(90, Math.round(tunedPickerPercent)));
+            const desktopFrameWidthPx = Math.round(820 * (modalScalePercent / 100));
+            const desktopFrameHeightPx = Math.round(670 * (modalScalePercent / 100));
+
+            if (isMobileLayout === true) {
+              modal.style.padding = '0';
+              modal.style.alignItems = 'stretch';
+              modal.style.justifyContent = 'stretch';
+
+              host.style.width = '100vw';
+              host.style.maxWidth = '100vw';
+              host.style.height = '100vh';
+              host.style.maxHeight = '100vh';
+              host.style.overflow = 'hidden';
+
+              frame.style.width = '100vw';
+              frame.style.height = '100vh';
+              frame.style.minHeight = '100vh';
+              frame.style.maxHeight = '100vh';
+              return;
+            }
+
+            modal.style.padding = '';
+            modal.style.alignItems = '';
+            modal.style.justifyContent = '';
+
+            host.style.width = 'auto';
+            modal.style.padding = '0.25rem';
+            host.style.maxWidth = 'calc(100vw - 0.5rem)';
+            host.style.height = 'auto';
+            host.style.maxHeight = 'calc(100vh - 0.5rem)';
+            host.style.overflow = 'visible';
+
+            host.style.width = 'min(' + String(desktopFrameWidthPx) + 'px,calc(100vw - 0.5rem))';
+            frame.style.width = '100%';
+            frame.style.height = 'min(' + String(desktopFrameHeightPx) + 'px,calc(100vh - 0.5rem))';
+            frame.style.minHeight = '22rem';
+            frame.style.maxHeight = 'calc(100vh - 0.5rem)';
           }
 
           function fetchDateTimePickerHtmlCached() {
@@ -6324,6 +6427,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const requestedTimeMode = String(optionBag.timeMode || '').trim().toLowerCase();
             const hasUse24Hour = Object.prototype.hasOwnProperty.call(optionBag, 'use24Hour');
             const use24Hour = hasUse24Hour ? optionBag.use24Hour === true : null;
+            const layoutState = getResponsiveLayoutState();
             if (requestedTimeMode === '24h' || requestedTimeMode === '24') {
               optionBag.timeMode = '24h';
             } else if (requestedTimeMode === '12h' || requestedTimeMode === '12') {
@@ -6346,6 +6450,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               }
             }
 
+            optionBag.mobileLayout = !!layoutState.mobileLayout;
+            optionBag.isMobile = !!layoutState.mobileLayout;
+            optionBag.layoutMode = layoutState.mobileLayout ? 'mobile' : 'desktop';
+
             return optionBag;
           }
 
@@ -6366,9 +6474,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
               const optionBag = normalizeDateTimePickerOpenOptions(options);
               dateTimePickerOpenOptions = optionBag;
+              applyDateTimePickerHostLayout(optionBag.mobileLayout === true);
 
               const activeResolve = resolve;
               modal.style.display = 'flex';
+              updateDatePickerModalScrollLock();
 
               ensureDateTimePickerFrameReady(frame)
                 .then((pickerApi) => {
@@ -6433,6 +6543,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (modal) {
               modal.style.display = 'none';
             }
+            updateDatePickerModalScrollLock();
             if (shouldResolveAsNull) {
               resolveAddMissedTimeRequest(null);
             }
@@ -6579,6 +6690,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               addMissedTimeOpenOptions = optionBag;
               const activeResolve = resolve;
               modal.style.display = 'flex';
+              updateDatePickerModalScrollLock();
 
               ensureAddMissedTimeFrameReady(frame)
                 .then((modalApi) => {
@@ -6628,6 +6740,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const html = String(rawHtml || '');
             const scriptOpen = '<scr' + 'ipt>';
             const scriptClose = '</scr' + 'ipt>';
+            const fullscreenStyle = '<style>' +
+              'html,body{margin:0!important;padding:0!important;width:100%!important;height:100%!important;min-height:100%!important;overflow:hidden!important;}' +
+              'body>#adminRoot,body>.admin-shell{width:100%!important;height:100%!important;min-height:100%!important;max-width:none!important;margin:0!important;border-radius:0!important;}' +
+              '</style>';
             const bridgeScript = scriptOpen + '(function(){' +
               'var p=window.parent;' +
               'window.google=window.google||{};' +
@@ -6656,10 +6772,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 'setAdminUiMode:function(mode){if(p&&typeof p.setAdminUiMode==="function"){return p.setAdminUiMode(mode,true);}return "legacy";}' +
               '};' +
               '})();' + scriptClose;
+            if (html.indexOf('<head>') > -1) {
+              if (html.indexOf('<body>') > -1) {
+                return html.replace('<head>', '<head>' + fullscreenStyle).replace('<body>', '<body>' + bridgeScript);
+              }
+              return html.replace('<head>', '<head>' + fullscreenStyle) + bridgeScript;
+            }
             if (html.indexOf('<body>') > -1) {
               return html.replace('<body>', '<body>' + bridgeScript);
             }
-            return bridgeScript + html;
+            return fullscreenStyle + bridgeScript + html;
           }
 
           function buildScheduleToolFrameHtml(rawHtml) {
@@ -6772,11 +6894,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const generateBtn = document.getElementById('adminHtmlGenerateBtn');
             if (generateBtn) generateBtn.disabled = true;
             if (modal) modal.style.display = 'flex';
+            updateDatePickerModalScrollLock();
           }
 
           function closeAdminHtmlPreviewModal() {
             const modal = document.getElementById('adminHtmlPreviewModal');
             if (modal) modal.style.display = 'none';
+            updateDatePickerModalScrollLock();
             closeAdminHtmlHolidayModal();
           }
 
@@ -6983,11 +7107,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             }
             const modal = document.getElementById('adminHtmlAwsModal');
             if (modal) modal.style.display = 'flex';
+            updateDatePickerModalScrollLock();
           }
 
           function closeAdminHtmlAwsModal() {
             const modal = document.getElementById('adminHtmlAwsModal');
             if (modal) modal.style.display = 'none';
+            updateDatePickerModalScrollLock();
             // Re-enable the generate button when AWS modal is closed
             const generateBtn = document.getElementById('adminHtmlGenerateBtn');
             if (generateBtn) generateBtn.disabled = false;
@@ -7403,11 +7529,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             renderAdminHtmlHolidayMatrix();
             const modal = document.getElementById('adminHtmlHolidayModal');
             if (modal) modal.style.display = 'flex';
+            updateDatePickerModalScrollLock();
           }
 
           function closeAdminHtmlHolidayModal() {
             const modal = document.getElementById('adminHtmlHolidayModal');
             if (modal) modal.style.display = 'none';
+            updateDatePickerModalScrollLock();
           }
 
           function applyAdminHtmlHolidayAssignments() {
@@ -8872,11 +9000,49 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
            }
 
           function updateDatePickerModalScrollLock() {
-            const manualModalEl = document.getElementById('manualEntryModal');
-            const adminTimeModalEl = document.getElementById('adminTimeEditModal');
-            const manualModalOpen = !!(manualModalEl && manualModalEl.style.display === 'flex');
-            const adminTimeModalOpen = !!(adminTimeModalEl && adminTimeModalEl.style.display === 'flex');
-            document.body.classList.toggle('timecard-modal-open', manualModalOpen || adminTimeModalOpen);
+            const modalIds = [
+              'manualEntryModal',
+              'archiveReviewModal',
+              'adminTimeEditModal',
+              'employeeScheduleModal',
+              'adminViewModal',
+              'adminModalHtmlModal',
+              'moreReportsModal',
+              'scheduleToolModal',
+              'adminHtmlPreviewModal',
+              'adminHtmlHolidayModal',
+              'adminHtmlAwsModal',
+              'addMissedTimeModal',
+              'dateTimePickerModal'
+            ];
+
+            function isModalVisible(modal) {
+              if (!modal) return false;
+              const computed = window.getComputedStyle ? window.getComputedStyle(modal) : null;
+              if (!computed) {
+                return modal.style.display !== 'none';
+              }
+              if (computed.display === 'none' || computed.visibility === 'hidden') {
+                return false;
+              }
+              const rect = modal.getBoundingClientRect();
+              return rect.width > 0 && rect.height > 0;
+            }
+
+            const anyModalOpen = modalIds.some((id) => {
+              const modal = document.getElementById(id);
+              return isModalVisible(modal);
+            });
+
+            document.body.classList.toggle('timecard-modal-open', anyModalOpen);
+            document.documentElement.classList.toggle('timecard-modal-open', anyModalOpen);
+
+            if (!anyModalOpen) {
+              document.body.style.overflow = '';
+              document.body.style.overscrollBehavior = '';
+              document.documentElement.style.overflow = '';
+              document.documentElement.style.overscrollBehavior = '';
+            }
           }
 
           function syncManualEntryTypeCheckboxes() {
@@ -10033,6 +10199,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             document.getElementById('archiveReviewModal').style.display = 'flex';
             document.getElementById('archiveReviewError').style.display = 'none';
             hideArchiveRangePanel();
+            updateDatePickerModalScrollLock();
             if (!archiveBounds) {
               loadArchiveBounds();
             } else {
@@ -10043,6 +10210,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           function hideArchiveReview() {
             document.getElementById('archiveReviewModal').style.display = 'none';
             hideArchiveRangePanel();
+            updateDatePickerModalScrollLock();
           }
 
           function setArchiveActionButtonLabel() {

@@ -30,7 +30,7 @@
     }
 
     html {
-      font-size: calc(16px * var(--modal-font-scale));
+      font-size: calc(19.2px * var(--modal-font-scale));
     }
 
     :root[data-theme="light"] {
@@ -1044,7 +1044,7 @@
           if (!p || p === window || !p.document || !p.document.documentElement || !p.getComputedStyle) return NaN;
           const rootFont = parseFloat(p.getComputedStyle(p.document.documentElement).fontSize);
           if (!isFinite(rootFont) || rootFont <= 0) return NaN;
-          return (rootFont / 16) * 100;
+          return (rootFont / 19.2) * 100;
         } catch (_e) {
           return NaN;
         }

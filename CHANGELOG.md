@@ -7,6 +7,141 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Added an optional raw-times pill to the Admin Timeline entry header so the Show raw times toggle displays raw clock-in/out alongside the effective times.
+- Why: Admins need a quick comparison between edited/effective times and the original raw punches without leaving the notes area.
+- Files: src/AdminModalHTML.html
+- Validation: Wired the Show raw times toggle into the entry note header render path, added a second pill with raw clock-in/out formatting, and confirmed the edit remains localized to the admin timeline view.
+
+- Summary: Removed the visible legacy admin-mode switch from both admin surfaces and made the timeline admin view the default.
+- Why: The legacy switch was no longer part of the desired user flow, and the timeline modal should be the primary admin experience while still allowing an automatic fallback if the modern modal fails to load.
+- Files: src/AdminModalHTML.html, src/UserInterface.js
+- Validation: Removed the admin-modal legacy button and the parent UI toggle, forced timeline mode during admin UI initialization, and kept a non-user-facing fallback to the legacy view if the timeline modal load fails.
+
+- Summary: Improved Admin Timeline summary-pill readability for unknown-only states and changed Open status timeline visuals to green.
+- Why: The `0/0 punches in sync | +N unknown` state was low-contrast and hard to read, and Open status needed a clearer positive/in-progress visual distinction.
+- Files: src/AdminModalHTML.html
+- Validation: Tuned `sync-pill.warn` and `sync-pill.no-data` contrast on the employee header surface, changed Open dot/line and legend swatch to green, switched unknown-only zero-scored summaries to `no-data`, updated zero-scored summary text to `No sync-scored punches`, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Refined Admin Timeline status semantics so warning and sync states are thresholded distinctly and non-timing states are separated.
+- Why: Warning previously mixed timing drift with missing-context fallbacks, which made sync colors ambiguous for admins reviewing entries.
+- Files: src/AdminModalHTML.html
+- Validation: Added deterministic threshold logic (`ok <=15`, `warn 16-30`, `bad >30`), introduced render-priority state mapping for `saving/open/unknown/deleted`, updated legend copy to match runtime behavior, adjusted summary badge handling to include `no-data` and contextual suffix counts, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Added a concrete admin sync-status refinement plan and updated the timeline overlay mockup to render all proposed status states with deterministic threshold logic.
+- Why: Captures the implementation contract in-repo and provides a practical visual testbed for distinguishing warning versus out-of-sync states plus non-timing states.
+- Files: mockups/admin-sync-status-refinement-plan.md, mockups/option-b2-timeline-overlay.html
+- Validation: Added a documented status contract (priority order, thresholds, summary rules, and tooltip semantics), implemented mock classification helpers with non-overlapping bands (ok <=15, warn 16-30, bad >30), expanded sample data to include ok/warn/bad/unknown/open/saving/deleted/no-data cases, and confirmed diagnostics report no file errors in touched files.
+
+- Summary: Merged Admin Timeline Edit Times note-save into Apply, removed the separate Save Note button, and moved delete/restore to the far-right action slot.
+- Why: Reduces action clutter in the edit modal and makes the primary edit workflow a single Apply action while keeping destructive controls visually separated.
+- Files: src/AdminModalHTML.html
+- Validation: Removed `editAddNoteBtn` markup/handler, updated Apply logic to save note-only changes and time+note changes (with required note validation for time edits), and aligned `.edit-hold-action-btn` to the far right of modal actions; diagnostics report no file errors in the touched file.
+
+- Summary: Required a note for Admin Timeline time edits and auto-appended the existing audit note format client-side, while making edit-note updates render optimistically inside the open Edit Times modal.
+- Why: Time edits needed explicit operator context in the same flow used elsewhere, and admins needed immediate visual note feedback before the server response.
+- Files: src/AdminModalHTML.html
+- Validation: Added client helpers matching legacy audit-note format (`Time edited by {user} at HH:mm MM/dd/yyyy`), enforced note-required only when time values actually change, passed `clientAppendedTimeEditNote` to prevent duplicate server append, and synced `editNotesList` on optimistic update and rollback; diagnostics report no file errors in the touched file.
+
+- Summary: Made Admin Timeline Edit Times Apply close the modal immediately on click using optimistic close behavior.
+- Why: Apply still felt delayed because modal close happened only after server success; optimistic close makes the interaction feel instant while save continues in background.
+- Files: src/AdminModalHTML.html
+- Validation: Extended `saveRowUpdate(...)` with optional `closeModalOptimistically` handling, wired Edit Apply to pass that option, retained rollback/error status handling, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Made Admin Timeline Add Missed Time close immediately on shared-modal submit and recompute edited row timeline sync color/hours through one unified derived-state helper.
+- Why: Add Missed Time felt delayed because the host modal stayed open during submit flow, and timeline status color could remain stale after time edits until a full refresh.
+- Files: src/AdminModalHTML.html
+- Validation: Switched shared modal option `closeHostOnSubmit` to true, added `recomputeEntryDerivedState(...)` to recompute `status` via `evaluateSync(...)` and recalc hours on optimistic row edits, applied rollback coverage for status/hours, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Reworked Admin Timeline day notes to render one notes group per entry row with a single add-note button in each entry header.
+- Why: Aligns the live admin experience with the approved V3 grouped-notes interaction so notes stay visually tied to their specific entry while preserving existing add/save/cancel behavior.
+- Files: src/AdminModalHTML.html
+- Validation: Updated `renderRowsList(...)` to group notes by row, moved add-note trigger to entry-group headers, preserved `openInlineNoteComposer(...)` and `saveInlineNoteComposer(...)` flows, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Reset Admin Timeline manual collapse overrides when Auto-collapse is cycled off and back on.
+- Why: Users needed a quick way to return to pure auto-collapse behavior after manually expanding/collapsing employees or days.
+- Files: src/AdminModalHTML.html
+- Validation: Added cycle-aware auto-collapse listener state so disabling arms a reset and re-enabling clears stored manual user/day collapse preferences before render.
+
+- Summary: Made Admin Timeline collapse behavior respect manual employee/day expand-collapse choices over auto-collapse defaults.
+- Why: Auto-collapse correctly folded verified days, but manual expand/collapse choices were being lost on re-render because collapsed state was rebuilt from scratch.
+- Files: src/AdminModalHTML.html
+- Validation: Added persistent collapse preference maps keyed by employee/day, applied auto-collapse only when no manual day preference exists, and wired toggle handlers to store manual overrides before re-render.
+
+- Summary: Updated the Admin Timeline so open punches draw from clock-in to the current time and added a timeline legend in the header.
+- Why: Open punches were rendering their line to 00:00 when clock-out was missing, which made active shifts look incorrect; the legend clarifies the punch color meanings in the admin view.
+- Files: src/AdminModalHTML.html
+- Validation: Rendered open punches using a shared current-time point, removed the outbound dot for open rows, added a compact header legend, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Fixed the Verified Day button styling so it matches the surrounding admin action buttons and remains readable in both light and dark layouts.
+- Why: The verified-state button used a low-contrast translucent background, making it visually disappear against the day header and look inconsistent with the other controls.
+- Files: src/AdminModalHTML.html
+- Validation: Updated the button background/border token to match adjacent action-buttons, preserved the verified green state with stronger contrast, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Made the legacy Admin View modal fullscreen and removed its fixed 60vh entries cap.
+- Why: Admin could still appear non-fullscreen when UI mode was legacy, because the wrapper used constrained sizing and the entries region was hard-limited to 60vh.
+- Files: src/UserInterface.js
+- Validation: Updated `#adminViewModal` host overlay/content to full viewport sizing and replaced inline entries wrapper max-height cap with a flex scroll region; confirmed diagnostics report no file errors.
+
+- Summary: Hardened Admin Timeline fullscreen behavior by injecting a host-side iframe CSS fullscreen shim and raising the host modal stack level.
+- Why: Some Admin Timeline loads still appeared inset despite fullscreen host wrapper sizing, so the iframe document now gets explicit full-viewport resets at load time.
+- Files: src/UserInterface.js
+- Validation: Added Admin-frame injected CSS to force `html/body/admin-shell` to `100%` viewport occupancy with zero margins/radius and increased `#adminModalHtmlModal` z-index; confirmed diagnostics report no file errors.
+
+- Summary: Made Admin Timeline and Schedule Tool open as true fullscreen host modals.
+- Why: The previous host wrappers used centered modal sizing with overlay padding, which left viewport margins and prevented full-screen use.
+- Files: src/UserInterface.js
+- Validation: Updated host modal CSS for `#adminModalHtmlModal` and `#scheduleToolModal` to remove overlay padding/centering and force `100vw x 100vh` modal content with zero border radius; confirmed diagnostics report no file errors.
+
+- Summary: Made the Schedule Tool sidebar 30% wider by default and added a desktop drag handle so users can resize the sidebar width.
+- Why: The previous fixed narrow sidebar constrained controls and summaries; user-resizable width improves readability and lets each user tune the left rail without changing schedule data behavior.
+- Files: src/ScheduleHTML.html
+- Validation: Increased default sidebar basis from 160px to 208px, added a drag-to-resize handle with min/max clamping and local persistence, disabled resizing on mobile layout, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Simplified Schedule Tool controls by moving utility actions into a hamburger tools menu, removed the local theme toggle, and added configurable CA/AWS auto-fill lunch-hour settings.
+- Why: Theme control now lives in the parent menu, while Schedule Tool needed a compact desktop-hover/mobile-tap tools surface and configurable shift generation for CA/AWS before/after lunch behavior.
+- Files: src/ScheduleHTML.html, src/Code.js
+- Validation: Added Schedule Tool tools trigger/dropdown with hover+tap interactions, moved Show deleted and Check for new employees into the menu, wired Auto-fill settings (before lunch / after lunch) into generation and hints, persisted settings in schedule_state_json with schemaVersion remaining 1, and confirmed diagnostics report no file errors in touched files.
+
+- Summary: Expanded the auto-fill settings panel into a floating popover attached to the tools menu so it can be wider than the sidebar without widening the sidebar itself.
+- Why: The settings form is wider than the left rail and needs more space for CA/AWS hour fields without making the Schedule Tool sidebar wider or affecting the compact layout.
+- Files: src/ScheduleHTML.html
+- Validation: Changed the settings panel to a positioned popover that anchors to the tools menu on desktop, keeps a stacked layout on smaller screens, and confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Fixed admin-launched Schedule Tool layering so it opens above the admin timeline, and added modal-driven scroll lock for admin modal stacks.
+- Why: Schedule Tool could render behind the admin timeline when both modals were open at the same z-index, and admins could still scroll background content while modal overlays were active.
+- Files: src/UserInterface.js, src/AdminModalHTML.html
+- Validation: Raised `#scheduleToolModal` z-index above admin timeline layers, expanded host modal-open detection to include admin/schedule/report modal surfaces, and added in-admin overlay scroll lock (`body.modal-open` + `.admin-shell.modal-open .content`) tied to `openModal`/`closeModal`; confirmed diagnostics report no file errors in touched files.
+
+- Summary: Added a manual layout override control to the hamburger tools menu (`Auto` → `Force Mobile` → `Force Desktop`) with persistent local storage.
+- Why: Provides a deterministic QA/testing fallback when automatic environment detection differs from expected behavior on specific devices or test harnesses.
+- Files: src/UserInterface.js
+- Validation: Added `Layout` override button in top-left tools menu, persisted mode in `timecard_layout_override`, made responsive class resolver honor override before capability auto mode, aligned default UI-scale baseline to the resolved override mode, and confirmed diagnostics report no file errors.
+
+- Summary: Switched the main app to strict class-only responsive mode using capability-based mobile detection and removed all viewport-width layout branching.
+- Why: Viewport width checks were not reliable in testing (especially 320-390 behavior), while touch/capability detection has been consistently reliable for determining mobile mode.
+- Files: src/UserInterface.js
+- Validation: Removed remaining narrow-phone `@media` blocks, removed viewport-width layout code (`window.innerWidth` and rem breakpoint map), set responsive mode from touch/capability only, retained unified `mobile-layout`/`desktop-layout` classes, and confirmed diagnostics report no file errors.
+
+- Summary: Converted key responsive CSS from media-query-first to class-first using the unified `mobile-layout`/`desktop-layout` mode layer.
+- Why: Keeps mobile/desktop behavior consistent with the global detector and makes layout intent easier to reason about across JS, CSS, and modal flows.
+- Files: src/UserInterface.js
+- Validation: Removed duplicate recent-layout media block, moved top-controls/container mobile adjustments to `body.mobile-layout`, converted the core mobile sizing block to class-prefixed selectors, converted admin-dayboard mobile lane override to class-first, left only narrow-phone refinement media queries (`30rem`, `24.375rem`), and confirmed diagnostics report no file errors.
+
+- Summary: Simplified app-wide responsive mode to two high-level layout classes (`mobile-layout` and `desktop-layout`) driven by one detector.
+- Why: Reduces mode drift and debugging complexity by removing extra global layout classes that were not needed for whole-app behavior.
+- Files: src/UserInterface.js
+- Validation: Collapsed responsive state to a single `mobile` breakpoint, removed `mobile-recent-layout`/`compact-layout`/`small-layout`/`tiny-layout` class toggles and selectors, kept Open Unpaid switching keyed to `mobile-layout`, and confirmed diagnostics report no file errors.
+
+- Summary: Unified client responsive-mode detection into a single rem-based layout state manager that applies global body classes on load/resize/orientation.
+- Why: Mobile behavior was inconsistent across screens because different features used different breakpoints and detection styles, while Open Unpaid Entries used a more reliable hybrid path.
+- Files: src/UserInterface.js
+- Validation: Added one shared detector (`getResponsiveLayoutState`) with capability + viewport rem checks, centralized class toggles (`mobile-layout`, `mobile-recent-layout`, `compact-layout`, `small-layout`, `tiny-layout`), migrated JS consumers (UI scale bootstrap and recent-layout switch) to the shared state, converted all `@media (max-width: Npx)` breakpoints in this file to rem units, and confirmed diagnostics report no file errors.
+
+- Summary: Increased the 100% UI-scale baseline typography by 20% across the main app and embedded modal/tool surfaces.
+- Why: Improves default readability while preserving existing UI scale percentage controls and step presets.
+- Files: src/UserInterface.js, src/AddMissedTimeModalHTML.html, src/DateTimePickerModal.html, src/AdminModalHTML.html, src/ScheduleHTML.html
+- Validation: Updated root baseline font anchors from 16px to 19.2px (or equivalent modal-root formulas), aligned parent-scale fallback math to the same 19.2px reference, and confirmed diagnostics report no file errors for all touched files.
+
 - Summary: Fixed quick-tools hamburger visibility and interaction so it appears and works on both desktop and mobile.
 - Why: The menu trigger did not appear reliably and desktop could not open it due viewport-gated interaction logic.
 - Files: src/UserInterface.js
