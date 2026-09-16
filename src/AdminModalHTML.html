@@ -382,6 +382,16 @@
       min-width: 0;
     }
 
+    .user-verified-check {
+      color: #22c55e;
+      font-size: 0.95rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-left: 0.2rem;
+      display: inline-flex;
+      align-items: center;
+    }
+
     .collapse-btn {
       width: 1.2rem;
       height: 1.2rem;
@@ -414,20 +424,38 @@
     .sync-pill.warn { color: #5f4200; border-color: rgba(172,121,22,0.72); background: rgba(255,224,151,0.72); }
     .sync-pill.no-data { color: #365170; border-color: rgba(107,138,172,0.66); background: rgba(210,224,241,0.72); }
 
-    .day { border-bottom: 1px solid #45556f; }
-    .day:last-child { border-bottom: none; }
+    .day {
+      border: 1px solid #45556f;
+      border-radius: 8px;
+      margin: 6px 6px 0 12px;
+      overflow: hidden;
+      background: #2b3648;
+    }
+    .day:last-child { margin-bottom: 6px; }
 
     .day-head {
       background: #aec3df;
       color: #16375e;
       border-bottom: 1px solid #7f9fc6;
-      padding: 5px 8px;
+      padding: 3px 8px;
       font-size: 1rem;
       font-weight: 700;
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 6px;
       align-items: center;
+    }
+
+    .day-head.type-vacation {
+      border-bottom-color: color-mix(in srgb, var(--type-vacation-accent) 56%, #7f9fc6 44%);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--type-vacation-soft) 72%, #aec3df 28%), #aec3df);
+      color: color-mix(in srgb, var(--type-vacation-accent) 32%, #16375e 68%);
+    }
+
+    .day-head.type-sick {
+      border-bottom-color: color-mix(in srgb, var(--type-sick-accent) 56%, #7f9fc6 44%);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--type-sick-surface) 82%, #1f3047 18%), #aec3df);
+      color: color-mix(in srgb, var(--type-sick-accent) 32%, #16375e 68%);
     }
 
     .day-actions { display: inline-flex; gap: 8px; align-items: center; }
@@ -472,7 +500,7 @@
       cursor: pointer;
     }
 
-    .day-body { padding: 6px; display: grid; gap: 6px; background: #2b3545; }
+    .day-body { padding: 5px; display: grid; gap: 4px; background: #2b3545; }
 
     .timeline {
       border: 1px solid #4d6384;
@@ -626,24 +654,24 @@
     }
     .dot-line.open-row { background: rgba(112,223,172,0.82); }
 
-    .rows-list { display: grid; gap: 6px; }
+    .rows-list { display: grid; gap: 4px; }
 
     .notes-group {
       border: 1px solid #4d6486;
       background: #1a283c;
       border-radius: 8px;
-      padding: 8px;
+      padding: 6px;
       display: grid;
-      gap: 6px;
+      gap: 4px;
     }
 
     .entry-note-group {
       border: 1px solid #57739a;
       background: #1f3047;
       border-radius: 10px;
-      padding: 8px;
+      padding: 6px;
       display: grid;
-      gap: 4px;
+      gap: 3px;
     }
 
     .entry-note-group.type-vacation:not(.deleted) {
@@ -668,7 +696,7 @@
       display: inline-flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
       min-width: 0;
     }
 
@@ -725,17 +753,17 @@
     .note-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 6px;
+      gap: 4px;
     }
 
     .day-note-item {
       border: 1px solid #607b9e;
       border-radius: 8px;
       background: #2b415f;
-      padding: 5px 8px;
+      padding: 4px 7px;
       display: grid;
       grid-template-columns: 1fr;
-      gap: 4px;
+      gap: 3px;
       align-items: start;
     }
 
@@ -1340,11 +1368,13 @@
       state.collapsePrefs.days = {};
     }
 
-    function resolveUserCollapsed(email) {
+    function resolveUserCollapsed(email, user) {
       const key = getUserCollapsePrefKey(email);
       if (!key) return false;
-      if (!hasManualCollapsePreference(state.collapsePrefs.users, key)) return false;
-      return state.collapsePrefs.users[key] === true;
+      if (hasManualCollapsePreference(state.collapsePrefs.users, key)) {
+        return state.collapsePrefs.users[key] === true;
+      }
+      return state.autoCollapse && isUserFullyVerified(user);
     }
 
     function resolveDayCollapsed(email, day) {
@@ -1531,7 +1561,7 @@
       const initialDefault = currentValue ? (currentValue.replace('T', ' ') + ':00') : '';
       const options = {
         defaultDateTime: initialDefault,
-        use24Hour: true,
+        use24Hour: false,
         closeOnConfirm: true
       };
       const bounds = settings && settings.bounds
@@ -1781,7 +1811,7 @@
         if (!state.showDeleted && entry.deleted) return;
         if (state.showOnlyActive && !isInActivePayPeriod(entry.effectiveClockIn)) return;
         const email = entry.email || 'unknown';
-        if (!grouped[email]) grouped[email] = { email, label: email, collapsed: resolveUserCollapsed(email), days: {} };
+        if (!grouped[email]) grouped[email] = { email, label: email, collapsed: false, days: {} };
         const key = getDayKey(entry.effectiveClockIn || entry.rawClockIn);
         if (!grouped[email].days[key]) {
           grouped[email].days[key] = {
@@ -1807,6 +1837,7 @@
           day.timeline = segmentMap;
           day.collapsed = resolveDayCollapsed(user.email, day);
         });
+        user.collapsed = resolveUserCollapsed(user.email, user);
       });
 
       state.users = users;
@@ -1825,6 +1856,11 @@
     function isDayFullyVerified(day) {
       const eligible = day.rows.filter((r) => !r.deleted);
       return eligible.length > 0 && eligible.every((r) => r.verified === true);
+    }
+
+    function isUserFullyVerified(user) {
+      const days = user && Array.isArray(user.days) ? user.days : [];
+      return days.length > 0 && days.every((day) => isDayFullyVerified(day));
     }
 
     function userSummary(user) {
@@ -1876,6 +1912,22 @@
       }
 
       return { ok, total, summaryClass, summaryText };
+    }
+
+    function getDayHeaderTypeClass(day) {
+      const rows = day && Array.isArray(day.rows) ? day.rows : [];
+      let hasSick = false;
+      let hasVacation = false;
+      rows.forEach((row) => {
+        if (!row || row.deleted) return;
+        const type = normalizeEntryTypeForRender(row.entryType);
+        if (type === 'sick') hasSick = true;
+        if (type === 'vacation') hasVacation = true;
+      });
+
+      if (hasSick && !hasVacation) return ' type-sick';
+      if (hasVacation && !hasSick) return ' type-vacation';
+      return '';
     }
 
     function updateModalScrollLock() {
@@ -2024,18 +2076,23 @@
       const out = [];
       state.users.forEach((user, uIdx) => {
         const summary = userSummary(user);
+        const userFullyVerified = isUserFullyVerified(user);
         const summaryClass = summary.summaryClass;
         const summaryText = summary.summaryText;
+        const syncPillClass = summaryText.indexOf('No sync-scored punches') === 0
+          ? 'sync-pill no-data'
+          : ('sync-pill ' + summaryClass);
         out.push('<article class="employee">');
-        out.push('<div class="employee-head"><span class="employee-label"><button class="collapse-btn" data-action="toggle-user" data-user="' + uIdx + '">' + (user.collapsed ? '+' : '-') + '</button><span>&#128100; ' + user.label + '</span></span><span class="sync-pill ' + summaryClass + '">' + summaryText + '</span></div>');
+        out.push('<div class="employee-head"><span class="employee-label"><button class="collapse-btn" data-action="toggle-user" data-user="' + uIdx + '">' + (user.collapsed ? '+' : '-') + '</button><span>&#128100; ' + user.label + (userFullyVerified ? ' <span class="user-verified-check" title="All visible days verified">&#10003;</span>' : '') + '</span></span><span class="' + syncPillClass + '">' + summaryText + '</span></div>');
 
         if (!user.collapsed) {
           user.days.forEach((day, dIdx) => {
             const dayVerified = isDayFullyVerified(day);
             const dayHasPending = day.rows.some((row) => row.pending === true);
             const dayTotal = day.rows.reduce((sum, row) => sum + Number(row.hours || 0), 0);
+            const dayHeaderTypeClass = getDayHeaderTypeClass(day);
             out.push('<section class="day">');
-            out.push('<div class="day-head"><span><button class="collapse-btn" data-action="toggle-day" data-user="' + uIdx + '" data-day="' + dIdx + '">' + (day.collapsed ? '+' : '-') + '</button> ' + day.label + '</span><span class="day-actions"><button class="day-verify-btn ' + (dayVerified ? 'on' : '') + '" data-action="verify-day" data-user="' + uIdx + '" data-day="' + dIdx + '"' + (dayHasPending ? ' disabled aria-disabled="true" title="Rows are saving..."' : '') + '>' + (dayVerified ? 'Verified Day' : 'Verify Day') + '</button><span class="day-total">Total ' + dayTotal.toFixed(2) + ' Hrs</span><button class="add-missed" data-action="add-missed" data-user="' + uIdx + '" data-day="' + dIdx + '"' + (dayHasPending ? ' disabled aria-disabled="true" title="Rows are saving..."' : '') + '>+ Add missed time</button></span></div>');
+            out.push('<div class="day-head' + dayHeaderTypeClass + '"><span><button class="collapse-btn" data-action="toggle-day" data-user="' + uIdx + '" data-day="' + dIdx + '">' + (day.collapsed ? '+' : '-') + '</button> ' + day.label + '</span><span class="day-actions"><button class="day-verify-btn ' + (dayVerified ? 'on' : '') + '" data-action="verify-day" data-user="' + uIdx + '" data-day="' + dIdx + '"' + (dayHasPending ? ' disabled aria-disabled="true" title="Rows are saving..."' : '') + '>' + (dayVerified ? 'Verified Day' : 'Verify Day') + '</button><span class="day-total">Total ' + dayTotal.toFixed(2) + ' Hrs</span><button class="add-missed" data-action="add-missed" data-user="' + uIdx + '" data-day="' + dIdx + '"' + (dayHasPending ? ' disabled aria-disabled="true" title="Rows are saving..."' : '') + '>+ Add missed time</button></span></div>');
             if (!day.collapsed) {
               out.push('<div class="day-body">');
               out.push(renderDayTimeline(day, uIdx, dIdx));

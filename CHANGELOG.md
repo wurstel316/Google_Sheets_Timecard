@@ -7,6 +7,56 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Updated AWS settings dialog loading to keep deleted schedule data out of memory by default, only hydrating deleted employees when they have punch history and are not in the active schedule, and auto-adding truly unknown punched employees to active schedule state.
+- Why: Reduces unnecessary deleted-roster loading for payroll AWS configuration while preserving edge-case visibility for deleted users with punches and ensuring new punched users are represented in live schedule data.
+- Files: src/Code.js
+- Validation: Refactored `fetchAWSConfigForDialog()` to read active schedule first, derive punch-backed non-active emails from `DataEntry` only using valid clock-in rows (instead of email-only presence), lazy-load deleted roster only when needed, include only matching deleted records in returned AWS config, and persist newly discovered non-deleted users into active schedule via existing append/save helpers.
+
+- Summary: Updated Add Holiday Pay to use a flat default of 8 hours per selected holiday and added per-employee holiday-hour override inputs.
+- Why: Holiday pay assignment should no longer depend on AWS vs CA for default hours, while still letting admins set custom holiday hours per employee when needed.
+- Files: src/UserInterface.js
+- Validation: Replaced AWS-dependent holiday increment logic with per-employee configurable hours (default 8), added row-level `Hours / Holiday` numeric inputs in the holiday matrix, updated preview recompute paths to apply the new override map, and confirmed diagnostics report no file errors in touched files.
+
+- Summary: Extended Admin Timeline auto-collapse to fold employee rows when every rendered day is fully verified, and added a green verified check marker next to qualifying employee names.
+- Why: Auto-collapse previously only applied at the day level; admins requested matching behavior at the user row level plus a clear visual signal when all visible days for that employee are verified.
+- Files: src/AdminModalHTML.html
+- Validation: Updated user collapse resolution to prioritize manual user overrides and otherwise auto-collapse only when all rendered days are fully verified, then added a user-level verified indicator in the employee header; confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Added day-level sick/vacation header styling in Admin Timeline so collapsed days still surface non-worked status at a glance.
+- Why: When a day section is collapsed, row-level type styling is hidden, so admins still need a visible status cue from the day header.
+- Files: src/AdminModalHTML.html
+- Validation: Added day header type classification from non-deleted day rows and mapped `type-sick` / `type-vacation` classes onto `.day-head` with matching accent surfaces; confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Simplified Admin Timeline sync-pill rendering so `No sync-scored punches` is always styled as `no-data` via a direct render-time class binding.
+- Why: This keeps that exact message visually static and removes extra summary-class branching, while still allowing light/dark theme colors to apply normally.
+- Files: src/AdminModalHTML.html
+- Validation: Removed the temporary `userSummary(...)` zero-scored class override and bound render class with `summaryText.indexOf('No sync-scored punches') === 0 ? 'sync-pill no-data' : ...`; confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Tightened Admin Timeline day-row density and note/timeline spacing, and added a subtle day-row indent under each employee header.
+- Why: Day sections had extra vertical whitespace and weak visual separation from employee headers, which reduced scan speed in dense admin review flows.
+- Files: src/AdminModalHTML.html
+- Validation: Reduced day header/body vertical padding and inter-block gaps, compacted note tile spacing, and introduced slight day-row inset styling; confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Generalized AGENTS modal guidance from DateTimePicker-specific instructions into reusable architecture rules for all desktop/mobile modals.
+- Why: Team guidance should apply project-wide across modal types, with DateTimePicker kept as a reference implementation instead of a one-off policy block.
+- Files: AGENTS.md
+- Validation: Replaced the DateTimePicker-only modal guidance section with a generic modal architecture standard covering host/child contracts, sizing/clamp strategy, typography scaling, mobile ergonomics, and unified action/close behavior.
+
+- Summary: Centralized host modal stack ordering into one sorted configuration and reused it for z-index assignments plus modal scroll-lock visibility checks.
+- Why: Modal layer values and tracked modal IDs were previously hardcoded in separate places, making stack maintenance error-prone when adding or reordering modals.
+- Files: src/UserInterface.js
+- Validation: Added a single sorted `HOST_MODAL_STACK` source of truth, derived z-index values and modal ID list from it, wired existing CSS z-index rules to the derived map, updated `updateDatePickerModalScrollLock()` to use the shared modal list, and confirmed diagnostics report no file errors.
+
+- Summary: Corrected modal stack order for payroll child overlays and applied z-index values for every host modal ID directly from the centralized stack.
+- Why: AWS and Holiday overlays can open from Payroll Preview and must always layer above it; relying on partial per-ID CSS assignments left some configured modal levels unapplied.
+- Files: src/UserInterface.js
+- Validation: Reordered `HOST_MODAL_STACK` levels (`...preview < holiday < aws < dateTimePicker`), added generated `HOST_MODAL_LAYER_CSS` from the stack so all modal IDs receive their configured z-index automatically, and confirmed diagnostics report no file errors.
+
+- Summary: Removed the remaining host-level X close button from the Date Time picker modal wrapper so the picker closes only through in-modal actions.
+- Why: The top-right X still appeared because it was coming from the parent host modal layer, not the picker iframe content.
+- Files: src/UserInterface.js
+- Validation: Deleted the `#dateTimePickerModal` host close button markup while keeping iframe sizing/layout intact; confirmed diagnostics report no file errors.
+
 - Summary: Locked Date Time picker month/year heading to a single row in the calendar header with overflow-safe truncation.
 - Why: Longer month names could wrap and break the calendar header layout at high scale, reducing readability and alignment.
 - Files: src/DateTimePickerModal.html

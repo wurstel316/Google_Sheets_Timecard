@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.244 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.258 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -23,6 +23,31 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
   const canExportPayrollReport = normalizedPermissionFlags.canExport;
   const canManageAwsConfig = normalizedPermissionFlags.canPayroll;
   const canManageScheduleTool = canManageEntries && canRunPayrollPreview;
+  // Single source of truth for host modal stacking. Keep sorted from lowest to highest.
+  const HOST_MODAL_STACK = Object.freeze([
+    { id: 'archiveReviewModal', zIndex: 1000 },
+    { id: 'employeeScheduleModal', zIndex: 1000 },
+    { id: 'adminViewModal', zIndex: 1000 },
+    { id: 'manualEntryModal', zIndex: 1100 },
+    { id: 'adminTimeEditModal', zIndex: 1150 },
+    { id: 'adminModalHtmlModal', zIndex: 1200 },
+    { id: 'moreReportsModal', zIndex: 1250 },
+    { id: 'scheduleToolModal', zIndex: 1260 },
+    { id: 'adminHtmlPreviewModal', zIndex: 1270 },
+    { id: 'addMissedTimeModal', zIndex: 1275 },
+    { id: 'adminHtmlHolidayModal', zIndex: 1280 },
+    { id: 'adminHtmlAwsModal', zIndex: 1290 },
+    { id: 'dateTimePickerModal', zIndex: 1300 }
+  ]);
+  const HOST_MODAL_Z_INDEX = Object.freeze(HOST_MODAL_STACK.reduce((acc, entry) => {
+    acc[entry.id] = entry.zIndex;
+    return acc;
+  }, {}));
+  const HOST_MODAL_IDS = Object.freeze(HOST_MODAL_STACK.map((entry) => entry.id));
+  const HOST_MODAL_LAYER_CSS = HOST_MODAL_STACK
+    .map((entry) => '#' + entry.id + ' { z-index: ' + entry.zIndex + '; }')
+    .join('\n          ');
+  const IDLE_LOCK_OVERLAY_Z_INDEX = 4000;
   const standardIdlePolicy = (typeof getStandardIdlePolicy_ === 'function' && getStandardIdlePolicy_()) || {
     warningMs: 10 * 60 * 1000,
     softRefreshMs: 15 * 60 * 1000,
@@ -1576,6 +1601,18 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             accent-color: var(--tc-holiday-detected);
             cursor: pointer;
           }
+          .admin-holiday-grid input[type="number"] {
+            width: 6.5rem;
+            min-width: 5.5rem;
+            margin: 0;
+            padding: 0.35rem 0.45rem;
+            border: 1px solid var(--tc-border);
+            border-radius: 0.35rem;
+            font-size: 1.05rem;
+            text-align: right;
+            background: var(--tc-input-bg);
+            color: var(--tc-text);
+          }
           .admin-holiday-grid th {
             position: sticky;
             top: 0;
@@ -2482,7 +2519,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             display: none;
             position: fixed;
             inset: 0;
-            z-index: 4000;
+            z-index: ${IDLE_LOCK_OVERLAY_Z_INDEX};
             background: var(--tc-idle-overlay);
             backdrop-filter: blur(1px);
             -webkit-backdrop-filter: blur(1px);
@@ -2546,36 +2583,28 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             justify-content: center;
             background: var(--tc-modal-overlay);
             padding: 1rem;
-            z-index: 1000;
+            z-index: ${HOST_MODAL_Z_INDEX.archiveReviewModal};
           }
+          ${HOST_MODAL_LAYER_CSS}
           html.timecard-modal-open,
           body.timecard-modal-open {
             overflow: hidden;
             overscroll-behavior: none;
           }
           #adminViewModal {
-            z-index: 1000;
             padding: 0;
             align-items: stretch;
             justify-content: stretch;
           }
           #adminModalHtmlModal {
-            z-index: 1200;
             padding: 0;
             align-items: stretch;
             justify-content: stretch;
-          }
-          #moreReportsModal {
-            z-index: 1250;
           }
           #scheduleToolModal {
-            z-index: 1260;
             padding: 0;
             align-items: stretch;
             justify-content: stretch;
-          }
-          #adminHtmlPreviewModal {
-            z-index: 1270;
           }
           #adminViewModal .modal-content,
           #adminModalHtmlModal .modal-content,
@@ -2594,15 +2623,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             flex: 1 1 auto;
             min-height: 0;
             overflow: auto;
-          }
-          #manualEntryModal {
-            z-index: 1100;
-          }
-          #addMissedTimeModal {
-            z-index: 1270;
-          }
-          #dateTimePickerModal {
-            z-index: 1300;
           }
           .modal-content {
             background: var(--tc-modal-bg);
@@ -3222,11 +3242,16 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               <span class="schedule-pill-title">Today</span>
               <span id="scheduleTodaySummary" class="schedule-pill-body"><span class="schedule-pill-empty">Loading schedule...</span></span>
             </button>
-            <button id="scheduleTomorrowPill" type="button" class="schedule-summary-pill" onclick="openEmployeeScheduleModal()" title="View full schedule">
-              <span class="schedule-pill-title">Tomorrow</span>
-              <span id="scheduleTomorrowSummary" class="schedule-pill-body"><span class="schedule-pill-empty">Loading schedule...</span></span>
-            </button>
           </div>
+
+          <button id="viewScheduleBtn" type="button" onclick="openEmployeeScheduleModal()" title="View full schedule">
+            View Schedule
+          </button>
+
+          <button id="manualEntryBtn" type="button" onclick="showManualEntryForm(event)">
+            ➕ Add Missed Time
+          </button>
+          <p class="manual-entry-helper">Worked, Sick, or Vacation.</p>
 
           ${canAccessAdminView ? `
           <div id="adminDayboardPanel" class="admin-workflow-box admin-dayboard-panel" aria-live="polite">
@@ -3246,11 +3271,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             </div>
           </div>
           ` : ''}
-
-          <button id="manualEntryBtn" type="button" onclick="showManualEntryForm(event)">
-            ➕ Add Time Entry
-          </button>
-          <p class="manual-entry-helper">Worked, Sick, or Vacation.</p>
 
           <button id="archiveReviewBtn" class="secondary-action-btn is-hidden" onclick="showArchiveReview()">
             Review Archived Entries
@@ -3411,7 +3431,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           <div id="dateTimePickerModal" class="modal" style="display: none;">
             <div class="modal-content admin-modal-content" style="width:min(58rem,calc(100vw - 0.5rem)); max-width:calc(100vw - 0.5rem); height:min(46rem,calc(100dvh - 0.5rem)); max-height:calc(100dvh - 0.5rem); min-height:22rem; padding:0; overflow:hidden; position:relative; background:transparent; box-shadow:none; border:0; border-radius:0; display:block;">
-              <button class="admin-close-btn" type="button" aria-label="Close date time picker" title="Close" onclick="closeDateTimePickerModal()">&#10005;</button>
               <iframe id="dateTimePickerFrame" title="Date Time Picker" style="width:100%; height:100%; min-height:0; max-height:100%; border:0; background:transparent; display:block; overflow:hidden;"></iframe>
             </div>
           </div>
@@ -3511,7 +3530,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             <div class="modal-content admin-modal-content" style="width:min(66rem,96vw);">
               <button class="admin-close-btn" type="button" aria-label="Close holiday pay" title="Close" onclick="closeAdminHtmlHolidayModal()">&#10005;</button>
               <h3>Add Holiday Pay</h3>
-              <p id="adminHtmlHolidayHelp" class="modal-note">Choose holidays per employee. Checked holidays add 8 hours (non-AWS) or 10 hours (AWS on holiday date).</p>
+              <p id="adminHtmlHolidayHelp" class="modal-note">Choose holidays per employee. Each selected holiday adds 8 hours by default, and you can override hours per employee.</p>
               <div class="admin-holiday-grid-wrap">
                 <div id="adminHtmlHolidayMatrix" style="min-height:8rem; display:flex; align-items:center; justify-content:center; color:var(--tc-holiday-matrix-muted);">Generate report preview to load employees and holidays.</div>
               </div>
@@ -3658,6 +3677,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           const IDLE_SOFT_REFRESH_MS = 5 * 60 * 1000;
           const IDLE_LOCK_MS = 30 * 60 * 1000;
           const IDLE_HEARTBEAT_MS = Number(IDLE_POLICY.heartbeatMs || (30 * 1000));
+          const HOST_MODAL_IDS = ${JSON.stringify(HOST_MODAL_IDS)};
 
           let lastUserActivityAtMs = Date.now();
           let idleSoftRefreshDoneForCycle = false;
@@ -3825,12 +3845,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               employeeSchedulePreview = getDefaultEmployeeSchedulePreview();
             }
             const todaySummaryEl = document.getElementById('scheduleTodaySummary');
-            const tomorrowSummaryEl = document.getElementById('scheduleTomorrowSummary');
-            if (!todaySummaryEl || !tomorrowSummaryEl) return;
+            if (!todaySummaryEl) return;
             const today = employeeSchedulePreview.today || { hasSchedule: false, summaryText: 'Not scheduled today', segments: [] };
-            const tomorrow = employeeSchedulePreview.tomorrow || { hasSchedule: false, summaryText: 'Not scheduled tomorrow', segments: [] };
             todaySummaryEl.innerHTML = today.hasSchedule ? buildScheduleSegmentsHtml(today.segments) : '<span class="schedule-pill-empty">' + escapeHtml(today.summaryText || 'Not scheduled today') + '</span>';
-            tomorrowSummaryEl.innerHTML = tomorrow.hasSchedule ? buildScheduleSegmentsHtml(tomorrow.segments) : '<span class="schedule-pill-empty">' + escapeHtml(tomorrow.summaryText || 'Not scheduled tomorrow') + '</span>';
           }
 
           function renderEmployeeScheduleModal() {
@@ -4624,7 +4641,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 required: true,
                 reason: 'clock-in-no-schedule',
                 placeholder: 'Clock in note',
-                message: buildClockInStatusMessage('No on-duty shift is scheduled today.')
+                message: buildClockInStatusMessage('No on-duty shift is scheduled today. Please add a note to Continue.')
               };
             }
 
@@ -7311,7 +7328,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 setAdminHtmlPreviewMessage('AWS settings saved.');
                 closeAdminHtmlAwsModal();
                 if (adminHtmlPreviewLastResult && adminHtmlPreviewLastResult.payload) {
-                  applyHolidaySelectionsToPreviewRows(adminHtmlPreviewLastResult.payload, adminHtmlPreviewAwsConfig || {});
+                  applyHolidaySelectionsToPreviewRows(adminHtmlPreviewLastResult.payload);
                   renderAdminHtmlPreviewRows(adminHtmlPreviewLastResult.payload);
                 }
               })
@@ -7442,42 +7459,50 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             if (!payload.holidayAssignmentsByEmail || typeof payload.holidayAssignmentsByEmail !== 'object') {
               payload.holidayAssignmentsByEmail = {};
             }
+            if (!payload.holidayHoursPerEmployeeByEmail || typeof payload.holidayHoursPerEmployeeByEmail !== 'object') {
+              payload.holidayHoursPerEmployeeByEmail = {};
+            }
             payload.rows.forEach((row) => {
               const email = String((row && row.email) || '').trim();
               if (!email) return;
               if (!payload.holidayAssignmentsByEmail[email] || typeof payload.holidayAssignmentsByEmail[email] !== 'object') {
                 payload.holidayAssignmentsByEmail[email] = {};
               }
+              const storedHours = Number(payload.holidayHoursPerEmployeeByEmail[email]);
+              payload.holidayHoursPerEmployeeByEmail[email] = (isNaN(storedHours) || storedHours < 0) ? 8 : storedHours;
               if (typeof row.baseHolidayHours !== 'number') {
                 row.baseHolidayHours = Number(row.holidayHours) || 0;
               }
             });
           }
 
-          function getEmployeeHolidayAddedHours(email, assignments, holidays, awsConfig) {
+          function getEmployeeHolidayAddedHours(email, assignments, holidays, holidayHoursPerEmployeeByEmail) {
             const map = assignments && assignments[email];
             if (!map || !Array.isArray(holidays) || holidays.length === 0) return 0;
 
+            const configuredHours = Number(holidayHoursPerEmployeeByEmail && holidayHoursPerEmployeeByEmail[email]);
+            const holidayHours = (isNaN(configuredHours) || configuredHours < 0) ? 8 : configuredHours;
             let added = 0;
             holidays.forEach((holiday) => {
               if (!holiday || !holiday.key) return;
               if (map[holiday.key] !== true) return;
-              added += isEmployeeAWSClient(awsConfig, email, holiday.key) ? 10 : 8;
+              added += holidayHours;
             });
             return added;
           }
 
-          function applyHolidaySelectionsToPreviewRows(payload, awsConfig) {
+          function applyHolidaySelectionsToPreviewRows(payload) {
             if (!payload || !Array.isArray(payload.rows)) return;
             ensureAdminHolidayAssignments(payload);
             const holidays = Array.isArray(payload.detectedHolidays) ? payload.detectedHolidays : [];
             const assignments = payload.holidayAssignmentsByEmail || {};
+            const holidayHoursByEmail = payload.holidayHoursPerEmployeeByEmail || {};
             payload.rows.forEach((row) => {
               const email = String((row && row.email) || '').trim();
               if (!email) return;
               const baseHoliday = Number(row.baseHolidayHours);
               const base = isNaN(baseHoliday) ? 0 : baseHoliday;
-              const added = getEmployeeHolidayAddedHours(email, assignments, holidays, awsConfig);
+              const added = getEmployeeHolidayAddedHours(email, assignments, holidays, holidayHoursByEmail);
               row.holidayHours = base + added;
             });
           }
@@ -7532,10 +7557,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             holidayBtn.title = 'Add holiday pay by employee.';
           }
 
-          function updateAdminHtmlHolidayRowTotal(email, assignments, holidays, awsConfig) {
+          function updateAdminHtmlHolidayRowTotal(email, assignments, holidays, holidayHoursByEmail) {
             const totalCell = document.getElementById('adminHolidayTotal_' + getSafeElementKey(email));
             if (!totalCell) return;
-            totalCell.innerText = getHoursString(getEmployeeHolidayAddedHours(email, assignments, holidays, awsConfig));
+            totalCell.innerText = getHoursString(getEmployeeHolidayAddedHours(email, assignments, holidays, holidayHoursByEmail));
           }
 
           function renderAdminHtmlHolidayMatrix() {
@@ -7558,7 +7583,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
             ensureAdminHolidayAssignments(ctx.payload);
             const assignments = ctx.payload.holidayAssignmentsByEmail;
-            const awsConfig = adminHtmlPreviewLastResult && adminHtmlPreviewLastResult.awsConfig ? adminHtmlPreviewLastResult.awsConfig : {};
+            const holidayHoursByEmail = ctx.payload.holidayHoursPerEmployeeByEmail || {};
 
             const table = document.createElement('table');
             table.className = 'admin-holiday-grid';
@@ -7578,6 +7603,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const totalTh = document.createElement('th');
             totalTh.textContent = 'Added Hours';
             headRow.appendChild(totalTh);
+
+            const hoursTh = document.createElement('th');
+            hoursTh.textContent = 'Hours / Holiday';
+            headRow.appendChild(hoursTh);
 
             thead.appendChild(headRow);
             table.appendChild(thead);
@@ -7602,7 +7631,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 checkbox.checked = assignments[email][holiday.key] === true;
                 checkbox.addEventListener('change', () => {
                   assignments[email][holiday.key] = checkbox.checked === true;
-                  updateAdminHtmlHolidayRowTotal(email, assignments, ctx.holidays, awsConfig);
+                  updateAdminHtmlHolidayRowTotal(email, assignments, ctx.holidays, holidayHoursByEmail);
                 });
                 td.appendChild(checkbox);
                 tr.appendChild(td);
@@ -7611,8 +7640,30 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               const totalCell = document.createElement('td');
               totalCell.className = 'admin-holiday-total';
               totalCell.id = 'adminHolidayTotal_' + getSafeElementKey(email);
-              totalCell.textContent = getHoursString(getEmployeeHolidayAddedHours(email, assignments, ctx.holidays, awsConfig));
+              totalCell.textContent = getHoursString(getEmployeeHolidayAddedHours(email, assignments, ctx.holidays, holidayHoursByEmail));
               tr.appendChild(totalCell);
+
+              const hoursCell = document.createElement('td');
+              const hoursInput = document.createElement('input');
+              hoursInput.type = 'number';
+              hoursInput.min = '0';
+              hoursInput.step = '0.25';
+              hoursInput.value = String(holidayHoursByEmail[email]);
+              hoursInput.setAttribute('aria-label', 'Holiday hours per holiday for ' + formatAdminPreviewEmail(email));
+              hoursInput.addEventListener('input', () => {
+                const parsed = Number(hoursInput.value);
+                holidayHoursByEmail[email] = (isNaN(parsed) || parsed < 0) ? 8 : parsed;
+                updateAdminHtmlHolidayRowTotal(email, assignments, ctx.holidays, holidayHoursByEmail);
+              });
+              hoursInput.addEventListener('blur', () => {
+                const parsed = Number(hoursInput.value);
+                const normalized = (isNaN(parsed) || parsed < 0) ? 8 : parsed;
+                holidayHoursByEmail[email] = normalized;
+                hoursInput.value = String(normalized);
+                updateAdminHtmlHolidayRowTotal(email, assignments, ctx.holidays, holidayHoursByEmail);
+              });
+              hoursCell.appendChild(hoursInput);
+              tr.appendChild(hoursCell);
               tbody.appendChild(tr);
             });
 
@@ -7661,7 +7712,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               return;
             }
 
-            applyHolidaySelectionsToPreviewRows(ctx.payload, adminHtmlPreviewLastResult.awsConfig || {});
+            applyHolidaySelectionsToPreviewRows(ctx.payload);
             renderAdminHtmlPreviewRows(ctx.payload);
 
             const assignments = ctx.payload.holidayAssignmentsByEmail || {};
@@ -7885,8 +7936,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             });
             const detectedHolidays = computePayPeriodHolidays(startDateKey, endDateKey);
             const holidayAssignmentsByEmail = {};
+            const holidayHoursPerEmployeeByEmail = {};
             rows.forEach((row) => {
               holidayAssignmentsByEmail[row.email] = {};
+              holidayHoursPerEmployeeByEmail[row.email] = 8;
             });
 
             return {
@@ -7897,6 +7950,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               entriesCount: filteredEntries.length,
               detectedHolidays: detectedHolidays,
               holidayAssignmentsByEmail: holidayAssignmentsByEmail,
+              holidayHoursPerEmployeeByEmail: holidayHoursPerEmployeeByEmail,
               unverifiedSummary: {
                 count: unverifiedEntries.length,
                 sample: unverifiedSample
@@ -8020,7 +8074,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 row.notes = noteMap[row.email];
               });
               ensureAdminHolidayAssignments(result);
-              applyHolidaySelectionsToPreviewRows(result, awsConfig);
+              applyHolidaySelectionsToPreviewRows(result);
               adminHtmlPreviewNotesByEmail = noteMap;
               setAdminHtmlPreviewTableTitle(result.startDateKey, result.endDateKey);
               renderAdminHtmlPreviewRows(result);
@@ -9115,23 +9169,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
            }
 
           function updateDatePickerModalScrollLock() {
-            const modalIds = [
-              'manualEntryModal',
-              'archiveReviewModal',
-              'adminTimeEditModal',
-              'employeeScheduleModal',
-              'adminViewModal',
-              'adminModalHtmlModal',
-              'moreReportsModal',
-              'scheduleToolModal',
-              'adminHtmlPreviewModal',
-              'adminHtmlHolidayModal',
-              'adminHtmlAwsModal',
-              'addMissedTimeModal',
-              'dateTimePickerModal'
-            ];
-
-            const anyModalOpen = modalIds.some((id) => {
+            const anyModalOpen = HOST_MODAL_IDS.some((id) => {
               const modal = document.getElementById(id);
               return isElementVisibleForModalState(modal);
             });

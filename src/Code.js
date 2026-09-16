@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.244 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.258 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -842,7 +842,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.2.2-push.244';
+const SCRIPT_VERSION = '2.2.2-push.258';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -3582,9 +3582,64 @@ function fetchAWSConfigForDialog() {
     if (!hasPermission('payroll')) {
         return {};
     }
-    const config = getAWSConfig();
+    let activeState = getStoredScheduleState_({ includeDeleted: false });
+    const activeEmails = new Set(collectScheduleEmployeeEmailsFromState_(activeState, false));
+    const punchedEmails = collectPunchedEmployeeEmails_();
+    const missingFromActive = punchedEmails.filter(email => !activeEmails.has(email));
+
+    const deletedWithPunches = [];
+    let addedMissingCount = 0;
+
+    if (missingFromActive.length > 0) {
+        const deletedState = getStoredDeletedScheduleState_();
+        const deletedByEmail = new Map();
+        deletedState.deleted_employee_data.forEach(employee => {
+            const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+            if (email) {
+                deletedByEmail.set(email, employee);
+            }
+        });
+
+        const missingFromBoth = [];
+        missingFromActive.forEach(email => {
+            const deletedRecord = deletedByEmail.get(email);
+            if (deletedRecord) {
+                deletedWithPunches.push(deletedRecord);
+            }
+            else {
+                missingFromBoth.push(email);
+            }
+        });
+
+        if (missingFromBoth.length > 0) {
+            const appended = appendMissingScheduleEmployees_(activeState, missingFromBoth);
+            if (appended.addedEmails.length > 0) {
+                activeState = writeStoredScheduleState_(appended.state);
+                addedMissingCount = appended.addedEmails.length;
+            }
+        }
+    }
+
+    const config = buildAWSConfigFromScheduleState_(activeState);
+    deletedWithPunches.forEach(employee => {
+        const email = normalizeScheduleEmail_(employee.EmployeeEmail || employee.EmployeeName);
+        if (!email) {
+            return;
+        }
+        config[email] = {
+            enabled: employee.workweek === 'AWS',
+            effectiveDate: String(employee.awsEffectiveDate || employee.AWSEffectiveDate || '').trim()
+        };
+    });
+
     Logger.log('fetchAWSConfigForDialog: returned %s employee config entries', Object.keys(config).length);
-    debugLog('fetchAWSConfigForDialog complete', { employeeCount: Object.keys(config).length });
+    debugLog('fetchAWSConfigForDialog complete', {
+        employeeCount: Object.keys(config).length,
+        activeEmployeeCount: Array.isArray(activeState.Employee_data) ? activeState.Employee_data.length : 0,
+        missingFromActiveCount: missingFromActive.length,
+        deletedWithPunchesCount: deletedWithPunches.length,
+        addedMissingCount: addedMissingCount
+    });
     return config;
 }
 function getScheduleToolDialogHtml(preferredThemeMode) {
@@ -4018,6 +4073,34 @@ function collectUniqueEmailsFromSheet_(sheet, oneBasedColumn) {
         }
     }
     return Array.from(unique).sort((a, b) => a.localeCompare(b));
+}
+function collectPunchedEmployeeEmails_() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dataEntry = ss.getSheetByName('DataEntry');
+    const punched = new Set();
+
+    if (dataEntry) {
+        const dataLastRow = dataEntry.getLastRow();
+        if (dataLastRow > 1) {
+            const dataRows = dataEntry.getRange(2, 1, dataLastRow - 1, DATA_COL_COUNT).getValues();
+            for (let i = 0; i < dataRows.length; i++) {
+                const row = dataRows[i];
+                if (isDeletedDataRow(row)) {
+                    continue;
+                }
+                const clockIn = getEffectiveClockInFromRow(row);
+                if (!(clockIn instanceof Date) || isNaN(clockIn.getTime())) {
+                    continue;
+                }
+                const email = normalizeScheduleEmail_(row[DATA_COLUMNS.EMAIL]);
+                if (email && email.indexOf('@') > 0) {
+                    punched.add(email);
+                }
+            }
+        }
+    }
+
+    return Array.from(punched).sort((a, b) => a.localeCompare(b));
 }
 function checkForNewUsers_(schedulePayload) {
     const state = normalizeScheduleState_(schedulePayload);

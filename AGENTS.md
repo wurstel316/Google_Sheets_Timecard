@@ -160,6 +160,71 @@ Current code continues to implement California rules with AWS-specific adjustmen
 - For iframe-based modals, avoid fixed desktop width/height caps; derive host/frame size from UI scale and clamp with viewport-based limits so modal footprint scales with typography.
 - Keep host and iframe sizing in sync (parent container and iframe should grow/shrink together) to avoid "scaled text but fixed shell" regressions.
 
+### Modal Architecture Gold Standard (All Modals)
+Use these rules for all modal work across desktop and mobile, whether the modal is inline HTML or iframe-hosted.
+
+- Reference implementation:
+	- DateTimePicker remains the strongest concrete example of this pattern in current code.
+	- Reuse its architecture decisions, but apply these rules generically to any modal type.
+- Host/child integration contract:
+	- Host is responsible for lifecycle, visibility, scroll-lock updates, and option/context passing.
+	- Child is responsible for rendering, interaction state, and deterministic resolve/cancel return behavior.
+	- If multiple option aliases can exist over time, normalize in host before opening so payload versions stay compatible.
+- Container and shell layering:
+	- Avoid duplicate chrome: if child renders full modal shell, host should not add extra close/header panels.
+	- Keep host container and child surface sizes synchronized (child should fill resolved host bounds).
+	- Resolve preferred modal size from content intent + UI scale, then clamp to viewport-safe max bounds.
+- Responsive sizing strategy:
+	- Do not hardcode one desktop size and reuse it everywhere.
+	- Desktop: scale toward preferred dimensions with max caps.
+	- Mobile: occupy practical viewport space (typically full-width/full-height or near-full-height) with safe clipping.
+	- Recompute sizing on open, resize, and `visualViewport` resize to handle rotation and browser chrome shifts.
+- Internal modal layout strategy:
+	- Use stable shell regions: header, content body, footer.
+	- Keep header/footer anchored; body is the overflow region when constrained.
+	- Prevent critical title/meta rows from wrapping into broken multi-line layouts unless intentionally designed.
+- Typography and scale strategy:
+	- Decouple text scale from geometry scale.
+	- Under pressure, compress geometry first; shrink text only as a last resort.
+	- Keep touch targets readable and tappable after scaling (titles, control labels, action buttons, dense data labels).
+	- Balance secondary text against primary readouts so one region is not disproportionately large/small.
+- Mobile interaction ergonomics:
+	- Allocate content areas intentionally to avoid dead space (for example, split-pane or weighted regions when appropriate).
+	- Size interactive controls using measured available space when fixed tokens are not sufficient.
+	- Ensure hidden mode-specific controls are removed from layout flow when needed to preserve centering/alignment.
+- Action model and close behavior:
+	- Keep primary action in footer and label it by outcome (`Apply`, `Save`, `Use`, etc.).
+	- Cancel must always be available and deterministic.
+	- All close paths should funnel through one cleanup function so promise resolution, pending state, and scroll lock remain consistent.
+
+When implementing a new modal, start from this architecture and adapt only modal-specific UI/content behavior.
+
+### Host modal z-index method (single source of truth)
+- Canonical source lives in `src/UserInterface.js` at `HOST_MODAL_STACK`.
+- Keep `HOST_MODAL_STACK` sorted from lowest to highest z-index and edit ordering there only.
+- Do not hand-edit individual modal z-index CSS rules for host overlays; z-index CSS is generated from `HOST_MODAL_LAYER_CSS`.
+- `HOST_MODAL_IDS` is derived from the same stack and is used by `updateDatePickerModalScrollLock()` to decide when page scroll lock must remain active.
+- If you add a new host modal, add it once to `HOST_MODAL_STACK` and ensure its placement reflects open-flow nesting (child modal must be above parent modal).
+
+Current layering contract (lowest -> highest):
+- `archiveReviewModal`, `employeeScheduleModal`, `adminViewModal`: `1000`
+- `manualEntryModal`: `1100`
+- `adminTimeEditModal`: `1150`
+- `adminModalHtmlModal`: `1200`
+- `moreReportsModal`: `1250`
+- `scheduleToolModal`: `1260`
+- `adminHtmlPreviewModal`: `1270`
+- `addMissedTimeModal`: `1275`
+- `adminHtmlHolidayModal`: `1280`
+- `adminHtmlAwsModal`: `1290`
+- `dateTimePickerModal`: `1300`
+- `idleLockOverlay`: `4000` (must remain above all modals)
+
+Ordering rules to preserve:
+- Payroll child modals (`adminHtmlHolidayModal`, `adminHtmlAwsModal`) must be above `adminHtmlPreviewModal`.
+- `dateTimePickerModal` must remain above any modal that can launch it.
+- `idleLockOverlay` must stay top-most.
+
 ## Common Pitfalls and Troubleshooting
 
 ### When editing entries or rows
