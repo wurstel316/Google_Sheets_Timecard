@@ -7,6 +7,101 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ## [Unreleased]
 
 ### Changed
+- Summary: Locked Date Time picker month/year heading to a single row in the calendar header with overflow-safe truncation.
+- Why: Longer month names could wrap and break the calendar header layout at high scale, reducing readability and alignment.
+- Files: src/DateTimePickerModal.html
+- Validation: Made month title a centered flex item with `white-space: nowrap`, `overflow: hidden`, and `text-overflow: ellipsis`, and pinned nav buttons to non-shrinking flex items; confirmed diagnostics report no file errors.
+
+- Summary: Removed the Date Time picker header X-close control, switched the primary footer action label to Apply, enlarged footer action buttons, and centered the time readout above the clock consistently in both 12h and 24h modes.
+- Why: Requested simplification to close via footer actions only, clearer primary-action wording, larger touch targets, and stronger visual centering when AM/PM is hidden in 24h mode.
+- Files: src/DateTimePickerModal.html
+- Validation: Removed inline close button markup/styles/listener, updated primary button text to Apply, increased footer button height/padding, changed hidden AM/PM state to `display:none` so it no longer offsets centering, and confirmed diagnostics report no file errors.
+
+- Summary: Rebalanced Date Time picker secondary typography and increased base text sizing by another 10%, plus tightened close-button geometry so the X sits cleanly inside the modal header.
+- Why: After prior text scale increases, smaller labels/buttons were visually out of balance and the close control needed better inset/size tuning at high scale.
+- Files: src/DateTimePickerModal.html
+- Validation: Raised picker text baseline mapping from 1.5x to 1.65x, increased mode/status/month/day-of-week/AM-PM/footer button text scales, and adjusted close button size/offset plus header right padding to keep the control fully contained; confirmed diagnostics report no file errors.
+
+- Summary: Increased Date Time picker text baseline so 100% UI scale now renders picker typography at 150% of the previous baseline.
+- Why: Even at high scale the calendar/clock text was still visually undersized relative to the desired readability target, so the picker needs a stronger base typography anchor.
+- Files: src/DateTimePickerModal.html
+- Validation: Updated picker text scale mapping to apply a 1.5x multiplier at 100% (with expanded upper cap), and confirmed diagnostics report no file errors.
+
+- Summary: Increased mobile Date Time picker calendar-day and clock numeral text emphasis to better match the large time readout at high UI scale, and widened clock ring spacing to keep enlarged numerals legible.
+- Why: At 240% scale the calendar/clock text still looked undersized compared with the highlighted `08:00` readout, reducing readability and tap confidence.
+- Files: src/DateTimePickerModal.html
+- Validation: Added shared mobile emphasis scaling for day cells and clock numerals, increased mobile numeral hit-size dimensions, introduced runtime emphasis tuning from available clock size, adjusted mobile clock radii for enlarged labels, and confirmed diagnostics report no file errors.
+
+- Summary: Rebalanced mobile Date Time picker geometry so calendar and clock each consume a full half-height region, with larger day/time controls and dynamic pane sizing for better tapability at high UI scales.
+- Why: The prior mobile layout packed both panes at intrinsic height near the top, leaving large unused space and making calendar/clock controls look undersized relative to the header.
+- Files: src/DateTimePickerModal.html
+- Validation: Switched mobile picker grid rows from `auto/auto` to `1fr/1fr`, added dedicated `calendar-pane` and `clock-pane` layout tracks, introduced runtime `--mobile-day-height` and `--mobile-clock-size` sizing based on pane dimensions, increased mobile time readout/icon sizing, and confirmed diagnostics report no file errors.
+
+- Summary: Hardened Date Time picker scale propagation by syncing all scale aliases and disabled mobile fit text downscaling so high UI scale applies consistently across header and picker body.
+- Why: Reports showed header text appearing scaled while calendar/time text looked undersized, which can happen when a payload reads a different scale alias or when mobile fit shrinks body text.
+- Files: src/UserInterface.js, src/DateTimePickerModal.html
+- Validation: Synced `uiScalePercent`, `scalePercent`, and `pickerScalePercent` before picker open, set mobile fit `--mobile-text-fit-scale` to fixed `1`, and confirmed diagnostics report no file errors.
+
+- Summary: Fixed Date Time picker 240% text scaling mismatch by applying picker text scale in mobile-specific day/time font overrides and raising picker text-scale ceiling to match app UI scale.
+- Why: In mobile layout, two override rules bypassed `--picker-text-scale`, so calendar day labels and time boxes stayed comparatively small even when header text appeared scaled.
+- Files: src/DateTimePickerModal.html
+- Validation: Updated mobile `.day-btn` and `.time-box` font formulas to include `--picker-text-scale`, increased picker scale clamp from 200 to 240 for text scaling, and confirmed diagnostics report no file errors.
+
+- Summary: Reworked Date Time picker sizing to cap host/frame footprint at viewport-safe limits and switched mobile fitting to a text-first geometry strategy.
+- Why: At high UI scales the picker could exceed viewport height/width or over-shrink text while leaving unused space, making host-open behavior less clean than standalone picker load.
+- Files: src/UserInterface.js, src/DateTimePickerModal.html
+- Validation: Added host-side width/height clamp math with dvh-aware mobile bounds, changed picker shell to contained scrolling for overflow states, reduced geometry growth ceiling while preserving stronger text scale, and confirmed diagnostics report no new file errors.
+
+- Summary: Polished the final Admin Timeline density pass by tightening the entry header-to-note gap and moving the timeline dots/line upward by about 20% while keeping the same track height.
+- Why: The compact admin view still had a little too much vertical whitespace between the entry summary row and the first note block, and the timing markers sat a bit too low for the denser layout.
+- Files: src/AdminModalHTML.html
+- Validation: Reduced the header-to-note spacing from 8px to 4px and shifted the dot/line anchor positions from 12/18px to 10/15px without changing the track height; checked diagnostics for the touched file and confirmed no syntax issues.
+
+- Summary: Compressed the Admin Timeline track to roughly half its previous height so each day uses less vertical space while preserving the same visual rhythm and controls.
+- Why: The timeline card was leaving large unused vertical gaps, making day rows feel taller than necessary and consuming extra screen space during admin review.
+- Files: src/AdminModalHTML.html
+- Validation: Reduced the schedule track height and re-centered the dot/line positions for the compact layout; checked file diagnostics for the touched source file and confirmed no syntax issues.
+
+- Summary: Raised the payroll preview, schedule tool, and more reports modal layers above the Admin Timeline while preserving the higher date-picker stack order.
+- Why: The schedule tool, payroll report, and more reports panel were rendering beneath the timeline modal, making them appear hidden or clipped when opened on top of the admin view.
+- Files: src/UserInterface.js
+- Validation: Updated the modal stacking order so `#moreReportsModal`, `#scheduleToolModal`, and `#adminHtmlPreviewModal` sit above `#adminModalHtmlModal` but below the dedicated date-time picker overlays, and confirmed there are no file diagnostics in the touched source file.
+
+- Summary: Removed the duplicated pay-period banner from the Admin Timeline modal and kept the single header label as the source of truth.
+- Why: The same active pay-period text was being rendered twice in the modal, creating redundant UI noise without adding clarity.
+- Files: src/AdminModalHTML.html
+- Validation: Removed the duplicate banner markup and the redundant banner population logic while preserving the existing top header text; confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Implemented unique sick and vacation rendering in the live Admin Timeline using the approved B2 palette direction.
+- Why: Non-worked entry types were present in data but visually blended with worked rows, making type-specific review slower than the legacy behavior.
+- Files: src/AdminModalHTML.html
+- Validation: Added entry-type design tokens and type-aware classes for timeline markers, entry note containers, and type tags; normalized render-time entry type handling to `worked|vacation|sick`; confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Updated the B2 timeline overlay mockup to preview unique vacation and sick entry styling using the modern timeline palette.
+- Why: Provides a fast visual checkpoint for type-specific color/style direction before applying the same treatment to the live Admin Timeline implementation.
+- Files: mockups/option-b2-timeline-overlay.html
+- Validation: Added type-aware render classes and sample entry types, introduced dedicated vacation/sick tokens for cards, punches, notes, and badges, and confirmed diagnostics report no file errors in the touched mockup file.
+
+- Summary: Made Admin Timeline delete/restore hold actions close the Edit Times modal immediately using optimistic-close behavior.
+- Why: The modal visually appeared to wait on server round-trip before closing, which made delete/restore feel delayed.
+- Files: src/AdminModalHTML.html
+- Validation: Wired delete and restore hold actions to `saveRowUpdate(...)` with `closeModalOptimistically: true`, keeping existing rollback/error handling; confirmed diagnostics report no file errors in touched files.
+
+- Summary: Made deleted entries visually dominant in Admin Timeline by forcing deleted timeline marker colors and applying deleted styling to attached notes.
+- Why: When Show deleted was enabled, deleted rows could still resemble normal sync states, making historical deleted punches and their notes easy to miss.
+- Files: src/AdminModalHTML.html
+- Validation: Added deleted design tokens, forced deleted dot class precedence over warn/bad/open classes in timeline rendering, applied stronger deleted connector styling, and added deleted styles for entry note groups/pills/note cards/text; confirmed diagnostics report no file errors in the touched file.
+
+- Summary: Removed non-working in-app refresh buttons from the main user surface and centered the remaining status/idle-lock text presentation.
+- Why: Manual browser refresh is the preferred fallback, and removing unreliable in-app refresh controls reduces user confusion.
+- Files: src/UserInterface.js
+- Validation: Removed the status refresh icon button and idle-lock refresh action button markup, then centered status pill and idle-lock title/message/action alignment to preserve balanced layout.
+
+- Summary: Fixed idle soft-refresh so it no longer resets the 30-minute lock timer, and added host/iframe refresh hooks to keep Admin Timeline and Schedule Tool modal data fresh safely while open.
+- Why: Background refresh was incorrectly treated as user activity, extending lock time indefinitely, and iframe modals needed explicit host orchestration to refresh safely without clobbering unsaved edits.
+- Files: src/UserInterface.js, src/AdminModalHTML.html, src/ScheduleHTML.html
+- Validation: Removed soft-refresh write to `lastUserActivityAtMs`, marked idle refresh cycle completion without activity reset, added iframe APIs (`refreshFromHost`, `hasUnsavedHostSensitiveState`) plus host-triggered refresh calls for visible admin/schedule modals, and relayed iframe user activity back to parent idle tracking.
+
 - Summary: Added an optional raw-times pill to the Admin Timeline entry header so the Show raw times toggle displays raw clock-in/out alongside the effective times.
 - Why: Admins need a quick comparison between edited/effective times and the original raw punches without leaving the notes area.
 - Files: src/AdminModalHTML.html

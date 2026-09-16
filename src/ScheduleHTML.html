@@ -3613,6 +3613,22 @@
   const SCHEDULE_IDLE_HEARTBEAT_MS = Number(IDLE_POLICY.heartbeatMs);
   let scheduleLastActivityAtMs = Date.now();
   let scheduleIdleRefreshDoneForCycle = false;
+  let scheduleLastHostActivitySignalAtMs = 0;
+
+  function notifyScheduleHostActivity() {
+    const now = Date.now();
+    if ((now - scheduleLastHostActivitySignalAtMs) < 4000) {
+      return;
+    }
+    scheduleLastHostActivitySignalAtMs = now;
+    try {
+      if (window.timecardScheduleHost && typeof window.timecardScheduleHost.notifyHostActivity === "function") {
+        window.timecardScheduleHost.notifyHostActivity();
+      }
+    } catch (_e) {
+      // Best effort only.
+    }
+  }
 
   function setScheduleIdleBar(visible, message) {
     const bar = document.getElementById("schedule-idle-bar");
@@ -3632,6 +3648,7 @@
     scheduleLastActivityAtMs = Date.now();
     scheduleIdleRefreshDoneForCycle = false;
     setScheduleIdleBar(false, "");
+    notifyScheduleHostActivity();
   }
 
   function scheduleHasNetworkWorkInFlight() {
@@ -3703,6 +3720,29 @@
       })
       .fetchScheduleToolData();
   }
+
+  function refreshFromHost() {
+    if (hasUnsavedChanges) {
+      setScheduleIdleBar(true, "Unsaved schedule changes detected. Idle refresh paused.");
+      return false;
+    }
+    if (scheduleHasNetworkWorkInFlight()) {
+      setScheduleIdleBar(true, "Refresh is waiting for current actions to finish.");
+      return false;
+    }
+    triggerScheduleIdleRefresh(false);
+    return true;
+  }
+
+  function hasUnsavedHostSensitiveState() {
+    return !!hasUnsavedChanges;
+  }
+
+  window.timecardScheduleToolApi = {
+    refreshFromHost: refreshFromHost,
+    hasUnsavedHostSensitiveState: hasUnsavedHostSensitiveState,
+    notifyHostActivity: notifyScheduleHostActivity
+  };
 
   function updateScheduleIdleState() {
     if (scheduleRefreshInFlight) {

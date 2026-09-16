@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.224 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.2.2-push.244 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -1622,6 +1622,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin: clamp(0.45rem, 1.9vw, 0.75rem) 0;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: var(--tc-space-xs);
           }
           #status {
@@ -1632,10 +1633,11 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             margin: 0;
             max-width: none;
             flex: 1 1 auto;
-            text-align: left;
+            text-align: center;
             line-height: 1;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             padding: 0.5rem 0.72rem;
             border-radius: 999px;
             border: 1px solid var(--tc-status-border);
@@ -2503,15 +2505,17 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           .idle-lock-title {
             font-size: clamp(1rem, 2.8vw, 1.18rem);
             font-weight: 700;
+            text-align: center;
           }
           .idle-lock-message {
             font-size: clamp(0.9rem, 2.5vw, 1rem);
             line-height: 1.38;
             color: var(--tc-text-muted);
+            text-align: center;
           }
           .idle-lock-actions {
             display: flex;
-            justify-content: flex-end;
+            justify-content: center;
             gap: 0.55rem;
             flex-wrap: wrap;
           }
@@ -2556,19 +2560,22 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             justify-content: stretch;
           }
           #adminModalHtmlModal {
-            z-index: 1250;
+            z-index: 1200;
             padding: 0;
             align-items: stretch;
             justify-content: stretch;
           }
           #moreReportsModal {
-            z-index: 1150;
+            z-index: 1250;
           }
           #scheduleToolModal {
-            z-index: 1200;
+            z-index: 1260;
             padding: 0;
             align-items: stretch;
             justify-content: stretch;
+          }
+          #adminHtmlPreviewModal {
+            z-index: 1270;
           }
           #adminViewModal .modal-content,
           #adminModalHtmlModal .modal-content,
@@ -3166,7 +3173,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             <div id="idleLockMessage" class="idle-lock-message">Session idle too long. Refresh is required.</div>
             <div class="idle-lock-actions">
               <button id="idleLockResumeBtn" type="button" class="idle-lock-btn" style="display:none;" onclick="resumeFromIdleLock()">Return to editing</button>
-              <button id="idleLockRefreshBtn" type="button" class="idle-lock-btn primary" onclick="triggerIdleHardRefresh(true)">Refresh now</button>
             </div>
           </div>
         </div>
@@ -3199,9 +3205,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           <h1>Welcome ${email}!</h1>
           <div class="status-row">
             <p id="status">${statusObj.status}</p>
-            <button id="refreshStatusBtn" class="status-refresh-btn" type="button" onclick="refreshStatus()" aria-label="Refresh status" title="Refresh status">
-              <span class="refresh-icon" aria-hidden="true">↻</span>
-            </button>
           </div>
           <p id="message" class="message" style="display: none;"></p>
           <p id="error" class="error" style="display: none;"></p>
@@ -3407,9 +3410,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           </div>
 
           <div id="dateTimePickerModal" class="modal" style="display: none;">
-            <div class="modal-content admin-modal-content" style="width:auto; max-width:calc(100vw - 0.5rem); max-height:calc(100vh - 0.5rem); height:auto; min-height:0; padding:0; overflow:visible; position:relative; background:transparent; box-shadow:none; border:0; border-radius:0; display:block;">
+            <div class="modal-content admin-modal-content" style="width:min(58rem,calc(100vw - 0.5rem)); max-width:calc(100vw - 0.5rem); height:min(46rem,calc(100dvh - 0.5rem)); max-height:calc(100dvh - 0.5rem); min-height:22rem; padding:0; overflow:hidden; position:relative; background:transparent; box-shadow:none; border:0; border-radius:0; display:block;">
               <button class="admin-close-btn" type="button" aria-label="Close date time picker" title="Close" onclick="closeDateTimePickerModal()">&#10005;</button>
-              <iframe id="dateTimePickerFrame" title="Date Time Picker" style="width:calc(100vw - 0.5rem); height:calc(100vh - 0.5rem); min-height:22rem; max-height:calc(100vh - 0.5rem); border:0; background:transparent; display:block; overflow:hidden;"></iframe>
+              <iframe id="dateTimePickerFrame" title="Date Time Picker" style="width:100%; height:100%; min-height:0; max-height:100%; border:0; background:transparent; display:block; overflow:hidden;"></iframe>
             </div>
           </div>
 
@@ -4964,6 +4967,89 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               hasUnsavedAdminDrafts();
           }
 
+          function isElementVisibleForModalState(el) {
+            if (!el) return false;
+            const computed = window.getComputedStyle ? window.getComputedStyle(el) : null;
+            if (!computed) {
+              return el.style.display !== 'none';
+            }
+            if (computed.display === 'none' || computed.visibility === 'hidden') {
+              return false;
+            }
+            const rect = el.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          }
+
+          function getEmbeddedModalApi(frameId, apiName) {
+            const frame = document.getElementById(String(frameId || ''));
+            if (!frame || !frame.contentWindow) return null;
+            const api = frame.contentWindow[String(apiName || '')];
+            if (!api || typeof api !== 'object') return null;
+            return api;
+          }
+
+          function isAdminModalHtmlVisible() {
+            return isElementVisibleForModalState(document.getElementById('adminModalHtmlModal'));
+          }
+
+          function isScheduleToolModalVisible() {
+            return isElementVisibleForModalState(document.getElementById('scheduleToolModal'));
+          }
+
+          function hasUnsavedIframeModalWork() {
+            try {
+              if (isAdminModalHtmlVisible()) {
+                const adminApi = getEmbeddedModalApi('adminModalHtmlFrame', 'timecardAdminModalApi');
+                if (adminApi && typeof adminApi.hasUnsavedHostSensitiveState === 'function') {
+                  if (adminApi.hasUnsavedHostSensitiveState() === true) {
+                    return true;
+                  }
+                }
+              }
+            } catch (error) {
+              debugClientError('idle_admin_iframe_unsaved_check_failed', { message: error && error.message ? error.message : String(error || '') });
+            }
+
+            try {
+              if (isScheduleToolModalVisible()) {
+                const scheduleApi = getEmbeddedModalApi('scheduleToolFrame', 'timecardScheduleToolApi');
+                if (scheduleApi && typeof scheduleApi.hasUnsavedHostSensitiveState === 'function') {
+                  if (scheduleApi.hasUnsavedHostSensitiveState() === true) {
+                    return true;
+                  }
+                }
+              }
+            } catch (error) {
+              debugClientError('idle_schedule_iframe_unsaved_check_failed', { message: error && error.message ? error.message : String(error || '') });
+            }
+
+            return false;
+          }
+
+          function requestVisibleIframeModalRefreshesFromHost() {
+            try {
+              if (isAdminModalHtmlVisible()) {
+                const adminApi = getEmbeddedModalApi('adminModalHtmlFrame', 'timecardAdminModalApi');
+                if (adminApi && typeof adminApi.refreshFromHost === 'function') {
+                  adminApi.refreshFromHost('Refreshing entries after idle...');
+                }
+              }
+            } catch (error) {
+              debugClientError('idle_admin_iframe_refresh_failed', { message: error && error.message ? error.message : String(error || '') });
+            }
+
+            try {
+              if (isScheduleToolModalVisible()) {
+                const scheduleApi = getEmbeddedModalApi('scheduleToolFrame', 'timecardScheduleToolApi');
+                if (scheduleApi && typeof scheduleApi.refreshFromHost === 'function') {
+                  scheduleApi.refreshFromHost(false);
+                }
+              }
+            } catch (error) {
+              debugClientError('idle_schedule_iframe_refresh_failed', { message: error && error.message ? error.message : String(error || '') });
+            }
+          }
+
           function refreshStatusQuietly(onComplete) {
             if (!navigator.onLine || pendingRefreshStatus) {
               if (typeof onComplete === 'function') onComplete();
@@ -5014,6 +5100,13 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             } catch (error) {
               debugClientError('idle_trigger_unsaved_check_failed', { message: error && error.message ? error.message : String(error || '') });
             }
+            if (!hasUnsaved) {
+              try {
+                hasUnsaved = hasUnsavedIframeModalWork();
+              } catch (error) {
+                debugClientError('idle_trigger_iframe_unsaved_check_failed', { message: error && error.message ? error.message : String(error || '') });
+              }
+            }
             if (!manual && hasUnsaved) {
               setIdleRefreshBanner(true, 'Auto Refresh 0 min', getLockCountdownLine());
               return;
@@ -5039,9 +5132,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 if (adminPermissions.canAccessAdminView === true) {
                   loadAdminDayboard();
                 }
+                requestVisibleIframeModalRefreshesFromHost();
                 idleSoftRefreshInFlight = false;
-                idleSoftRefreshDoneForCycle = false;
-                lastUserActivityAtMs = Date.now();
+                idleSoftRefreshDoneForCycle = true;
                 updateIdleRefreshState();
               });
             });
@@ -6325,6 +6418,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             const modalScalePercent = Math.min(165, Math.max(90, Math.round(tunedPickerPercent)));
             const desktopFrameWidthPx = Math.round(820 * (modalScalePercent / 100));
             const desktopFrameHeightPx = Math.round(670 * (modalScalePercent / 100));
+            const viewport = window.visualViewport;
+            const viewportWidthPx = Math.max(280, Math.round((viewport && isFinite(viewport.width) ? viewport.width : window.innerWidth) || 0));
+            const viewportHeightPx = Math.max(320, Math.round((viewport && isFinite(viewport.height) ? viewport.height : window.innerHeight) || 0));
+            const viewportPadPx = 8;
+            const widthCapPx = Math.max(260, viewportWidthPx - viewportPadPx);
+            const heightCapPx = Math.max(300, viewportHeightPx - viewportPadPx);
 
             if (isMobileLayout === true) {
               modal.style.padding = '0';
@@ -6333,14 +6432,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
               host.style.width = '100vw';
               host.style.maxWidth = '100vw';
-              host.style.height = '100vh';
-              host.style.maxHeight = '100vh';
+              host.style.height = '100dvh';
+              host.style.maxHeight = '100dvh';
+              host.style.minHeight = '0';
               host.style.overflow = 'hidden';
 
               frame.style.width = '100vw';
-              frame.style.height = '100vh';
-              frame.style.minHeight = '100vh';
-              frame.style.maxHeight = '100vh';
+              frame.style.height = '100dvh';
+              frame.style.minHeight = '0';
+              frame.style.maxHeight = '100dvh';
               return;
             }
 
@@ -6348,18 +6448,25 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             modal.style.alignItems = '';
             modal.style.justifyContent = '';
 
-            host.style.width = 'auto';
             modal.style.padding = '0.25rem';
-            host.style.maxWidth = 'calc(100vw - 0.5rem)';
-            host.style.height = 'auto';
-            host.style.maxHeight = 'calc(100vh - 0.5rem)';
-            host.style.overflow = 'visible';
+            const desktopMaxWidthPx = Math.min(980, widthCapPx);
+            const desktopMaxHeightPx = Math.min(760, heightCapPx);
+            const desktopMinWidthPx = Math.min(480, desktopMaxWidthPx);
+            const desktopMinHeightPx = Math.min(352, desktopMaxHeightPx);
+            const resolvedWidthPx = Math.max(desktopMinWidthPx, Math.min(desktopFrameWidthPx, desktopMaxWidthPx));
+            const resolvedHeightPx = Math.max(desktopMinHeightPx, Math.min(desktopFrameHeightPx, desktopMaxHeightPx));
 
-            host.style.width = 'min(' + String(desktopFrameWidthPx) + 'px,calc(100vw - 0.5rem))';
+            host.style.width = String(resolvedWidthPx) + 'px';
+            host.style.maxWidth = String(widthCapPx) + 'px';
+            host.style.height = String(resolvedHeightPx) + 'px';
+            host.style.maxHeight = String(heightCapPx) + 'px';
+            host.style.minHeight = '0';
+            host.style.overflow = 'hidden';
+
             frame.style.width = '100%';
-            frame.style.height = 'min(' + String(desktopFrameHeightPx) + 'px,calc(100vh - 0.5rem))';
-            frame.style.minHeight = '22rem';
-            frame.style.maxHeight = 'calc(100vh - 0.5rem)';
+            frame.style.height = '100%';
+            frame.style.minHeight = '0';
+            frame.style.maxHeight = '100%';
           }
 
           function fetchDateTimePickerHtmlCached() {
@@ -6449,6 +6556,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 optionBag.uiScalePercent = getCurrentUiScalePercentForPicker();
               }
             }
+
+            // Keep all scale aliases synchronized so older/newer picker payloads
+            // read the same effective scale value.
+            optionBag.uiScalePercent = Number(optionBag.uiScalePercent);
+            optionBag.scalePercent = Number(optionBag.uiScalePercent);
+            optionBag.pickerScalePercent = Number(optionBag.uiScalePercent);
 
             optionBag.mobileLayout = !!layoutState.mobileLayout;
             optionBag.isMobile = !!layoutState.mobileLayout;
@@ -6754,6 +6867,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 'openScheduleToolModal:function(){if(p&&typeof p.openScheduleToolModal==="function"){p.openScheduleToolModal();}},' +
                 'openMoreReportsModal:function(){if(p&&typeof p.openMoreReportsModal==="function"){p.openMoreReportsModal();}},' +
                 'openAdminHtmlPreviewModal:function(){if(p&&typeof p.openAdminHtmlPreviewModal==="function"){p.openAdminHtmlPreviewModal();}},' +
+                'notifyHostActivity:function(){if(p&&typeof p.markUserActivity==="function"){p.markUserActivity();}},' +
                 'openDateTimePickerModal:function(options){if(p&&typeof p.openDateTimePickerModal==="function"){return p.openDateTimePickerModal(options||{});}return Promise.reject(new Error("Date time picker unavailable."));},' +
                 'openAddMissedTimeModal:function(options){if(p&&typeof p.openAddMissedTimeModal==="function"){return p.openAddMissedTimeModal(options||{});}return Promise.reject(new Error("Add missed time modal unavailable."));},' +
                 'preloadAddMissedTimeModal:function(options){if(p&&typeof p.preloadAddMissedTimeModal==="function"){return p.preloadAddMissedTimeModal(options||{});}return Promise.resolve(false);},' +
@@ -6794,6 +6908,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               'window.google.script=window.google.script||{};' +
               'if(p&&p.google&&p.google.script&&p.google.script.run){window.google.script.run=p.google.script.run;}' +
               'window.google.script.host={close:function(){if(p&&typeof p.closeScheduleToolModal==="function"){p.closeScheduleToolModal();}}};' +
+              'window.timecardScheduleHost={notifyHostActivity:function(){if(p&&typeof p.markUserActivity==="function"){p.markUserActivity();}}};' +
               '})();' + scriptClose;
             if (html.indexOf('<body>') > -1) {
               return html.replace('<body>', '<body>' + bridgeScript);
@@ -9016,22 +9131,9 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               'dateTimePickerModal'
             ];
 
-            function isModalVisible(modal) {
-              if (!modal) return false;
-              const computed = window.getComputedStyle ? window.getComputedStyle(modal) : null;
-              if (!computed) {
-                return modal.style.display !== 'none';
-              }
-              if (computed.display === 'none' || computed.visibility === 'hidden') {
-                return false;
-              }
-              const rect = modal.getBoundingClientRect();
-              return rect.width > 0 && rect.height > 0;
-            }
-
             const anyModalOpen = modalIds.some((id) => {
               const modal = document.getElementById(id);
-              return isModalVisible(modal);
+              return isElementVisibleForModalState(modal);
             });
 
             document.body.classList.toggle('timecard-modal-open', anyModalOpen);

@@ -22,6 +22,16 @@
       --ok: #70dfac;
       --bad: #ff879c;
       --warn: #ffd589;
+      --type-vacation-accent: #f3c15f;
+      --type-vacation-soft: rgba(243, 193, 95, 0.22);
+      --type-vacation-surface: #483a1f;
+      --type-sick-accent: #f09aae;
+      --type-sick-soft: rgba(240, 154, 174, 0.22);
+      --type-sick-surface: #4a2733;
+      --deleted-accent: #ff5f78;
+      --deleted-soft: rgba(255, 95, 120, 0.22);
+      --deleted-surface: #4a2732;
+      --deleted-text: #ffdce3;
       --radius: 12px;
     }
 
@@ -37,6 +47,16 @@
       --ok: #1f8454;
       --bad: #b33a53;
       --warn: #976700;
+      --type-vacation-accent: #b67805;
+      --type-vacation-soft: rgba(245, 189, 64, 0.2);
+      --type-vacation-surface: #fff4d6;
+      --type-sick-accent: #bf4060;
+      --type-sick-soft: rgba(212, 83, 117, 0.18);
+      --type-sick-surface: #fdebf0;
+      --deleted-accent: #bf2b45;
+      --deleted-soft: rgba(191, 43, 69, 0.18);
+      --deleted-surface: #fde8ed;
+      --deleted-text: #6e1023;
     }
 
     * { box-sizing: border-box; }
@@ -172,6 +192,16 @@
       text-decoration-color: rgba(255, 132, 148, 0.9);
     }
 
+    .legend-item.type-vacation {
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 58%, var(--line) 42%);
+      background: color-mix(in srgb, var(--type-vacation-soft) 58%, var(--panel) 42%);
+    }
+
+    .legend-item.type-sick {
+      border-color: color-mix(in srgb, var(--type-sick-accent) 58%, var(--line) 42%);
+      background: color-mix(in srgb, var(--type-sick-soft) 58%, var(--panel) 42%);
+    }
+
     .legend-swatch {
       position: relative;
       flex: 0 0 auto;
@@ -187,6 +217,16 @@
     .legend-swatch.bad { background: var(--bad); }
     .legend-swatch.deleted { background: rgba(255, 132, 148, 0.8); }
     .legend-swatch.pending { background: rgba(255, 255, 255, 0.32); }
+    .legend-swatch.vacation {
+      border-radius: 4px;
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 65%, #ffffff 35%);
+      background: color-mix(in srgb, var(--type-vacation-soft) 62%, var(--type-vacation-accent) 38%);
+    }
+    .legend-swatch.sick {
+      border-radius: 4px;
+      border-color: color-mix(in srgb, var(--type-sick-accent) 65%, #ffffff 35%);
+      background: color-mix(in srgb, var(--type-sick-soft) 62%, var(--type-sick-accent) 38%);
+    }
 
     .legend-swatch.line::after {
       content: '';
@@ -381,12 +421,12 @@
       background: #aec3df;
       color: #16375e;
       border-bottom: 1px solid #7f9fc6;
-      padding: 6px 8px;
+      padding: 5px 8px;
       font-size: 1rem;
       font-weight: 700;
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
     }
 
@@ -432,22 +472,22 @@
       cursor: pointer;
     }
 
-    .day-body { padding: 8px; display: grid; gap: 8px; background: #2b3545; }
+    .day-body { padding: 6px; display: grid; gap: 6px; background: #2b3545; }
 
     .timeline {
       border: 1px solid #4d6384;
       border-radius: 9px;
       background: #16253a;
-      padding: 6px 7px 12px;
+      padding: 4px 6px 8px;
       position: relative;
     }
 
     .ticks {
       position: relative;
-      height: 12px;
+      height: 11px;
       color: #99afca;
       font-size: 0.68rem;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
     }
 
     .tick { position: absolute; top: 0; transform: translateX(-50%); }
@@ -456,7 +496,7 @@
 
     .track-grid {
       position: relative;
-      height: 70px;
+      height: 35px;
       border-radius: 7px;
       background-image: linear-gradient(to right, rgba(114,146,181,0.16) 1px, transparent 1px);
       background-size: calc(100% / 24) 100%;
@@ -466,8 +506,8 @@
 
     .expected {
       position: absolute;
-      top: 6px;
-      height: 12px;
+      top: 4px;
+      height: 10px;
       border-radius: 999px;
       background: rgba(90,178,130,0.2);
       border: 1px solid rgba(90,178,130,0.6);
@@ -514,16 +554,45 @@
     }
 
     .dot.out { background: #8cc4ff; }
+    .dot.type-vacation:not(.bad):not(.warn):not(.unknown):not(.open):not(.deleted) {
+      background: var(--type-vacation-accent);
+      border-color: #fff0cd;
+      box-shadow: 0 0 0 3px var(--type-vacation-soft);
+    }
+    .dot.type-sick:not(.bad):not(.warn):not(.unknown):not(.open):not(.deleted) {
+      background: var(--type-sick-accent);
+      border-color: #ffe0e7;
+      box-shadow: 0 0 0 3px var(--type-sick-soft);
+    }
     .dot.bad { background: var(--bad); box-shadow: 0 0 0 3px rgba(255,135,156,0.25); }
     .dot.warn { background: var(--warn); box-shadow: 0 0 0 3px rgba(255,213,137,0.28); }
     .dot.unknown { background: #a7b8cd; box-shadow: 0 0 0 3px rgba(167,184,205,0.25); }
     .dot.open { background: var(--ok); box-shadow: 0 0 0 3px rgba(112,223,172,0.26); }
+    .dot.type-vacation.bad,
+    .dot.type-vacation.warn,
+    .dot.type-vacation.unknown,
+    .dot.type-vacation.open,
+    .dot.type-vacation.pending {
+      border-color: #ffebbe;
+    }
+    .dot.type-sick.bad,
+    .dot.type-sick.warn,
+    .dot.type-sick.unknown,
+    .dot.type-sick.open,
+    .dot.type-sick.pending {
+      border-color: #ffd4de;
+    }
+    .dot.deleted {
+      background: var(--deleted-accent);
+      border-color: rgba(255, 236, 240, 0.95);
+      box-shadow: 0 0 0 3px var(--deleted-soft), 0 0 0 1px rgba(255, 95, 120, 0.75);
+    }
     .dot.pending { opacity: 0.55; cursor: wait; }
 
     .dot::after {
       content: attr(data-label);
       position: absolute;
-      top: 14px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
       font-size: 0.62rem;
@@ -540,7 +609,21 @@
 
     .dot-line.warn-row { background: rgba(255,213,137,0.78); }
     .dot-line.unknown-row { background: rgba(167,184,205,0.8); }
-    .dot-line.deleted-row { background: rgba(255, 132, 148, 0.5); }
+    .dot-line.type-vacation:not(.warn-row):not(.unknown-row):not(.open-row):not(.deleted-row) {
+      height: 2px;
+      background: color-mix(in srgb, var(--type-vacation-accent) 74%, #9cb8d8 26%);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--type-vacation-soft) 72%, transparent 28%);
+    }
+    .dot-line.type-sick:not(.warn-row):not(.unknown-row):not(.open-row):not(.deleted-row) {
+      height: 2px;
+      background: color-mix(in srgb, var(--type-sick-accent) 74%, #9cb8d8 26%);
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--type-sick-soft) 72%, transparent 28%);
+    }
+    .dot-line.deleted-row {
+      height: 2px;
+      background: linear-gradient(90deg, rgba(255, 95, 120, 0.95), rgba(255, 145, 162, 0.95));
+      box-shadow: 0 0 0 1px rgba(255, 95, 120, 0.36);
+    }
     .dot-line.open-row { background: rgba(112,223,172,0.82); }
 
     .rows-list { display: grid; gap: 6px; }
@@ -560,14 +643,32 @@
       border-radius: 10px;
       padding: 8px;
       display: grid;
-      gap: 8px;
+      gap: 4px;
+    }
+
+    .entry-note-group.type-vacation:not(.deleted) {
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 64%, #7ea6d3 36%);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--type-vacation-surface) 82%, #1f3047 18%), #1f3047);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--type-vacation-soft) 65%, transparent 35%);
+    }
+
+    .entry-note-group.type-sick:not(.deleted) {
+      border-color: color-mix(in srgb, var(--type-sick-accent) 64%, #7ea6d3 36%);
+      background: linear-gradient(135deg, color-mix(in srgb, var(--type-sick-surface) 82%, #1f3047 18%), #1f3047);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--type-sick-soft) 65%, transparent 35%);
+    }
+
+    .entry-note-group.deleted {
+      border-color: color-mix(in srgb, var(--deleted-accent) 72%, #ffffff 28%);
+      background: linear-gradient(135deg, var(--deleted-surface), color-mix(in srgb, var(--deleted-surface) 70%, #000000 30%));
+      box-shadow: inset 0 0 0 1px rgba(255, 95, 120, 0.18);
     }
 
     .entry-note-head {
       display: inline-flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       min-width: 0;
     }
 
@@ -593,10 +694,38 @@
       color: #f0f6ff;
     }
 
+    .entry-note-pill.type-tag {
+      max-width: none;
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .entry-note-pill.type-tag.vacation {
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 70%, #ffffff 30%);
+      background: color-mix(in srgb, var(--type-vacation-soft) 72%, #2d4a6d 28%);
+      color: #ffe8ba;
+    }
+
+    .entry-note-pill.type-tag.sick {
+      border-color: color-mix(in srgb, var(--type-sick-accent) 70%, #ffffff 30%);
+      background: color-mix(in srgb, var(--type-sick-soft) 72%, #2d4a6d 28%);
+      color: #ffd6df;
+    }
+
+    .entry-note-pill.deleted {
+      border-color: color-mix(in srgb, var(--deleted-accent) 68%, #ffffff 32%);
+      background: color-mix(in srgb, var(--deleted-surface) 78%, var(--deleted-accent) 22%);
+      color: var(--deleted-text);
+      text-decoration: line-through;
+      text-decoration-thickness: 0.11rem;
+      text-decoration-color: color-mix(in srgb, var(--deleted-accent) 80%, #ffffff 20%);
+    }
+
     .note-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 8px;
+      gap: 6px;
     }
 
     .day-note-item {
@@ -608,6 +737,23 @@
       grid-template-columns: 1fr;
       gap: 4px;
       align-items: start;
+    }
+
+    .day-note-item.type-vacation:not(.deleted):not(.composer) {
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 64%, #607b9e 36%);
+      background: color-mix(in srgb, var(--type-vacation-soft) 58%, #2b415f 42%);
+    }
+
+    .day-note-item.type-sick:not(.deleted):not(.composer) {
+      border-color: color-mix(in srgb, var(--type-sick-accent) 64%, #607b9e 36%);
+      background: color-mix(in srgb, var(--type-sick-soft) 58%, #2b415f 42%);
+    }
+
+    .day-note-item.deleted {
+      border-color: color-mix(in srgb, var(--deleted-accent) 64%, #ffffff 36%);
+      background:
+        repeating-linear-gradient(-45deg, rgba(255, 95, 120, 0.16) 0 8px, rgba(255, 95, 120, 0.06) 8px 16px),
+        color-mix(in srgb, var(--deleted-surface) 82%, #000000 18%);
     }
 
     .day-note-item.composer {
@@ -636,6 +782,13 @@
       white-space: normal;
       overflow: visible;
       text-overflow: clip;
+    }
+
+    .day-note-line.deleted {
+      color: var(--deleted-text);
+      text-decoration: line-through;
+      text-decoration-thickness: 0.1rem;
+      text-decoration-color: color-mix(in srgb, var(--deleted-accent) 76%, #ffffff 24%);
     }
 
     .inline-note-input {
@@ -966,9 +1119,9 @@
         <span class="legend-item" title="Entry is still open with no clock-out; sync scoring is deferred."><span class="legend-swatch" style="background:var(--ok);"></span>Open</span>
         <span class="legend-item deleted" title="This row is deleted and excluded from the active timeline."><span class="legend-swatch deleted"></span>Deleted</span>
         <span class="legend-item" title="This punch is still saving and its final state is pending."><span class="legend-swatch pending"></span>Saving</span>
+        <span class="legend-item type-vacation" title="Vacation entry row styling."><span class="legend-swatch vacation"></span>Vacation</span>
+        <span class="legend-item type-sick" title="Sick entry row styling."><span class="legend-swatch sick"></span>Sick</span>
       </div>
-
-      <div class="active-period-banner" id="activePayPeriodBanner"></div>
 
       <div class="msg" id="adminLoadMsg">Loading entries...</div>
     </header>
@@ -1085,6 +1238,43 @@
     function hostCall(name, arg) {
       if (!window.timecardAdminHost || typeof window.timecardAdminHost[name] !== 'function') return null;
       return window.timecardAdminHost[name](arg);
+    }
+
+    let lastHostActivitySignalAtMs = 0;
+
+    function notifyHostActivity() {
+      const now = Date.now();
+      if ((now - lastHostActivitySignalAtMs) < 4000) {
+        return;
+      }
+      lastHostActivitySignalAtMs = now;
+      try {
+        hostCall('notifyHostActivity');
+      } catch (_e) {
+        // Best effort only.
+      }
+    }
+
+    function hasUnsavedHostSensitiveState() {
+      const inlineInput = document.getElementById('inlineComposerInput');
+      const editNoteInput = document.getElementById('editAddNoteInput');
+      const manualNotesInput = document.getElementById('manualNotes');
+      const inlineValue = inlineInput ? String(inlineInput.value || '').trim() : '';
+      const editNoteValue = editNoteInput ? String(editNoteInput.value || '').trim() : '';
+      const manualNotesValue = manualNotesInput ? String(manualNotesInput.value || '').trim() : '';
+      if (inlineValue.length > 0 || editNoteValue.length > 0 || manualNotesValue.length > 0) {
+        return true;
+      }
+      return !!(state.inlineNoteComposer || state.editTarget || state.manualTarget || state.manualSubmitting || state.refreshInFlight);
+    }
+
+    function refreshFromHost(message) {
+      if (hasUnsavedHostSensitiveState()) {
+        setStatus('Unsaved admin edits detected. Idle refresh paused.');
+        return false;
+      }
+      refreshFromServer(message || 'Refreshing entries after idle...');
+      return true;
     }
 
     function closeSelf() {
@@ -1479,6 +1669,11 @@
       return 'Valid: max delta ' + maxDelta + 'm (in ' + inDelta + 'm, out ' + outDelta + 'm)';
     }
 
+    function normalizeEntryTypeForRender(entryType) {
+      const value = String(entryType || '').trim().toLowerCase();
+      return value === 'vacation' || value === 'sick' ? value : 'worked';
+    }
+
     function normalizeEntry(entry) {
       const effectiveIn = entry.effectiveClockIn || entry.rawClockIn || '';
       const effectiveOut = entry.effectiveClockOut || entry.rawClockOut || '';
@@ -1497,7 +1692,7 @@
         verified: entry.verified === true,
         notes: String(entry.notes || ''),
         deleted: entry.deleted === true,
-        entryType: String(entry.entryType || 'worked'),
+        entryType: normalizeEntryTypeForRender(entry.entryType),
         scheduleSnapshot: entry.scheduleSnapshot || {},
         status: statusInfo.status,
         syncInDelta: Number.isFinite(statusInfo.inDelta) ? statusInfo.inDelta : null,
@@ -1544,7 +1739,7 @@
         verified: entry.verified === true,
         notes: String(entry.notes || ''),
         deleted: entry.deleted === true,
-        entryType: String(entry.entryType || 'worked'),
+        entryType: normalizeEntryTypeForRender(entry.entryType),
         scheduleSnapshot: entry.scheduleSnapshot || {},
         status: String(entry.status || 'unknown'),
         syncInDelta: Number.isFinite(entry.syncInDelta) ? Number(entry.syncInDelta) : null,
@@ -1573,7 +1768,7 @@
         verified: false,
         notes: String(note || '').trim(),
         deleted: false,
-        entryType: String(type || 'worked'),
+        entryType: normalizeEntryTypeForRender(type),
         scheduleSnapshot: {}
       });
       optimistic.pending = true;
@@ -1715,28 +1910,33 @@
         const outPoint = hasClockOut ? clockToPercent(row.effectiveClockOut || row.rawClockOut) : nowPoint;
         const left = Math.min(inPoint, outPoint);
         const width = Math.abs(outPoint - inPoint);
+        const rowEntryType = normalizeEntryTypeForRender(row.entryType);
+        const rowTypeClass = rowEntryType === 'worked' ? '' : (' type-' + rowEntryType);
         const status = getRowStatusForRender(row);
+        const isDeleted = row.deleted === true;
         const tooltip = escapeHtml(getStatusTooltipText(row));
         const warnClass = status === 'warn' ? ' warn-row' : '';
         const unknownClass = status === 'unknown' ? ' unknown-row' : '';
         const deletedClass = row.deleted ? ' deleted-row' : '';
         const openClass = hasClockOut ? '' : ' open-row';
-        const inBad = status === 'bad' ? ' bad' : '';
-        const outBad = status === 'bad' ? ' bad' : '';
-        const inWarn = status === 'warn' ? ' warn' : '';
-        const outWarn = status === 'warn' ? ' warn' : '';
-        const inUnknown = status === 'unknown' ? ' unknown' : '';
-        const outUnknown = status === 'unknown' ? ' unknown' : '';
-        const inOpen = status === 'open' ? ' open' : '';
-        const outOpen = status === 'open' ? ' open' : '';
+        const inBad = !isDeleted && status === 'bad' ? ' bad' : '';
+        const outBad = !isDeleted && status === 'bad' ? ' bad' : '';
+        const inWarn = !isDeleted && status === 'warn' ? ' warn' : '';
+        const outWarn = !isDeleted && status === 'warn' ? ' warn' : '';
+        const inUnknown = !isDeleted && status === 'unknown' ? ' unknown' : '';
+        const outUnknown = !isDeleted && status === 'unknown' ? ' unknown' : '';
+        const inOpen = !isDeleted && status === 'open' ? ' open' : '';
+        const outOpen = !isDeleted && status === 'open' ? ' open' : '';
+        const inDeleted = isDeleted ? ' deleted' : '';
+        const outDeleted = isDeleted ? ' deleted' : '';
         const pendingClass = row.pending ? ' pending' : '';
         const pendingAttr = row.pending ? ' disabled aria-disabled="true" title="Saving..."' : '';
         const outDot = hasClockOut
-          ? '<button class="dot out' + outBad + outWarn + outUnknown + outOpen + pendingClass + '" style="left:' + outPoint + '%; top:35px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockOut || row.rawClockOut) + '" title="' + tooltip + '"' + pendingAttr + '></button>'
+          ? '<button class="dot out' + rowTypeClass + outBad + outWarn + outUnknown + outOpen + outDeleted + pendingClass + '" style="left:' + outPoint + '%; top:9px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockOut || row.rawClockOut) + '" title="' + tooltip + '"' + pendingAttr + '></button>'
           : '';
         return '' +
-          '<span class="dot-line' + warnClass + unknownClass + deletedClass + openClass + '" style="left:' + left + '%; width:' + width + '%; top:41px;"></span>' +
-          '<button class="dot in' + inBad + inWarn + inUnknown + inOpen + pendingClass + '" style="left:' + inPoint + '%; top:35px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockIn || row.rawClockIn) + '" title="' + tooltip + '"' + pendingAttr + '></button>' +
+          '<span class="dot-line' + rowTypeClass + warnClass + unknownClass + deletedClass + openClass + '" style="left:' + left + '%; width:' + width + '%; top:14px;"></span>' +
+          '<button class="dot in' + rowTypeClass + inBad + inWarn + inUnknown + inOpen + inDeleted + pendingClass + '" style="left:' + inPoint + '%; top:9px;" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '" data-label="' + formatClock24(row.effectiveClockIn || row.rawClockIn) + '" title="' + tooltip + '"' + pendingAttr + '></button>' +
           outDot;
       }).join('');
 
@@ -1765,6 +1965,12 @@
       const composer = state.inlineNoteComposer;
       const groups = day.rows.map((row, rIdx) => {
         const notes = splitNotes(row.notes);
+        const isDeleted = row.deleted === true;
+        const rowEntryType = normalizeEntryTypeForRender(row.entryType);
+        const rowTypeClass = rowEntryType === 'worked' ? '' : (' type-' + rowEntryType);
+        const rowTypeTag = rowEntryType === 'worked'
+          ? ''
+          : '<span class="entry-note-pill type-tag ' + rowEntryType + '">' + rowEntryType + '</span>';
         const composerOpenForRow = !!composer && composer.u === uIdx && composer.d === dIdx && composer.r === rIdx;
         const inLabel = formatClock12(row.effectiveClockIn || row.rawClockIn);
         const outLabel = row.effectiveClockOut || row.rawClockOut
@@ -1779,10 +1985,11 @@
 
         const noteRows = notes.length
           ? notes.map((text) => {
-              const textClass = 'day-note-line' + (String(text || '').length > 90 ? ' long' : '');
-              return '<div class="day-note-item"><div class="' + textClass + '">' + escapeHtml(text) + '</div></div>';
+              const textClass = 'day-note-line' + (String(text || '').length > 90 ? ' long' : '') + (isDeleted ? ' deleted' : '');
+              const noteItemClass = 'day-note-item' + rowTypeClass + (isDeleted ? ' deleted' : '');
+              return '<div class="' + noteItemClass + '"><div class="' + textClass + '">' + escapeHtml(text) + '</div></div>';
             }).join('')
-          : '<div class="day-note-item"><div class="day-note-line empty">No notes</div></div>';
+          : '<div class="day-note-item' + rowTypeClass + (isDeleted ? ' deleted' : '') + '"><div class="day-note-line empty' + (isDeleted ? ' deleted' : '') + '">No notes</div></div>';
 
         const composerHtml = composerOpenForRow
           ? '' +
@@ -1796,9 +2003,10 @@
           : '';
 
         return '' +
-          '<div class="entry-note-group">' +
+          '<div class="entry-note-group' + rowTypeClass + (isDeleted ? ' deleted' : '') + '">' +
             '<div class="entry-note-head">' +
-              '<span class="entry-note-pill">Entry ' + (rIdx + 1) + ' | ' + inLabel + ' to ' + outLabel + '</span>' +
+              '<span class="entry-note-pill' + (isDeleted ? ' deleted' : '') + '">Entry ' + (rIdx + 1) + ' | ' + inLabel + ' to ' + outLabel + '</span>' +
+              rowTypeTag +
               (state.showRawTimes ? '<span class="entry-note-pill raw">Raw Times | ' + escapeHtml(formatEntryTimeRangeLabel(row, true)) + '</span>' : '') +
               addNoteBtn +
             '</div>' +
@@ -2248,6 +2456,12 @@
         .getAllEntriesForAdminView(true);
     }
 
+    window.timecardAdminModalApi = {
+      refreshFromHost: refreshFromHost,
+      hasUnsavedHostSensitiveState: hasUnsavedHostSensitiveState,
+      notifyHostActivity: notifyHostActivity
+    };
+
     function bindDynamicEvents() {
       document.querySelectorAll('[data-action="toggle-user"]').forEach((btn) => {
         btn.onclick = () => {
@@ -2648,10 +2862,10 @@
       state.holdTimer = setTimeout(() => {
         cancelDeleteRestoreHold();
         if (action === 'restore') {
-          saveRowUpdate(row, { deleted: false }, 'Row restored.');
+          saveRowUpdate(row, { deleted: false }, 'Row restored.', { closeModalOptimistically: true });
           return;
         }
-        saveRowUpdate(row, { deleted: true }, 'Row deleted.');
+        saveRowUpdate(row, { deleted: true }, 'Row deleted.', { closeModalOptimistically: true });
       }, 3000);
 
       setStatus(action === 'restore' ? 'Hold for 3 seconds to restore.' : 'Hold for 3 seconds to delete.');
@@ -2735,20 +2949,12 @@
         ? '(Active pay period: ' + state.context.activePayPeriodStartLabel + ' to ' + state.context.activePayPeriodEndLabel + ')'
         : '';
       document.getElementById('periodLabel').textContent = period;
-
-      const banner = document.getElementById('activePayPeriodBanner');
-      if (banner) {
-        if (state.context.activePayPeriodStartLabel && state.context.activePayPeriodEndLabel) {
-          banner.textContent = 'Active pay period: ' + state.context.activePayPeriodStartLabel + ' to ' + state.context.activePayPeriodEndLabel;
-          banner.classList.add('visible');
-        } else {
-          banner.textContent = '';
-          banner.classList.remove('visible');
-        }
-      }
     }
 
     initializeContext();
+    ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach((eventName) => {
+      window.addEventListener(eventName, notifyHostActivity, { passive: true });
+    });
     try {
       // Transitional warmup: best-effort preload for shared modal path.
       // Keep until load telemetry confirms this is still beneficial.

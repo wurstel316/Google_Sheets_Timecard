@@ -17,6 +17,12 @@
       --ok: #70dfac;
       --bad: #ff879c;
       --warn: #ffd589;
+      --type-vacation-accent: #f3c15f;
+      --type-vacation-soft: rgba(243, 193, 95, 0.2);
+      --type-vacation-surface: #3f3420;
+      --type-sick-accent: #f09aae;
+      --type-sick-soft: rgba(240, 154, 174, 0.2);
+      --type-sick-surface: #40262f;
       --radius: 12px;
     }
 
@@ -307,6 +313,18 @@
       padding: 8px;
     }
 
+    .timeline-card.type-vacation {
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 44%, #485c7a 56%);
+      background: linear-gradient(130deg, color-mix(in srgb, var(--type-vacation-surface) 86%, #1f2d42 14%), #1f2d42);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--type-vacation-soft) 60%, transparent 40%);
+    }
+
+    .timeline-card.type-sick {
+      border-color: color-mix(in srgb, var(--type-sick-accent) 44%, #485c7a 56%);
+      background: linear-gradient(130deg, color-mix(in srgb, var(--type-sick-surface) 86%, #1f2d42 14%), #1f2d42);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--type-sick-soft) 60%, transparent 40%);
+    }
+
     .timeline-top {
       display: grid;
       grid-template-columns: 34px 1fr auto;
@@ -371,6 +389,24 @@
       cursor: default;
     }
 
+    .chip.type-badge {
+      cursor: default;
+      padding: 5px 10px;
+      letter-spacing: 0.01em;
+    }
+
+    .chip.type-badge.vacation {
+      background: color-mix(in srgb, var(--type-vacation-soft) 78%, #2a364a 22%);
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 72%, #ffffff 28%);
+      color: #ffe9bd;
+    }
+
+    .chip.type-badge.sick {
+      background: color-mix(in srgb, var(--type-sick-soft) 78%, #2a364a 22%);
+      border-color: color-mix(in srgb, var(--type-sick-accent) 72%, #ffffff 28%);
+      color: #ffd8e1;
+    }
+
     .timeline {
       position: relative;
       border: 1px solid #4d6384;
@@ -427,6 +463,36 @@
       border: 2px solid #ffffff;
       background: #6db7ff;
       box-shadow: 0 0 0 2px rgba(109,183,255,0.26);
+    }
+
+    .punch.type-vacation:not(.bad):not(.warn):not(.unknown):not(.open):not(.saving):not(.deleted) {
+      background: var(--type-vacation-accent);
+      box-shadow: 0 0 0 3px var(--type-vacation-soft);
+      border-color: #fff0cf;
+    }
+
+    .punch.type-sick:not(.bad):not(.warn):not(.unknown):not(.open):not(.saving):not(.deleted) {
+      background: var(--type-sick-accent);
+      box-shadow: 0 0 0 3px var(--type-sick-soft);
+      border-color: #ffe1e8;
+    }
+
+    .punch.type-vacation.warn,
+    .punch.type-vacation.bad,
+    .punch.type-vacation.unknown,
+    .punch.type-vacation.open,
+    .punch.type-vacation.saving,
+    .punch.type-vacation.deleted {
+      border-color: #ffeac0;
+    }
+
+    .punch.type-sick.warn,
+    .punch.type-sick.bad,
+    .punch.type-sick.unknown,
+    .punch.type-sick.open,
+    .punch.type-sick.saving,
+    .punch.type-sick.deleted {
+      border-color: #ffd6df;
     }
 
     .punch.bad {
@@ -656,6 +722,16 @@
       gap: 4px;
     }
 
+    .notes.type-vacation .note-line {
+      border-color: color-mix(in srgb, var(--type-vacation-accent) 58%, #566983 42%);
+      background: color-mix(in srgb, var(--type-vacation-soft) 52%, #2e4058 48%);
+    }
+
+    .notes.type-sick .note-line {
+      border-color: color-mix(in srgb, var(--type-sick-accent) 58%, #566983 42%);
+      background: color-mix(in srgb, var(--type-sick-soft) 52%, #2e4058 48%);
+    }
+
     .note-line {
       border: 1px dashed #566983;
       background: #2e4058;
@@ -703,6 +779,11 @@
       font-size: 0.82rem;
       background: #293446;
       color: #b7cae2;
+    }
+
+    .legend .type-dot {
+      border: 1px solid rgba(255,255,255,0.52);
+      border-radius: 3px;
     }
 
     .dot {
@@ -959,6 +1040,8 @@
       <span><span class="dot" style="background:#89c8ff"></span>Open: clock-out missing, sync deferred</span>
       <span><span class="dot" style="background:#d6e3f3"></span>Saving: row update in progress</span>
       <span><span class="dot" style="background:#cf8f9d"></span>Deleted: hidden unless Show deleted rows is on</span>
+      <span><span class="dot type-dot" style="background:var(--type-vacation-accent)"></span>Vacation entry style</span>
+      <span><span class="dot type-dot" style="background:var(--type-sick-accent)"></span>Sick entry style</span>
     </footer>
   </section>
 
@@ -1098,6 +1181,7 @@
               rows: [
                 {
                   id: 'a1',
+                  entryType: 'worked',
                   clockIn: '08:01 AM',
                   clockOut: '12:48 PM',
                   rawIn: '2026-08-18T08:01:12-07:00',
@@ -1115,6 +1199,7 @@
                 },
                 {
                   id: 'a2',
+                  entryType: 'vacation',
                   clockIn: '01:52 PM',
                   clockOut: '05:06 PM',
                   rawIn: '2026-08-18T13:52:20-07:00',
@@ -1132,6 +1217,7 @@
                 },
                 {
                   id: 'a3',
+                  entryType: 'sick',
                   clockIn: '06:04 PM',
                   clockOut: '10:15 PM',
                   rawIn: '2026-08-18T18:04:00-07:00',
@@ -1149,6 +1235,7 @@
                 },
                 {
                   id: 'a4',
+                  entryType: 'worked',
                   clockIn: '10:59 PM',
                   clockOut: '11:58 PM',
                   rawIn: '2026-08-18T22:59:00-07:00',
@@ -1186,6 +1273,7 @@
               rows: [
                 {
                   id: 'j1',
+                  entryType: 'worked',
                   clockIn: '08:00 AM',
                   clockOut: '11:32 AM',
                   rawIn: '2026-08-21T08:00:05-07:00',
@@ -1203,6 +1291,7 @@
                 },
                 {
                   id: 'j2',
+                  entryType: 'vacation',
                   clockIn: '12:11 PM',
                   clockOut: '11:59 PM',
                   rawIn: '2026-08-21T12:11:14-07:00',
@@ -1220,6 +1309,7 @@
                 },
                 {
                   id: 'j3',
+                  entryType: 'sick',
                   clockIn: '12:00 AM',
                   clockOut: '04:26 AM',
                   rawIn: '2026-08-22T00:00:00-07:00',
@@ -1236,6 +1326,7 @@
                 },
                 {
                   id: 'j5',
+                  entryType: 'worked',
                   clockIn: '09:44 PM',
                   clockOut: '--:--',
                   rawIn: '2026-08-21T21:44:00-07:00',
@@ -1254,6 +1345,7 @@
                 },
                 {
                   id: 'j6',
+                  entryType: 'worked',
                   clockIn: '04:18 PM',
                   clockOut: '06:16 PM',
                   rawIn: '2026-08-21T16:18:00-07:00',
@@ -1283,6 +1375,7 @@
               rows: [
                 {
                   id: 'j4',
+                  entryType: 'worked',
                   clockIn: '10:07 AM',
                   clockOut: '04:07 PM',
                   rawIn: '2026-08-16T10:07:00-07:00',
@@ -1319,6 +1412,7 @@
               rows: [
                 {
                   id: 'c1',
+                  entryType: 'worked',
                   clockIn: '12:02 PM',
                   clockOut: '07:30 PM',
                   rawIn: '2026-08-20T12:02:00-07:00',
@@ -1419,6 +1513,11 @@
       if (status === 'saving') return 'SAVING';
       if (status === 'deleted') return 'DELETED';
       return 'CHECK';
+    }
+
+    function normalizeEntryType(entryType) {
+      const value = String(entryType || '').trim().toLowerCase();
+      return value === 'vacation' || value === 'sick' ? value : 'worked';
     }
 
     function formatDeltaText(rowState) {
@@ -1549,10 +1648,16 @@
                 if (!state.showDeleted && row.deleted) return;
 
                 const rowState = getRowRenderState(row);
+                const rowEntryType = normalizeEntryType(row.entryType);
+                const rowTypeClass = rowEntryType === 'worked' ? '' : (' type-' + rowEntryType);
+                const typeBadge = rowEntryType === 'worked'
+                  ? ''
+                  : ('<span class="chip type-badge ' + rowEntryType + '">' + (rowEntryType === 'vacation' ? 'Vacation' : 'Sick') + '</span>');
                 const inPunchClass = rowState.status === 'ok' ? '' : (' ' + rowState.status);
                 const outPunchClass = rowState.status === 'ok' ? '' : (' ' + rowState.status);
 
                 const classes = ['timeline-card'];
+                if (rowTypeClass) classes.push(rowTypeClass.trim());
                 if (row.deleted) classes.push('deleted');
                 if (row.pending) classes.push('pending');
 
@@ -1564,6 +1669,7 @@
                       '<button class="chip in" data-action="edit" data-part="in" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">IN ' + row.clockIn + '</button>' +
                       '<button class="chip out" data-action="edit" data-part="out" data-user="' + uIdx + '" data-day="' + dayIdx + '" data-row="' + rIdx + '">OUT ' + row.clockOut + '</button>' +
                       '<span class="chip hours">' + row.hours.toFixed(2) + ' Hrs</span>' +
+                      typeBadge +
                     '</div>' +
                     '<span class="row-actions">' +
                       (row.deleted
@@ -1579,9 +1685,9 @@
                 out.push('<div class="timeline"><div class="ticks"><span>07:00</span><span>09:00</span><span>11:00</span><span>01:00</span><span>03:00</span><span>05:00</span><span>07:00</span><span>09:00</span></div>');
                 out.push('<div class="track-grid">');
                 out.push(renderTimelineSegments(day));
-                out.push('<div class="punch' + inPunchClass + '" style="left:' + row.inPoint + '%;" data-label="' + row.clockIn + ' IN" title="' + rowState.reason + '"></div>');
+                out.push('<div class="punch' + rowTypeClass + inPunchClass + '" style="left:' + row.inPoint + '%;" data-label="' + row.clockIn + ' IN" title="' + rowState.reason + '"></div>');
                 if (Number.isFinite(row.outPoint)) {
-                  out.push('<div class="punch' + outPunchClass + '" style="left:' + row.outPoint + '%;" data-label="' + row.clockOut + ' OUT" title="' + rowState.reason + '"></div>');
+                  out.push('<div class="punch' + rowTypeClass + outPunchClass + '" style="left:' + row.outPoint + '%;" data-label="' + row.clockOut + ' OUT" title="' + rowState.reason + '"></div>');
                 }
                 out.push('</div></div>');
 
@@ -1596,7 +1702,7 @@
                   '</div>'
                 );
 
-                out.push('<div class="notes">');
+                out.push('<div class="notes' + rowTypeClass + '">');
                 row.notes.forEach((n) => out.push('<div class="note-line">' + n + '</div>'));
                 out.push('</div>');
 
