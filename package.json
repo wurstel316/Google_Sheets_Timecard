@@ -14,6 +14,7 @@
     "version:push": "node bump-push-version.mjs",
     "sync:testdata": "node sync-test-data-csv.mjs",
     "push:test": "npm run version:push && npm run sync:testdata && npm run env:test && clasp push && clasp deploy -i AKfycbxjg3UEh-SA3Oip3HixWsRrr7oS5uDgyAlJ4LCI0EqmgUzMLB2KID-DJnQM8cXu4Gjf -d \"Deployed from OpenCode\"",
+    "preview": "python3 -m http.server 4173 --bind 127.0.0.1",
     "release:status": "git status -sb && git log --oneline --decorate -n 10",
     "release:live": "node guard-live-release.mjs && git push && git push --tags && npm run env:live && clasp push && clasp deploy --deploymentId AKfycbxGxJVbfVxUDNH75QieX9SCzplO5hwvt5hGckNWYhwibfe18qBngByILqIuf7zHdifa --description \"Release v$npm_package_version\"",
     "release:patch": "node run-release.mjs patch",
