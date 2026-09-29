@@ -6,6 +6,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 
 ## [Unreleased]
 
+### Added
+- _None yet._
+
+### Changed
+- _None yet._
+
+### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.3.0] - 2026-09-29
+
 ### Changed
 - Summary: Updated AWS settings dialog loading to keep deleted schedule data out of memory by default, only hydrating deleted employees when they have punch history and are not in the active schedule, and auto-adding truly unknown punched employees to active schedule state.
 - Why: Reduces unnecessary deleted-roster loading for payroll AWS configuration while preserving edge-case visibility for deleted users with punches and ensuring new punched users are represented in live schedule data.
