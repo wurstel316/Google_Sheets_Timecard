@@ -10,10 +10,21 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
-- _None yet._
+- Summary: Added always-on Add Missed Time trace logs in parent host flow and expanded iframe close diagnostics.
+- Why: Modal-level logs showed valid payload creation on `Use Entry`, but parent flow visibility was still gated by debug mode, making null/cancel branch root-cause analysis difficult.
+- Files: src/UserInterface.js, src/AddMissedTimeModalHTML.html
+- Validation: Added non-gated `[TimeCard][AddMissedTime][TRACE]` events for open/resolve/cancel/error and employee caller branches, plus explicit scalar fields in `closeModalWithValue` logs; confirmed diagnostics report no file errors in touched files.
 
 ### Fixed
-- _None yet._
+- Summary: Prevented false "Add missed time cancelled by user." outcomes when `Use Entry` is clicked but the shared modal unexpectedly resolves with null.
+- Why: A submit-intent race can look like a user cancel to callers, which hides the real failure mode and confuses admins/employees.
+- Files: src/UserInterface.js, src/AddMissedTimeModalHTML.html
+- Validation: Added host-side submit-intent tracking via `onAddMissedTimeSubmit(...)`, null-after-submit guard with explicit error, and detailed debug trace logs across iframe open/cancel/submit/resolve paths; confirmed diagnostics report no file errors in touched files.
+
+- Summary: Fixed admin shared Add Missed Time submit race by disabling iframe host-close-on-submit and guarding host null-resolution after recent submit intent.
+- Why: Admin flow passed `closeHostOnSubmit: true`, which could call host close immediately after submit and clear the active resolver before payload delivery reached the parent handler.
+- Files: src/AdminModalHTML.html, src/UserInterface.js
+- Validation: Set admin modal options to `closeHostOnSubmit: false`, added host close trace + submit-intent null-resolution skip, and instrumented stale resolver exits; confirmed diagnostics report no file errors in touched files.
 
 ### Removed
 - _None yet._

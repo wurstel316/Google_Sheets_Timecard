@@ -2298,7 +2298,7 @@
         note: '',
         preloadDateTimePicker: true,
         closeHostOnCancel: false,
-        closeHostOnSubmit: true,
+        closeHostOnSubmit: false,
         conflictContext: {
           openEntryStartMs: getOpenEntryStartForEmail(user.email, null),
           conflictIntervals: collectConflictIntervalsForEmail(user.email, null)
@@ -2463,8 +2463,25 @@
         }
 
         const payload = await hostCall('openAddMissedTimeModal', options);
-        if (!payload) {
-          setStatus('Add missed time cancelled.');
+        if (payload === null || payload === undefined) {
+          setStatus('Add missed time cancelled by user.');
+          return;
+        }
+
+        if (!payload || typeof payload !== 'object') {
+          setStatus('Invalid Add Missed Time response: response was not an object. Invalid data: ' + String(payload));
+          return;
+        }
+
+        const requiredFields = ['isoClockIn', 'isoClockOut', 'note', 'workType'];
+        const missingFields = requiredFields.filter((fieldName) => {
+          const value = payload[fieldName];
+          return value === null || value === undefined || String(value).trim() === '';
+        });
+
+        if (missingFields.length) {
+          const invalidData = (() => { try { return JSON.stringify(payload); } catch (_e) { return String(payload); } })();
+          setStatus('Invalid Add Missed Time response: missing required fields: ' + missingFields.join(', ') + '. Invalid data: ' + invalidData);
           return;
         }
 

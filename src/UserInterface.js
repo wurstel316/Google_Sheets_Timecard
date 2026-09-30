@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.2.2-push.258 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.3.1-push.3 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -3699,6 +3699,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
           let addMissedTimeCachedHtml = '';
           let addMissedTimeFrameReady = false;
           let addMissedTimeFrameLoadPromise = null;
+          let addMissedTimeLastSubmitIntentAtMs = 0;
+          let addMissedTimeLastSubmitIntentSummary = null;
           let employeeAddMissedTimeInFlight = false;
           let adminUiMode = ADMIN_UI_MODE_LEGACY;
 
@@ -4841,6 +4843,14 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               console.error('[TimeCard][DEBUG] ' + eventName, payload || {});
             } catch (e) {
               // No-op for logging failures
+            }
+          }
+
+          function traceAddMissedTimeEvent(eventName, payload) {
+            try {
+              console.log('[TimeCard][AddMissedTime][TRACE] ' + eventName, payload || {});
+            } catch (_e) {
+              // No-op for logging failures.
             }
           }
 
@@ -6648,8 +6658,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             addMissedTimePromiseResolve = null;
             addMissedTimePromiseReject = null;
             addMissedTimeOpenOptions = null;
+            addMissedTimeLastSubmitIntentAtMs = 0;
+            addMissedTimeLastSubmitIntentSummary = null;
             if (typeof resolve === 'function') {
-              resolve(value || null);
+              resolve(value === undefined ? null : value);
             }
           }
 
@@ -6658,6 +6670,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             addMissedTimePromiseResolve = null;
             addMissedTimePromiseReject = null;
             addMissedTimeOpenOptions = null;
+            addMissedTimeLastSubmitIntentAtMs = 0;
+            addMissedTimeLastSubmitIntentSummary = null;
             if (typeof reject === 'function') {
               reject(error || new Error('Add missed time modal failed.'));
             }
@@ -6665,6 +6679,8 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
 
           function closeAddMissedTimeModal(resolveAsNull) {
             const shouldResolveAsNull = resolveAsNull !== false;
+            const submitIntentAgeMs = addMissedTimeLastSubmitIntentAtMs > 0 ? (Date.now() - addMissedTimeLastSubmitIntentAtMs) : NaN;
+            const skipResolveAsNull = shouldResolveAsNull && isFinite(submitIntentAgeMs) && submitIntentAgeMs >= 0 && submitIntentAgeMs <= 10000;
             const modal = document.getElementById('addMissedTimeModal');
             const frame = document.getElementById('addMissedTimeFrame');
             if (frame && !addMissedTimeFrameLoadPromise) {
@@ -6674,7 +6690,12 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               modal.style.display = 'none';
             }
             updateDatePickerModalScrollLock();
-            if (shouldResolveAsNull) {
+            traceAddMissedTimeEvent('host.closeModal', {
+              requestedResolveAsNull: shouldResolveAsNull,
+              skippedResolveAsNullAfterSubmitIntent: skipResolveAsNull,
+              submitIntentAgeMs: isFinite(submitIntentAgeMs) ? submitIntentAgeMs : null
+            });
+            if (shouldResolveAsNull && !skipResolveAsNull) {
               resolveAddMissedTimeRequest(null);
             }
           }
@@ -6801,6 +6822,75 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             });
           }
 
+          function describeInvalidAddMissedTimePayload(payload) {
+            if (payload === null || payload === undefined) {
+              return 'null';
+            }
+            if (typeof payload === 'string') {
+              return payload;
+            }
+            try {
+              return JSON.stringify(payload);
+            } catch (_e) {
+              return String(payload);
+            }
+          }
+
+          function validateAddMissedTimePayload(payload) {
+            if (payload === null || payload === undefined) {
+              return { valid: false, reason: 'cancelled by user', payload: payload };
+            }
+            if (!payload || typeof payload !== 'object') {
+              return {
+                valid: false,
+                reason: 'response was not an object',
+                payload: payload
+              };
+            }
+
+            const requiredFields = ['isoClockIn', 'isoClockOut', 'note', 'workType'];
+            const missingFields = requiredFields.filter((fieldName) => {
+              const value = payload[fieldName];
+              return value === null || value === undefined || String(value).trim() === '';
+            });
+
+            if (missingFields.length) {
+              return {
+                valid: false,
+                reason: 'missing required fields: ' + missingFields.join(', '),
+                payload: payload
+              };
+            }
+
+            return { valid: true, reason: '', payload: payload };
+          }
+
+          function buildAddMissedTimePayloadSummary(payload) {
+            if (!payload || typeof payload !== 'object') {
+              return { payloadType: typeof payload };
+            }
+            return {
+              hasIsoClockIn: !!String(payload.isoClockIn || '').trim(),
+              hasIsoClockOut: !!String(payload.isoClockOut || '').trim(),
+              hasNote: !!String(payload.note || '').trim(),
+              workType: String(payload.workType || '').trim() || 'worked',
+              targetEmail: String(payload.targetEmail || '').trim().toLowerCase()
+            };
+          }
+
+          function markAddMissedTimeSubmitIntent(payload) {
+            addMissedTimeLastSubmitIntentAtMs = Date.now();
+            addMissedTimeLastSubmitIntentSummary = buildAddMissedTimePayloadSummary(payload);
+            debugClientLog('addMissedTimeModal.useEntryClicked', {
+              submitIntentAtMs: addMissedTimeLastSubmitIntentAtMs,
+              summary: addMissedTimeLastSubmitIntentSummary
+            });
+            traceAddMissedTimeEvent('useEntryClicked', {
+              submitIntentAtMs: addMissedTimeLastSubmitIntentAtMs,
+              summary: addMissedTimeLastSubmitIntentSummary
+            });
+          }
+
           function openAddMissedTimeModal(options) {
             const modal = document.getElementById('addMissedTimeModal');
             const frame = document.getElementById('addMissedTimeFrame');
@@ -6815,16 +6905,35 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             return new Promise((resolve, reject) => {
               addMissedTimePromiseResolve = resolve;
               addMissedTimePromiseReject = reject;
+              addMissedTimeLastSubmitIntentAtMs = 0;
+              addMissedTimeLastSubmitIntentSummary = null;
 
               const optionBag = normalizeAddMissedTimeOpenOptions(options);
               addMissedTimeOpenOptions = optionBag;
               const activeResolve = resolve;
+              debugClientLog('addMissedTimeModal.open.start', {
+                optionSummary: {
+                  targetEmail: String(optionBag.targetEmail || '').trim().toLowerCase(),
+                  minDate: String(optionBag.minDate || '').trim(),
+                  maxDate: String(optionBag.maxDate || '').trim(),
+                  requireNote: optionBag.requireNote !== false
+                }
+              });
+              traceAddMissedTimeEvent('open.start', {
+                targetEmail: String(optionBag.targetEmail || '').trim().toLowerCase(),
+                minDate: String(optionBag.minDate || '').trim(),
+                maxDate: String(optionBag.maxDate || '').trim(),
+                requireNote: optionBag.requireNote !== false
+              });
               modal.style.display = 'flex';
               updateDatePickerModalScrollLock();
 
               ensureAddMissedTimeFrameReady(frame)
                 .then((modalApi) => {
                   if (addMissedTimePromiseResolve !== activeResolve) {
+                    traceAddMissedTimeEvent('open.staleBeforeBridgeSetup', {
+                      reason: 'active resolver changed before bridge setup'
+                    });
                     return;
                   }
 
@@ -6834,32 +6943,93 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                       preloadDateTimePickerModal: preloadDateTimePickerModal,
                       // Transitional shim: currently no-op because caller handles submit resolution
                       // directly from modal Promise. Keep shape for compatibility during rollout.
-                      onAddMissedTimeSubmit: function () {}
+                      onAddMissedTimeSubmit: function (payload) {
+                        markAddMissedTimeSubmitIntent(payload);
+                      }
                     });
                   }
 
                   window.requestAnimationFrame(() => {
                     if (addMissedTimePromiseResolve !== activeResolve) {
+                      traceAddMissedTimeEvent('open.staleBeforeModalOpen', {
+                        reason: 'active resolver changed before modalApi.open call'
+                      });
                       return;
                     }
                     modalApi.open(Object.assign({}, addMissedTimeOpenOptions || optionBag))
                       .then((value) => {
                         if (addMissedTimePromiseResolve !== activeResolve) {
+                          traceAddMissedTimeEvent('open.staleOnResolve', {
+                            reason: 'active resolver changed before resolve handler',
+                            valueType: value === undefined || value === null ? 'nullish' : typeof value
+                          });
                           return;
                         }
-                        resolveAddMissedTimeRequest(value || null);
+                        const normalizedValue = value === undefined ? null : value;
+                        traceAddMissedTimeEvent('open.resolved', {
+                          valueType: normalizedValue === null ? 'null' : typeof normalizedValue,
+                          payloadSummary: normalizedValue && typeof normalizedValue === 'object'
+                            ? buildAddMissedTimePayloadSummary(normalizedValue)
+                            : null
+                        });
+                        if (normalizedValue === null) {
+                          const submitIntentAgeMs = addMissedTimeLastSubmitIntentAtMs > 0 ? (Date.now() - addMissedTimeLastSubmitIntentAtMs) : NaN;
+                          if (isFinite(submitIntentAgeMs) && submitIntentAgeMs >= 0 && submitIntentAgeMs <= 10000) {
+                            debugClientError('addMissedTimeModal.resolveNullAfterUseEntry', {
+                              submitIntentAgeMs: submitIntentAgeMs,
+                              submitIntentSummary: addMissedTimeLastSubmitIntentSummary || {}
+                            });
+                            traceAddMissedTimeEvent('open.resolveNullAfterUseEntry', {
+                              submitIntentAgeMs: submitIntentAgeMs,
+                              submitIntentSummary: addMissedTimeLastSubmitIntentSummary || {}
+                            });
+                            rejectAddMissedTimeRequest(new Error('Use Entry was clicked, but Add Missed Time returned no data. Please try again.'));
+                            closeAddMissedTimeModal(false);
+                            return;
+                          }
+                          debugClientLog('addMissedTimeModal.cancelledByUser', {
+                            submitIntentRecorded: addMissedTimeLastSubmitIntentAtMs > 0
+                          });
+                          traceAddMissedTimeEvent('open.cancelledByUser', {
+                            submitIntentRecorded: addMissedTimeLastSubmitIntentAtMs > 0
+                          });
+                        } else {
+                          debugClientLog('addMissedTimeModal.resolvePayload', {
+                            payloadSummary: buildAddMissedTimePayloadSummary(normalizedValue)
+                          });
+                          traceAddMissedTimeEvent('open.resolvePayload', {
+                            payloadSummary: buildAddMissedTimePayloadSummary(normalizedValue)
+                          });
+                        }
+                        resolveAddMissedTimeRequest(normalizedValue);
                         closeAddMissedTimeModal(false);
                       })
                       .catch((error) => {
                         if (addMissedTimePromiseResolve !== activeResolve) {
+                          traceAddMissedTimeEvent('open.staleOnReject', {
+                            reason: 'active resolver changed before reject handler',
+                            message: (error && error.message) ? error.message : 'Unknown error'
+                          });
                           return;
                         }
+                        debugClientError('addMissedTimeModal.promiseRejected', {
+                          message: (error && error.message) ? error.message : 'Unknown error'
+                        });
+                        traceAddMissedTimeEvent('open.promiseRejected', {
+                          message: (error && error.message) ? error.message : 'Unknown error'
+                        });
                         rejectAddMissedTimeRequest(error);
                         closeAddMissedTimeModal(false);
                       });
                   });
                 })
                 .catch((error) => {
+                  debugClientError('addMissedTimeModal.openFailed', {
+                    message: (error && error.message) ? error.message : 'Unknown error'
+                  });
+                  traceAddMissedTimeEvent('open.failed', {
+                    message: (error && error.message) ? error.message : 'Unknown error'
+                  });
                   rejectAddMissedTimeRequest(error || new Error('Unable to load Add Missed Time modal.'));
                   closeAddMissedTimeModal(false);
                 });
@@ -9550,14 +9720,39 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               }
 
               const payload = await openAddMissedTimeModal(options);
-              if (!payload) {
-                setStatusText('Add missed time cancelled.');
+              traceAddMissedTimeEvent('employee.open.returned', {
+                valueType: payload === null ? 'null' : typeof payload,
+                payloadSummary: payload && typeof payload === 'object'
+                  ? buildAddMissedTimePayloadSummary(payload)
+                  : null
+              });
+              if (payload === null || payload === undefined) {
+                traceAddMissedTimeEvent('employee.open.cancelledBranch', {
+                  reason: 'payload null/undefined'
+                });
+                setStatusText('Add missed time cancelled by user.');
+                return;
+              }
+
+              const payloadCheck = validateAddMissedTimePayload(payload);
+              if (!payloadCheck.valid) {
+                const invalidData = describeInvalidAddMissedTimePayload(payload);
+                const reason = payloadCheck.reason || 'invalid response';
+                const message = 'Invalid Add Missed Time response: ' + reason + '. Invalid data: ' + invalidData;
+                debugClientError('employeeAddMissedTime.invalidPayload', {
+                  invalidData: payload,
+                  reason: reason
+                });
+                setStatusText(message);
                 return;
               }
 
               submitEmployeeAddMissedTimePayload(payload);
             } catch (error) {
               const message = (error && error.message) ? error.message : 'Unable to open Add Missed Time.';
+              traceAddMissedTimeEvent('employee.open.error', {
+                message: message
+              });
               const errorEl = document.getElementById('error');
               if (errorEl) {
                 errorEl.innerText = message;

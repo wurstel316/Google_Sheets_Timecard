@@ -454,6 +454,14 @@
         submitBtn: document.getElementById('submitBtn')
       };
 
+      function debugModalLog(eventName, payload) {
+        try {
+          console.log('[TimeCard][AddMissedTimeModal] ' + eventName, payload || {});
+        } catch (_e) {
+          // No-op for logging failures.
+        }
+      }
+
       function pad(n) {
         return String(n).padStart(2, '0');
       }
@@ -1024,7 +1032,16 @@
         const reject = state.rejecter;
         state.resolver = null;
         state.rejecter = null;
-        if (resolve) resolve(value);
+        debugModalLog('closeModalWithValue', {
+          shouldReject: shouldReject === true,
+          resolvedAsNull: value === undefined || value === null,
+          resolvedType: value === null ? 'null' : typeof value,
+          hasIsoClockIn: !!(value && typeof value === 'object' && String(value.isoClockIn || '').trim()),
+          hasIsoClockOut: !!(value && typeof value === 'object' && String(value.isoClockOut || '').trim()),
+          hadResolver: !!resolve,
+          hadRejecter: !!reject
+        });
+        if (resolve) resolve(value === undefined ? null : value);
         if (shouldReject === true && reject) reject(new Error('Add missed time modal cancelled'));
       }
 
@@ -1187,10 +1204,17 @@
 
       function openAddMissedTimeModal(options) {
         if (state.resolver) {
+          debugModalLog('open.interruptedPreviousSession', {});
           closeModalWithValue(null, false);
         }
 
         applyOptions(options || {});
+        debugModalLog('open', {
+          targetEmail: state.targetEmail,
+          minDate: state.minDateKey,
+          maxDate: state.maxDateKey,
+          requireNote: state.requireNote
+        });
 
         return new Promise(function (resolve, reject) {
           state.resolver = resolve;
@@ -1212,6 +1236,9 @@
       });
 
       el.cancelBtn.addEventListener('click', function () {
+        debugModalLog('cancel.clicked', {
+          targetEmail: state.targetEmail
+        });
         closeModalWithValue(null, false);
         if (state.closeHostOnCancel) {
           closeHostWindow();
@@ -1220,11 +1247,21 @@
 
       el.submitBtn.addEventListener('click', function () {
         const validation = validateAndRender();
+        debugModalLog('useEntry.clicked', {
+          validationPassed: !!(validation && validation.valid)
+        });
         if (!validation.valid) {
           return;
         }
 
         const payload = buildSubmitPayload(validation);
+        debugModalLog('useEntry.payloadBuilt', {
+          hasIsoClockIn: !!String(payload.isoClockIn || '').trim(),
+          hasIsoClockOut: !!String(payload.isoClockOut || '').trim(),
+          hasNote: !!String(payload.note || '').trim(),
+          workType: String(payload.workType || '').trim() || 'worked',
+          targetEmail: String(payload.targetEmail || '').trim().toLowerCase()
+        });
         closeModalWithValue(payload, false);
 
         const bridge = resolveHostBridge();
