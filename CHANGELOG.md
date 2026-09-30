@@ -18,6 +18,11 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 ### Removed
 - _None yet._
 
+## [2.4.1] - 2026-09-30
+
+### Changed
+- No documented changes were recorded in Unreleased before this release.
+
 ## [2.4.0] - 2026-09-30
 
 ### Added
