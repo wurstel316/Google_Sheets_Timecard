@@ -10,6 +10,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
+- _None yet._
+
+### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.4.0] - 2026-09-30
+
+### Added
+- _None yet._
+
+### Changed
 - Summary: Added always-on Add Missed Time trace logs in parent host flow and expanded iframe close diagnostics.
 - Why: Modal-level logs showed valid payload creation on `Use Entry`, but parent flow visibility was still gated by debug mode, making null/cancel branch root-cause analysis difficult.
 - Files: src/UserInterface.js, src/AddMissedTimeModalHTML.html
