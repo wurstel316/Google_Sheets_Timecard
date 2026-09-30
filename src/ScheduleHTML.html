@@ -1594,8 +1594,8 @@
     const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     const DEFAULT_SCHEDULE_SETTINGS = Object.freeze({
       autoFill: {
-        CA: { hoursBeforeLunch: 5, hoursAfterLunch: 2 },
-        AWS: { hoursBeforeLunch: 5, hoursAfterLunch: 4 }
+        CA: { hoursBeforeLunch: 4, hoursAfterLunch: 4 },
+        AWS: { hoursBeforeLunch: 4, hoursAfterLunch: 6 }
       }
     });
     let scheduleSettings = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_SETTINGS));
@@ -2177,6 +2177,12 @@
       const atIndex = normalized.indexOf("@");
       if (atIndex > 0) return normalized.slice(0, atIndex);
       return raw;
+    }
+
+    // Header-only display label: keep the table compact without changing identity keys.
+    function getEmployeeHeaderDisplayLabel(employeeOrEmail) {
+      const label = getEmployeeDisplayLabel(employeeOrEmail);
+      return label.slice(0, 7);
     }
 
     function normalizeEmployeeDays(days) {
@@ -2946,7 +2952,7 @@
             th.dataset.empName = empEmail;
 
             const nameSpan = document.createElement("span");
-            nameSpan.textContent = getEmployeeDisplayLabel(empEmail);
+            nameSpan.textContent = getEmployeeHeaderDisplayLabel(empEmail);
             th.appendChild(nameSpan);
 
             const clearBtn = document.createElement("button");

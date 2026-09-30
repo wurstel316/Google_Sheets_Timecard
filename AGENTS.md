@@ -6,6 +6,7 @@
 3. **For non-trivial changes**: Update `CHANGELOG.md` under `Unreleased` section before finishing.
 4. **For permission-gated features**: Check [AdminUsers sheet pattern](#permission-model) and use `hasPermission()` server-side + client-side gating.
 5. **For UI changes**: Validate against [optimistic UI patterns](#optimistic-ui--pending-state-actions) and [modal rules](#modal-and-ui-best-practices).
+6. **For all functions**: Add a short descriptive comment explaining purpose/intent.
 
 ## Project Overview
 This project is a Google Apps Script time-tracking and payroll system built around a Google Sheet-backed data model. The app supports employee clock-in/out flows, admin review and editing, payroll preview/export, and a Schedule Tool for roster and AWS work-week configuration.
