@@ -13,6 +13,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.4.2] - 2026-10-13
+
+### Added
+- _None yet._
+
+### Changed
+- _None yet._
+
+### Fixed
 - Summary: Fixed deleted-row filtering in report aggregation so rows marked as string `TRUE` / `FALSE` in Google Sheets are treated consistently with real booleans.
 - Why: The deleted-row guard used strict `=== true` checks, which failed when Sheets returned string values, allowing deleted entries to leak into attendance and daily-summary totals.
 - Files: src/Code.js
