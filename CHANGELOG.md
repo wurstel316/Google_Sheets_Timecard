@@ -10,6 +10,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
+- _None yet._
+
+### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.4.3] - 2026-10-13
+
+### Added
+- _None yet._
+
+### Changed
 - Summary: Added clickable longest/shortest day drilldown in Employee Attendance Overview to reveal the underlying raw time-entry rows.
 - Why: Admins need a direct way to inspect the raw records behind summary extrema without leaving the report view.
 - Files: src/Code.js
