@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.4.2 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.4.3-push.2 (TypeScript 4.9.5)
 /**
 * Consolidated TimeCard System - Single Sheet Architecture
 * All employees use one central sheet with filtered views
@@ -667,6 +667,11 @@ function isDeletedDataRow(rowData) {
         return false;
     return isSheetBooleanTrue(rowData[DATA_COLUMNS.DELETED]);
 }
+function isDeletedArchiveRow(rowData) {
+    if (!rowData || rowData.length <= ARCHIVE_COLUMNS.DELETED)
+        return false;
+    return isSheetBooleanTrue(rowData[ARCHIVE_COLUMNS.DELETED]);
+}
 function isSheetBooleanTrue(value) {
     if (value === true)
         return true;
@@ -842,7 +847,7 @@ const ACTIVE_PAY_PERIOD_START_KEY = 'activePayPeriodStartDate';
 const ACTIVE_PAY_PERIOD_END_KEY = 'activePayPeriodEndDate';
 const EMPLOYEE_EMAIL_CACHE_KEY = 'employeeEmailList';
 const EMPLOYEE_EMAIL_CACHE_UPDATED_AT_KEY = 'employeeEmailListUpdatedAt';
-const SCRIPT_VERSION = '2.4.2';
+const SCRIPT_VERSION = '2.4.3-push.2';
 const ADMIN_DEFAULT_PERMISSIONS = 'admin,payroll,export,verify,edit';
 const MIGRATION_VERSION_KEY = 'migrationVersion';
 const MIGRATION_VERSION = 'v2.1';
@@ -5324,6 +5329,8 @@ function getReportBootstrapData() {
     if (archive && archive.getLastRow() > 1) {
         const data = archive.getDataRange().getValues();
         for (let i = 1; i < data.length; i++) {
+            if (isDeletedArchiveRow(data[i]))
+                continue;
             const clockIn = getEffectiveClockInFromArchiveRow(data[i]);
             if (!(clockIn instanceof Date) || isNaN(clockIn.getTime()))
                 continue;
@@ -5507,8 +5514,10 @@ function runReport(records, reportType, startDateISO, endDateISO, email) {
                 attendancePct: attendancePct,
                 avgDaily: daysWorked > 0 ? Math.round((d.totalHours / daysWorked) * 100) / 100 : 0,
                 longest: Math.round(d.longest * 100) / 100,
+                longestDateISO: d.longestDate || '',
                 longestDate: d.longestDate ? d.longestDate.substring(5).replace('-', '/') : '',
                 shortest: d.shortest === Infinity ? 0 : Math.round(d.shortest * 100) / 100,
+                shortestDateISO: d.shortestDate || '',
                 shortestDate: d.shortestDate ? d.shortestDate.substring(5).replace('-', '/') : ''
             };
         });
@@ -5793,6 +5802,12 @@ function getCreateReportDialogHtml(preferredThemeMode) {
           .report-table .hours { text-align: right; font-family: 'Roboto Mono', monospace; }
           .report-table .time { font-family: 'Roboto Mono', monospace; font-weight: bold; }
           .report-table .notes { color: var(--rep-muted); font-size: 12px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .attendance-drilldown { padding: 0; border: 0; margin: 0; background: transparent; color: var(--rep-primary); font: inherit; cursor: pointer; text-decoration: underline; }
+          .attendance-drilldown:hover { filter: brightness(1.1); }
+          .attendance-drilldown-subtext { color: var(--rep-muted); font-size: 0.85em; text-decoration: none; }
+          .attendance-detail-panel { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--rep-border); border-radius: 6px; background: var(--rep-surface); }
+          .attendance-detail-title { margin: 0 0 6px; font-size: 14px; }
+          .attendance-detail-meta { margin: 0 0 8px; color: var(--rep-muted); font-size: 12px; }
 
           .action-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
           .sticky-top { position: sticky; top: 0; background: var(--rep-bg); z-index: 1; padding: 6px 0; border-bottom: 1px solid var(--rep-border); }
@@ -5883,6 +5898,7 @@ function getCreateReportDialogHtml(preferredThemeMode) {
           <div class="summary-strip" id="summaryStrip"></div>
 
           <div id="reportTableContainer"></div>
+          <div id="attendanceDetailPanel" class="attendance-detail-panel" style="display:none;"></div>
 
           <div class="action-row" style="margin-top: 12px;">
             <button class="primary" id="exportBottomBtn" onclick="handleExportPdf()">Export PDF</button>
@@ -6348,6 +6364,7 @@ function getCreateReportDialogHtml(preferredThemeMode) {
             }
 
             document.getElementById('reportTableContainer').innerHTML = tableHtml;
+            clearAttendanceDetailPanel();
 
             // Reset export messages
             document.getElementById('exportTopMsg').style.display = 'none';
@@ -6415,8 +6432,8 @@ function getCreateReportDialogHtml(preferredThemeMode) {
                 '<td class="hours">' + e.otHours.toFixed(2) + '</td>' +
                 '<td class="hours" style="color:' + aColor + '; font-weight:bold;">' + e.attendancePct.toFixed(2) + '%</td>' +
                 '<td class="hours">' + e.avgDaily.toFixed(2) + '</td>' +
-                '<td class="hours">' + e.longest.toFixed(2) + (e.longestDate ? ' <span style="color:#666;font-size:0.85em;">(' + esc(e.longestDate) + ')</span>' : '') + '</td>' +
-                '<td class="hours">' + e.shortest.toFixed(2) + (e.shortestDate ? ' <span style="color:#666;font-size:0.85em;">(' + esc(e.shortestDate) + ')</span>' : '') + '</td></tr>';
+                '<td class="hours">' + buildAttendanceDayDrilldownCell(e, 'longest') + '</td>' +
+                '<td class="hours">' + buildAttendanceDayDrilldownCell(e, 'shortest') + '</td></tr>';
             });
             html += '<tr style="font-weight:bold; background:#e8f0fe;">' +
               '<td style="text-align:right;">Total</td>' +
@@ -6424,6 +6441,87 @@ function getCreateReportDialogHtml(preferredThemeMode) {
               '<td class="hours">' + (result.totalOT || 0).toFixed(2) + '</td>' +
               '<td colspan="4"></td></tr>';
             return html + '</tbody></table>';
+          }
+
+          // Builds the clickable longest/shortest day cell for attendance rows.
+          function buildAttendanceDayDrilldownCell(entry, dayType) {
+            var isLongest = dayType === 'longest';
+            var hoursValue = isLongest ? entry.longest : entry.shortest;
+            var dayLabel = isLongest ? entry.longestDate : entry.shortestDate;
+            var dayIso = isLongest ? entry.longestDateISO : entry.shortestDateISO;
+            if (!dayIso) {
+              return hoursValue.toFixed(2) + (dayLabel ? ' <span class="attendance-drilldown-subtext">(' + esc(dayLabel) + ')</span>' : '');
+            }
+            var buttonText = hoursValue.toFixed(2) + (dayLabel ? ' <span class="attendance-drilldown-subtext">(' + esc(dayLabel) + ')</span>' : '');
+            return '<button type="button" class="attendance-drilldown" data-action="attendance-day-drilldown" data-day-type="' + esc(dayType) + '" data-email="' + esc(entry.email) + '" data-employee-id="' + esc(entry.employeeId) + '" data-date-iso="' + esc(dayIso) + '" data-date-label="' + esc(dayLabel) + '">' + buttonText + '</button>';
+          }
+
+          // Clears and hides the attendance raw-data detail panel.
+          function clearAttendanceDetailPanel() {
+            var panel = document.getElementById('attendanceDetailPanel');
+            if (!panel) return;
+            panel.style.display = 'none';
+            panel.innerHTML = '';
+          }
+
+          // Handles click events for attendance longest/shortest day drilldown links.
+          function handleAttendanceDayDrilldownClick(event) {
+            var target = event.target;
+            if (!target || typeof target.closest !== 'function') return;
+            var btn = target.closest('button[data-action="attendance-day-drilldown"]');
+            if (!btn) return;
+            var dayIso = String(btn.getAttribute('data-date-iso') || '');
+            var email = String(btn.getAttribute('data-email') || '');
+            var employeeId = String(btn.getAttribute('data-employee-id') || '');
+            var dayLabel = String(btn.getAttribute('data-date-label') || '');
+            var dayType = String(btn.getAttribute('data-day-type') || '');
+            if (!dayIso || !email || !dayType) return;
+            renderAttendanceRawDayPanel(email, employeeId, dayIso, dayLabel, dayType);
+          }
+
+          // Renders raw rows behind a selected longest/shortest attendance day.
+          function renderAttendanceRawDayPanel(email, employeeId, dayIso, dayLabel, dayType) {
+            var panel = document.getElementById('attendanceDetailPanel');
+            if (!panel) return;
+            var rows = [];
+            for (var i = 0; i < cachedRecords.length; i++) {
+              var record = cachedRecords[i];
+              if (record.email !== email) continue;
+              if (!record.clockIn || record.clockIn.substring(0, 10) !== dayIso) continue;
+              rows.push(record);
+            }
+            rows.sort(function(a, b) {
+              return a.clockIn < b.clockIn ? -1 : (a.clockIn > b.clockIn ? 1 : 0);
+            });
+            var heading = dayType === 'longest' ? 'Longest Day Raw Data' : 'Shortest Day Raw Data';
+            var totalHours = 0;
+            rows.forEach(function(r) { totalHours += Number(r.hours) || 0; });
+            var html = '<div class="action-row" style="justify-content:space-between; margin-top:0;">' +
+              '<h4 class="attendance-detail-title">' + esc(heading) + '</h4>' +
+              '<button type="button" class="secondary mini" onclick="clearAttendanceDetailPanel()">Close</button>' +
+              '</div>';
+            html += '<p class="attendance-detail-meta">Employee: <b>' + esc(employeeId) + '</b> (' + esc(email) + ') &nbsp; Date: <b>' + esc(dayLabel || formatDateDisplay(dayIso)) + '</b> &nbsp; Entries: <b>' + rows.length + '</b> &nbsp; Total Hours: <b>' + totalHours.toFixed(2) + '</b></p>';
+            if (!rows.length) {
+              html += '<div class="error" style="display:block; margin:0;">No raw rows found for this day.</div>';
+              panel.innerHTML = html;
+              panel.style.display = 'block';
+              return;
+            }
+            html += '<table class="report-table"><thead><tr><th>Clock In</th><th>Clock Out</th><th>Hours</th><th>Notes</th><th>Source</th></tr></thead><tbody>';
+            rows.forEach(function(r, idx) {
+              var rowCls = idx % 2 === 0 ? 'day-even' : 'day-odd';
+              html += '<tr class="' + rowCls + '">' +
+                '<td class="time">' + esc(r.clockIn) + '</td>' +
+                '<td class="time">' + esc(r.clockOut) + '</td>' +
+                '<td class="hours">' + (Number(r.hours) || 0).toFixed(2) + '</td>' +
+                '<td class="notes" title="' + esc(r.notes) + '">' + esc(r.notes) + '</td>' +
+                '<td>' + esc(r.source || '') + '</td>' +
+                '</tr>';
+            });
+            html += '</tbody></table>';
+            panel.innerHTML = html;
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
 
           // ---- Export PDF ----
@@ -6542,6 +6640,7 @@ function getCreateReportDialogHtml(preferredThemeMode) {
 
           // ---- New Report ----
           function handleNewReport() {
+            clearAttendanceDetailPanel();
             showView('selection');
           }
 
@@ -6561,6 +6660,7 @@ function getCreateReportDialogHtml(preferredThemeMode) {
             if (!s && s !== 0) return '';
             return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
           }
+          document.getElementById('reportTableContainer').addEventListener('click', handleAttendanceDayDrilldownClick);
         </script>
       </body>
     </html>

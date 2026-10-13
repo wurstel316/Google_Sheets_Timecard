@@ -10,10 +10,16 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
-- _None yet._
+- Summary: Added clickable longest/shortest day drilldown in Employee Attendance Overview to reveal the underlying raw time-entry rows.
+- Why: Admins need a direct way to inspect the raw records behind summary extrema without leaving the report view.
+- Files: src/Code.js
+- Validation: Confirmed attendance report payload now includes ISO day keys for longest/shortest matching, clickable cells render in the attendance table, and drilldown rows are filtered from cached records by exact employee + ISO day and shown in an inline detail panel.
 
 ### Fixed
-- _None yet._
+- Summary: Excluded deleted Archive rows from report bootstrap data so Employee Attendance Overview and day drilldown no longer count deleted punches.
+- Why: Attendance totals and longest/shortest day drilldowns could include archived rows flagged as deleted, inflating hours with records that should remain hidden.
+- Files: src/Code.js
+- Validation: Added archive deleted-row filtering in `getReportBootstrapData()` using the same sheet-boolean normalization logic as DataEntry filtering; verified script syntax with `node --check src/Code.js`.
 
 ### Removed
 - _None yet._

@@ -716,6 +716,15 @@
       max-width: calc(100% - 2rem);
     }
 
+    .entry-note-pill.entry-edit-trigger {
+      cursor: pointer;
+    }
+
+    .entry-note-pill.entry-edit-trigger:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
     .entry-note-pill.raw {
       background: #4a627b;
       border-color: #98b3d4;
@@ -2028,6 +2037,10 @@
         const outLabel = row.effectiveClockOut || row.rawClockOut
           ? formatClock12(row.effectiveClockOut || row.rawClockOut)
           : '--:--';
+        const entryEditPendingAttr = row.pending
+          ? ' disabled aria-disabled="true" title="Saving..."'
+          : ' title="Edit this entry"';
+        const entryEditBtn = '<button type="button" class="entry-note-pill entry-edit-trigger' + (isDeleted ? ' deleted' : '') + '" data-action="edit-row" data-user="' + uIdx + '" data-day="' + dIdx + '" data-row="' + rIdx + '"' + entryEditPendingAttr + '>Entry ' + (rIdx + 1) + ' | ' + inLabel + ' to ' + outLabel + '</button>';
 
         const addNoteBtn = row.deleted
           ? '<button class="admin-note-add-btn" title="No editable row available" disabled>+</button>'
@@ -2057,7 +2070,7 @@
         return '' +
           '<div class="entry-note-group' + rowTypeClass + (isDeleted ? ' deleted' : '') + '">' +
             '<div class="entry-note-head">' +
-              '<span class="entry-note-pill' + (isDeleted ? ' deleted' : '') + '">Entry ' + (rIdx + 1) + ' | ' + inLabel + ' to ' + outLabel + '</span>' +
+              entryEditBtn +
               rowTypeTag +
               (state.showRawTimes ? '<span class="entry-note-pill raw">Raw Times | ' + escapeHtml(formatEntryTimeRangeLabel(row, true)) + '</span>' : '') +
               addNoteBtn +
