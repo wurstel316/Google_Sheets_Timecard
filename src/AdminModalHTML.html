@@ -2931,7 +2931,7 @@
 
       if (state.holdTimer) return;
 
-      const action = row.deleted ? 'restore' : 'delete';
+      const action = row.deleted ? 'restore' :
       setEditHoldVisualState(true);
       state.holdTimer = setTimeout(() => {
         cancelDeleteRestoreHold();

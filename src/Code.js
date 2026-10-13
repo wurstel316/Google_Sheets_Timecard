@@ -665,7 +665,7 @@ function sortDataEntry(sheet) {
 function isDeletedDataRow(rowData) {
     if (!rowData || rowData.length <= DATA_COLUMNS.DELETED)
         return false;
-    return rowData[DATA_COLUMNS.DELETED] === true;
+    return isSheetBooleanTrue(rowData[DATA_COLUMNS.DELETED]);
 }
 function isSheetBooleanTrue(value) {
     if (value === true)
