@@ -10,7 +10,18 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
-- _None yet._
+- Summary: Replaced the admin "Today at a glance" lane chips with a compact timeline overlay that highlights name backgrounds for in/expected/missing states and removes per-row status pills.
+- Why: Admins needed a fast at-a-glance view under the clock area showing who is expected now, who is currently in, and who is missing without opening detailed admin workflows.
+- Files: src/UserInterface.js
+- Validation: Verified timeline render path now uses on-duty schedule segments plus current/closed punches, tokenized dayboard CSS variables for light/dark + mobile layout, and script syntax check passes with `node --check src/UserInterface.js`.
+- Summary: Extended timeline expected overlays to include backup and lunch schedule segments in addition to on-duty segments.
+- Why: Admins need the timeline to show all expected schedule windows (on-duty, backup, and lunch) even when only on-duty drives expected-now/missing-now status checks.
+- Files: src/UserInterface.js
+- Validation: Updated timeline segment parsing and rendering to map O/B/L statuses into distinct overlay colors while keeping expected-now and missing-now logic tied to on-duty ranges; verified script syntax with `node --check src/UserInterface.js`.
+- Summary: Split each dayboard row into dual rails so expected schedule overlays and actual punches no longer obscure each other.
+- Why: A single overlaid rail reduced readability because completed/open punch bars could hide expected windows, making fast visual comparisons harder.
+- Files: src/UserInterface.js
+- Validation: Refactored row markup/CSS into separate expected and actual rails with a shared now-line and missing marker, then verified script syntax with `node --check src/UserInterface.js`.
 
 ### Fixed
 - _None yet._

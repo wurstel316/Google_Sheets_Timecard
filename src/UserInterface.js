@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.4.3 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.4.4-push.2 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -390,6 +390,27 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             --tc-dayboard-pill-out-text: #33567b;
             --tc-dayboard-pill-out-border: #cad9ea;
             --tc-dayboard-arrow: #8595ab;
+            --tc-dayboard-name-col-width: clamp(9rem, 24vw, 12rem);
+            --tc-dayboard-name-col-width-mobile: clamp(7.75rem, 35vw, 9.5rem);
+            --tc-dayboard-row-height: clamp(2.65rem, 6.4vh, 3.2rem);
+            --tc-dayboard-track-height: 0.5rem;
+            --tc-dayboard-track-height-actual: 0.42rem;
+            --tc-dayboard-track-rail-gap: 0.22rem;
+            --tc-dayboard-board-min-width: clamp(38rem, 92vw, 56rem);
+            --tc-dayboard-name-neutral-bg: transparent;
+            --tc-dayboard-name-in-bg: #e8f6ee;
+            --tc-dayboard-name-expected-bg: #e8f0fe;
+            --tc-dayboard-name-missing-bg: #fce8e6;
+            --tc-dayboard-track-bg: #f2f6fb;
+            --tc-dayboard-axis-text: #5d6c80;
+            --tc-dayboard-axis-tick: #e4ecf7;
+            --tc-dayboard-expected-block-bg: #77aef7;
+            --tc-dayboard-expected-backup-block-bg: #a78bfa;
+            --tc-dayboard-expected-lunch-block-bg: #f7c66d;
+            --tc-dayboard-open-block-bg: #3fb97b;
+            --tc-dayboard-completed-block-bg: #a7b4c8;
+            --tc-dayboard-now-line: #ef4444;
+            --tc-dayboard-missing-dot: #ef4444;
             --tc-preview-border: #d6dde7;
             --tc-preview-title-bg: #f3f6fb;
             --tc-preview-title-text: #203040;
@@ -594,6 +615,27 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             --tc-dayboard-pill-out-text: #c7d8ee;
             --tc-dayboard-pill-out-border: #41506a;
             --tc-dayboard-arrow: #93a4bb;
+            --tc-dayboard-name-col-width: clamp(9rem, 24vw, 12rem);
+            --tc-dayboard-name-col-width-mobile: clamp(7.75rem, 35vw, 9.5rem);
+            --tc-dayboard-row-height: clamp(2.65rem, 6.4vh, 3.2rem);
+            --tc-dayboard-track-height: 0.5rem;
+            --tc-dayboard-track-height-actual: 0.42rem;
+            --tc-dayboard-track-rail-gap: 0.22rem;
+            --tc-dayboard-board-min-width: clamp(38rem, 92vw, 56rem);
+            --tc-dayboard-name-neutral-bg: transparent;
+            --tc-dayboard-name-in-bg: #1f3a2d;
+            --tc-dayboard-name-expected-bg: #1f2f46;
+            --tc-dayboard-name-missing-bg: #3a1d23;
+            --tc-dayboard-track-bg: #233044;
+            --tc-dayboard-axis-text: #9fb0c9;
+            --tc-dayboard-axis-tick: #334155;
+            --tc-dayboard-expected-block-bg: #60a5fa;
+            --tc-dayboard-expected-backup-block-bg: #8b7cf7;
+            --tc-dayboard-expected-lunch-block-bg: #d4a14d;
+            --tc-dayboard-open-block-bg: #4ade80;
+            --tc-dayboard-completed-block-bg: #64748b;
+            --tc-dayboard-now-line: #f87171;
+            --tc-dayboard-missing-dot: #f87171;
             --tc-preview-border: #41506a;
             --tc-preview-title-bg: #1f2a3d;
             --tc-preview-title-text: #dbe6f5;
@@ -1301,147 +1343,264 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             background: var(--tc-dayboard-chip-bg);
           }
           .admin-dayboard-board {
-            min-width: 48rem;
+            min-width: var(--tc-dayboard-board-min-width);
             display: block;
-          }
-          .admin-dayboard-lanes {
-            display: flex;
-            flex-direction: column;
-          }
-          .admin-dayboard-lane {
-            display: grid;
-            grid-template-columns: 13rem minmax(0, 1fr);
-            min-height: 7rem;
-            border-bottom: 1px solid var(--tc-dayboard-lane-border);
-          }
-          .admin-dayboard-lane:last-child {
-            border-bottom: 0;
-          }
-          .admin-dayboard-lane-meta {
-            background: var(--tc-dayboard-meta-bg);
-            border-right: 1px solid var(--tc-dayboard-lane-border);
-            padding: 0.65rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 0.3rem;
-          }
-          .admin-dayboard-name {
-            display: flex;
-            align-items: center;
-            gap: 0.45rem;
-            font-weight: 800;
-            color: var(--tc-dayboard-title);
-            line-height: 1.15;
-          }
-          .admin-dayboard-dot {
-            width: 0.55rem;
-            height: 0.55rem;
-            border-radius: 999px;
-            background: var(--tc-dayboard-dot);
-            flex: 0 0 auto;
-          }
-          .admin-dayboard-dot.is-in {
-            background: var(--tc-dayboard-dot-in);
-            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12);
-          }
-          .admin-dayboard-dot.is-today {
-            background: var(--tc-dayboard-dot-today);
-            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
-          }
-          .admin-dayboard-status-line {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.28rem;
-          }
-          .admin-dayboard-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.14rem 0.4rem;
-            border-radius: 999px;
-            font-size: 0.68rem;
-            font-weight: 700;
-            border: 1px solid transparent;
-          }
-          .admin-dayboard-badge.in-now {
-            background: var(--tc-dayboard-badge-in-bg);
-            color: var(--tc-dayboard-badge-in-text);
-            border-color: var(--tc-dayboard-badge-in-border);
-          }
-          .admin-dayboard-badge.today {
-            background: var(--tc-dayboard-badge-today-bg);
-            color: var(--tc-dayboard-badge-today-text);
-            border-color: var(--tc-dayboard-badge-today-border);
-          }
-          .admin-dayboard-badge.unscheduled {
-            background: var(--tc-dayboard-badge-unscheduled-bg);
-            color: var(--tc-dayboard-badge-unscheduled-text);
-            border-color: var(--tc-dayboard-badge-unscheduled-border);
-          }
-          .admin-dayboard-lane-body {
-            padding: 0.6rem;
-            display: grid;
-            gap: 0.48rem;
-            align-content: center;
-          }
-          .admin-dayboard-track {
-            display: grid;
-            gap: 0.28rem;
-          }
-          .admin-dayboard-track-label {
-            font-size: 0.64rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--tc-dayboard-subtitle);
-            font-weight: 700;
-          }
-          .admin-dayboard-chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.28rem;
           }
           .admin-dayboard-empty {
             color: var(--tc-dayboard-subtitle);
-            font-size: 0.78rem;
+            font-size: var(--tc-text-sm);
             font-style: italic;
+            padding: 0.75rem;
           }
-          .admin-dayboard-session-chip {
+          .admin-dayboard-timeline {
+            display: flex;
+            flex-direction: column;
+          }
+          .admin-dayboard-axis {
+            display: grid;
+            grid-template-columns: var(--tc-dayboard-name-col-width) minmax(0, 1fr);
+            min-height: 1.95rem;
+            border-bottom: 1px solid var(--tc-dayboard-lane-border);
+          }
+          .admin-dayboard-axis-name {
+            display: flex;
+            align-items: center;
+            padding: 0.4rem 0.55rem;
+            font-size: var(--tc-text-xs);
+            font-weight: 700;
+            color: var(--tc-dayboard-axis-text);
+            border-right: 1px solid var(--tc-dayboard-lane-border);
+            background: var(--tc-dayboard-meta-bg);
+          }
+          .admin-dayboard-axis-track {
+            position: relative;
+            min-height: 1.95rem;
+          }
+          .admin-dayboard-axis-tick {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--tc-dayboard-axis-tick);
+          }
+          .admin-dayboard-axis-label {
+            position: absolute;
+            top: 0.2rem;
+            transform: translateX(-50%);
+            font-size: var(--tc-text-xs);
+            color: var(--tc-dayboard-axis-text);
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+          }
+          .admin-dayboard-row {
+            display: grid;
+            grid-template-columns: var(--tc-dayboard-name-col-width) minmax(0, 1fr);
+            border-bottom: 1px solid var(--tc-dayboard-lane-border);
+          }
+          .admin-dayboard-row:last-child {
+            border-bottom: 0;
+          }
+          .admin-dayboard-namecell {
+            display: flex;
+            align-items: center;
+            gap: 0.48rem;
+            padding: 0.35rem 0.55rem;
+            min-height: var(--tc-dayboard-row-height);
+            border-right: 1px solid var(--tc-dayboard-lane-border);
+            background: var(--tc-dayboard-name-neutral-bg);
+          }
+          .admin-dayboard-namecell.is-in-now {
+            background: var(--tc-dayboard-name-in-bg);
+          }
+          .admin-dayboard-namecell.is-expected-now {
+            background: var(--tc-dayboard-name-expected-bg);
+          }
+          .admin-dayboard-namecell.is-missing-now {
+            background: var(--tc-dayboard-name-missing-bg);
+          }
+          .admin-dayboard-avatar {
+            width: 1.45rem;
+            height: 1.45rem;
+            border-radius: 999px;
+            background: var(--tc-dayboard-meta-bg);
+            border: 1px solid var(--tc-dayboard-chip-border);
+            color: var(--tc-dayboard-title);
+            font-size: var(--tc-text-xs);
+            font-weight: 800;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            text-transform: uppercase;
+          }
+          .admin-dayboard-name-text {
+            min-width: 0;
+            font-size: var(--tc-text-sm);
+            font-weight: 700;
+            color: var(--tc-dayboard-title);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .admin-dayboard-track-cell {
+            position: relative;
+            min-height: var(--tc-dayboard-row-height);
+            padding: 0.35rem 0.55rem;
+            display: flex;
+            align-items: center;
+          }
+          .admin-dayboard-track-stack {
+            position: relative;
+            width: 100%;
+            display: grid;
+            gap: var(--tc-dayboard-track-rail-gap);
+          }
+          .admin-dayboard-track-rail {
+            position: relative;
+            width: 100%;
+            height: var(--tc-dayboard-track-height);
+            border-radius: var(--tc-radius-pill);
+            background: var(--tc-dayboard-track-bg);
+            overflow: visible;
+          }
+          .admin-dayboard-track-rail.actual {
+            height: var(--tc-dayboard-track-height-actual);
+          }
+          .admin-dayboard-block {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: var(--tc-radius-pill);
+          }
+          .admin-dayboard-block.expected {
+            background: var(--tc-dayboard-expected-block-bg);
+            opacity: 0.78;
+          }
+          .admin-dayboard-block.expected-backup {
+            background: var(--tc-dayboard-expected-backup-block-bg);
+            opacity: 0.72;
+          }
+          .admin-dayboard-block.expected-lunch {
+            background: var(--tc-dayboard-expected-lunch-block-bg);
+            opacity: 0.78;
+          }
+          .admin-dayboard-block.completed {
+            background: var(--tc-dayboard-completed-block-bg);
+            opacity: 0.85;
+          }
+          .admin-dayboard-block.open {
+            background: var(--tc-dayboard-open-block-bg);
+            opacity: 0.95;
+          }
+          .admin-dayboard-now-line {
+            position: absolute;
+            top: -0.18rem;
+            bottom: -0.18rem;
+            width: 2px;
+            border-radius: 2px;
+            background: var(--tc-dayboard-now-line);
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 3;
+          }
+          .admin-dayboard-missing-dot {
+            position: absolute;
+            top: 50%;
+            width: 0.36rem;
+            height: 0.36rem;
+            border-radius: 999px;
+            background: var(--tc-dayboard-missing-dot);
+            transform: translate(-50%, -50%);
+            z-index: 4;
+          }
+          .admin-dayboard-section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.55rem;
+            border-bottom: 1px solid var(--tc-dayboard-lane-border);
+            background: var(--tc-dayboard-meta-bg);
+            color: var(--tc-dayboard-title);
+            font-size: var(--tc-text-sm);
+            font-weight: 700;
+          }
+          .admin-dayboard-section-count {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.45rem;
+            height: 1.25rem;
+            padding: 0 0.35rem;
+            border-radius: var(--tc-radius-pill);
+            border: 1px solid var(--tc-dayboard-chip-border);
+            background: var(--tc-dayboard-chip-bg);
+            color: var(--tc-dayboard-subtitle);
+            font-size: var(--tc-text-xs);
+            font-weight: 800;
+          }
+          .admin-dayboard-legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+            gap: 0.35rem 0.55rem;
+            padding: 0.5rem 0.55rem;
+            border-top: 1px solid var(--tc-dayboard-lane-border);
+            background: var(--tc-dayboard-meta-bg);
+          }
+          .admin-dayboard-legend-item {
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
+            min-width: 0;
+            font-size: var(--tc-text-xs);
+            color: var(--tc-dayboard-subtitle);
+            font-weight: 700;
+          }
+          .admin-dayboard-legend-swatch {
+            width: 0.86rem;
+            height: 0.86rem;
+            border-radius: 0.22rem;
             border: 1px solid var(--tc-dayboard-chip-border);
-            border-radius: 0.55rem;
-            padding: 0.3rem 0.45rem;
-            background: var(--tc-dayboard-chip-bg);
-            font-size: 0.72rem;
-            font-weight: 700;
+            flex: 0 0 auto;
           }
-          .admin-dayboard-session-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.14rem 0.38rem;
-            border-radius: 999px;
-            font-size: 0.69rem;
-            font-weight: 700;
-            border: 1px solid transparent;
+          .admin-dayboard-legend-swatch.in {
+            background: var(--tc-dayboard-name-in-bg);
           }
-          .admin-dayboard-session-pill.in {
-            background: var(--tc-dayboard-badge-in-bg);
-            color: var(--tc-dayboard-badge-in-text);
-            border-color: var(--tc-dayboard-badge-in-border);
+          .admin-dayboard-legend-swatch.expected {
+            background: var(--tc-dayboard-name-expected-bg);
           }
-          .admin-dayboard-session-pill.out {
-            background: var(--tc-dayboard-pill-out-bg);
-            color: var(--tc-dayboard-pill-out-text);
-            border-color: var(--tc-dayboard-pill-out-border);
+          .admin-dayboard-legend-swatch.missing {
+            background: var(--tc-dayboard-name-missing-bg);
           }
-          .admin-dayboard-session-arrow {
-            color: var(--tc-dayboard-arrow);
+          .admin-dayboard-legend-swatch.timeline-expected {
+            background: var(--tc-dayboard-expected-block-bg);
           }
-          body.mobile-layout .admin-dayboard-lane {
-            grid-template-columns: 10rem minmax(0, 1fr);
+          .admin-dayboard-legend-swatch.timeline-backup {
+            background: var(--tc-dayboard-expected-backup-block-bg);
+          }
+          .admin-dayboard-legend-swatch.timeline-lunch {
+            background: var(--tc-dayboard-expected-lunch-block-bg);
+          }
+          .admin-dayboard-legend-swatch.timeline-open {
+            background: var(--tc-dayboard-open-block-bg);
+          }
+          .admin-dayboard-legend-swatch.timeline-completed {
+            background: var(--tc-dayboard-completed-block-bg);
+          }
+          .admin-dayboard-legend-now {
+            width: 2px;
+            height: 0.9rem;
+            border-radius: 2px;
+            background: var(--tc-dayboard-now-line);
+            flex: 0 0 auto;
+          }
+          body.mobile-layout {
+            --tc-dayboard-name-col-width: var(--tc-dayboard-name-col-width-mobile);
+          }
+          body.mobile-layout .admin-dayboard-board-wrap {
+            max-height: min(48vh, 31rem);
           }
           .admin-preview-grid {
             width: 100%;
@@ -3262,8 +3421,10 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
               </div>
               <div class="admin-dayboard-summary">
                 <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">In Now</div><div id="adminDayboardInNowCount" class="admin-dayboard-stat-value">--</div></div>
-                <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">Clocked In Today</div><div id="adminDayboardTodayCount" class="admin-dayboard-stat-value">--</div></div>
+                <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">Expected Now</div><div id="adminDayboardExpectedNowCount" class="admin-dayboard-stat-value">--</div></div>
+                <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">Missing Now</div><div id="adminDayboardMissingNowCount" class="admin-dayboard-stat-value">--</div></div>
                 <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">Scheduled</div><div id="adminDayboardScheduledCount" class="admin-dayboard-stat-value">--</div></div>
+                <div class="admin-dayboard-stat"><div class="admin-dayboard-stat-label">Anomalies</div><div id="adminDayboardAnomalyCount" class="admin-dayboard-stat-value">--</div></div>
               </div>
             </div>
             <div id="adminDayboardBoardWrap" class="admin-dayboard-board-wrap">
@@ -3944,82 +4105,300 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             };
           }
 
-          function buildAdminDayboardSessionChipHtml(session) {
-            const source = session && typeof session === 'object' ? session : {};
-            const clockInText = formatDisplayTime(source.clockIn) || '--:--';
-            const clockOutText = source.clockOut ? (formatDisplayTime(source.clockOut) || '--:--') : 'Now';
-            const isOpen = source.isOpen === true || !source.clockOut;
-            return '<span class="admin-dayboard-session-chip">' +
-              '<span class="admin-dayboard-session-pill in">In ' + escapeHtml(clockInText) + '</span>' +
-              '<span class="admin-dayboard-session-arrow" aria-hidden="true">→</span>' +
-              '<span class="admin-dayboard-session-pill out' + (isOpen ? ' is-open' : '') + '">' + escapeHtml((isOpen ? 'Out --' : 'Out ' + clockOutText)) + '</span>' +
-            '</span>';
+          // Computes the minute-of-day position for a given ISO timestamp in local time.
+          function getMinutesOfDayFromIso(isoValue) {
+            const iso = String(isoValue || '').trim();
+            if (!iso) return null;
+            const date = new Date(iso);
+            if (!(date instanceof Date) || isNaN(date.getTime())) {
+              return null;
+            }
+            return (date.getHours() * 60) + date.getMinutes();
           }
 
+          // Clamps minute values into the current 24-hour timeline.
+          function clampTimelineMinute(value) {
+            const minute = Number(value);
+            if (!Number.isFinite(minute)) return 0;
+            if (minute < 0) return 0;
+            if (minute > 1440) return 1440;
+            return minute;
+          }
+
+          // Converts a minute-of-day value to an inline percentage for timeline block placement.
+          function toTimelinePercent(value) {
+            const minute = clampTimelineMinute(value);
+            return (minute / 1440) * 100;
+          }
+
+          // Creates a short two-letter avatar from display labels for compact row identity.
+          function getAdminDayboardAvatarText(label) {
+            const text = String(label || '').trim();
+            if (!text) return '??';
+            const parts = text.split(/\s+/).filter(Boolean);
+            if (parts.length >= 2) {
+              return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return text.slice(0, 2).toUpperCase();
+          }
+
+          // Builds normalized schedule ranges by segment status for the 24-hour timeline.
+          function getScheduleTimelineRangesByStatus(segments) {
+            const source = Array.isArray(segments) ? segments : [];
+            const rangesByStatus = { O: [], B: [], L: [] };
+            source.forEach((segment) => {
+              const item = segment && typeof segment === 'object' ? segment : {};
+              const status = String(item.status || '').toUpperCase();
+              if (status !== 'O' && status !== 'B' && status !== 'L') {
+                return;
+              }
+              const startHour = Number(item.startHour);
+              const endHourExclusive = Number(item.endHourExclusive);
+              if (!Number.isFinite(startHour) || !Number.isFinite(endHourExclusive)) {
+                return;
+              }
+              const startMinute = clampTimelineMinute(Math.round(startHour * 60));
+              const endMinute = clampTimelineMinute(Math.round(endHourExclusive * 60));
+              if (endMinute > startMinute) {
+                rangesByStatus[status].push({ start: startMinute, end: endMinute });
+              } else if (endMinute < startMinute) {
+                rangesByStatus[status].push({ start: startMinute, end: 1440 });
+                rangesByStatus[status].push({ start: 0, end: endMinute });
+              }
+            });
+            return rangesByStatus;
+          }
+
+          // Builds timeline ranges for punch sessions clipped to today.
+          function getSessionTimelineRangeForToday(session, todayKey, nowMinute) {
+            const source = session && typeof session === 'object' ? session : {};
+            const clockInMinuteRaw = getMinutesOfDayFromIso(source.clockIn);
+            if (clockInMinuteRaw === null) return null;
+
+            const clockInKey = String(source.clockInKey || '').trim();
+            const clockOutKey = String(source.clockOutKey || '').trim();
+            const isOpen = source.isOpen === true || !String(source.clockOut || '').trim();
+            const startMinute = clockInKey && clockInKey !== todayKey ? 0 : clockInMinuteRaw;
+
+            let endMinute = nowMinute;
+            if (!isOpen) {
+              const clockOutMinuteRaw = getMinutesOfDayFromIso(source.clockOut);
+              if (clockOutMinuteRaw === null) return null;
+              if (clockOutKey && clockOutKey !== todayKey) {
+                if (clockOutKey < todayKey) {
+                  return null;
+                }
+                endMinute = 1440;
+              } else {
+                endMinute = clockOutMinuteRaw;
+              }
+            }
+
+            const start = clampTimelineMinute(startMinute);
+            const end = clampTimelineMinute(endMinute);
+            if (end <= start) {
+              return null;
+            }
+            return { start: start, end: end, isOpen: isOpen };
+          }
+
+          // Returns whether the current minute is inside at least one expected schedule range.
+          function isMinuteWithinRanges(ranges, minute) {
+            const source = Array.isArray(ranges) ? ranges : [];
+            const currentMinute = clampTimelineMinute(minute);
+            for (let i = 0; i < source.length; i++) {
+              const range = source[i];
+              if (range && currentMinute >= range.start && currentMinute < range.end) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          // Returns whether the employee should be marked missing after grace within an active expected range.
+          function isMissingForCurrentMinute(ranges, minute, graceMinutes) {
+            const source = Array.isArray(ranges) ? ranges : [];
+            const currentMinute = clampTimelineMinute(minute);
+            const grace = Number.isFinite(Number(graceMinutes)) ? Number(graceMinutes) : 0;
+            for (let i = 0; i < source.length; i++) {
+              const range = source[i];
+              if (!range) continue;
+              if (currentMinute >= range.start && currentMinute < range.end && currentMinute >= (range.start + grace)) {
+                return true;
+              }
+            }
+            return false;
+          }
+
+          // Generates absolute-positioned timeline blocks for expected/punch ranges.
+          function buildTimelineBlocksHtml(ranges, className) {
+            const source = Array.isArray(ranges) ? ranges : [];
+            return source.map((range) => {
+              const left = toTimelinePercent(range.start);
+              const width = Math.max(0.1, toTimelinePercent(range.end) - left);
+              return '<span class="admin-dayboard-block ' + className + '" style="left:' + left.toFixed(3) + '%; width:' + width.toFixed(3) + '%;"></span>';
+            }).join('');
+          }
+
+          // Renders the compact timeline dayboard for expected-vs-in-now scanning.
           function renderAdminDayboard() {
             const board = document.getElementById('adminDayboardBoard');
             const meta = document.getElementById('adminDayboardMeta');
             const inNowEl = document.getElementById('adminDayboardInNowCount');
-            const todayEl = document.getElementById('adminDayboardTodayCount');
+            const expectedNowEl = document.getElementById('adminDayboardExpectedNowCount');
+            const missingNowEl = document.getElementById('adminDayboardMissingNowCount');
             const scheduledEl = document.getElementById('adminDayboardScheduledCount');
-            if (!board || !meta || !inNowEl || !todayEl || !scheduledEl) return;
+            const anomalyEl = document.getElementById('adminDayboardAnomalyCount');
+            if (!board || !meta || !inNowEl || !expectedNowEl || !missingNowEl || !scheduledEl || !anomalyEl) return;
 
             const data = adminDayboardData || getDefaultAdminDayboardData();
             const summary = data.summary || { inNowCount: 0, clockedInTodayCount: 0, scheduledCount: 0 };
+            const employees = Array.isArray(data.employees) ? data.employees : [];
+            const now = new Date();
+            const nowMinute = (now.getHours() * 60) + now.getMinutes();
+            const nowPercent = toTimelinePercent(nowMinute);
+            const todayKey = String(data.todayKey || '').trim();
+            const missingGraceMinutes = 15;
+            const preparedRows = [];
+            const anomalyRows = [];
+            let expectedNowCount = 0;
+            let missingNowCount = 0;
+
+            employees.forEach((employee) => {
+              const schedule = employee && employee.schedule && typeof employee.schedule === 'object'
+                ? employee.schedule
+                : { hasSchedule: false, segments: [] };
+              const scheduleRanges = getScheduleTimelineRangesByStatus(schedule.segments);
+              const onDutyRanges = Array.isArray(scheduleRanges.O) ? scheduleRanges.O : [];
+              const backupRanges = Array.isArray(scheduleRanges.B) ? scheduleRanges.B : [];
+              const lunchRanges = Array.isArray(scheduleRanges.L) ? scheduleRanges.L : [];
+              const allExpectedRanges = onDutyRanges.concat(backupRanges, lunchRanges);
+              const sessionsToday = Array.isArray(employee && employee.sessionsToday) ? employee.sessionsToday.slice() : [];
+              const sessionById = {};
+              sessionsToday.forEach((session) => {
+                const key = String(session && session.entryId || '').trim();
+                if (key) sessionById[key] = true;
+              });
+              const currentPunch = employee && employee.currentPunch ? employee.currentPunch : null;
+              if (currentPunch && !sessionById[String(currentPunch.entryId || '').trim()]) {
+                sessionsToday.push(currentPunch);
+              }
+
+              const completedRanges = [];
+              const openRanges = [];
+              sessionsToday.forEach((session) => {
+                const range = getSessionTimelineRangeForToday(session, todayKey, nowMinute);
+                if (!range) return;
+                if (range.isOpen) {
+                  openRanges.push(range);
+                } else {
+                  completedRanges.push(range);
+                }
+              });
+
+              const expectedNow = isMinuteWithinRanges(onDutyRanges, nowMinute);
+              const missingNow = expectedNow && !employee.isInNow && isMissingForCurrentMinute(onDutyRanges, nowMinute, missingGraceMinutes);
+              const anomaly = !!employee.isInNow && allExpectedRanges.length === 0;
+              if (expectedNow) expectedNowCount += 1;
+              if (missingNow) missingNowCount += 1;
+
+              const rowStateClass = missingNow
+                ? 'is-missing-now'
+                : (employee.isInNow ? 'is-in-now' : (expectedNow ? 'is-expected-now' : ''));
+              const rowInfo = {
+                displayLabel: String(employee && employee.displayLabel || employee && employee.email || 'Unknown'),
+                avatarText: getAdminDayboardAvatarText(employee && employee.displayLabel),
+                rowStateClass: rowStateClass,
+                expectedRanges: onDutyRanges,
+                backupRanges: backupRanges,
+                lunchRanges: lunchRanges,
+                openRanges: openRanges,
+                completedRanges: completedRanges,
+                showMissingDot: missingNow
+              };
+              if (anomaly) {
+                anomalyRows.push(rowInfo);
+              } else {
+                preparedRows.push(rowInfo);
+              }
+            });
+
+            const scheduledCount = preparedRows.filter((row) => (row.expectedRanges.length + row.backupRanges.length + row.lunchRanges.length) > 0).length;
             inNowEl.innerText = String(summary.inNowCount || 0);
-            todayEl.innerText = String(summary.clockedInTodayCount || 0);
-            scheduledEl.innerText = String(summary.scheduledCount || 0);
+            expectedNowEl.innerText = String(expectedNowCount);
+            missingNowEl.innerText = String(missingNowCount);
+            scheduledEl.innerText = String(scheduledCount || summary.scheduledCount || 0);
+            anomalyEl.innerText = String(anomalyRows.length);
             meta.innerText = data.updatedAt ? ('Updated ' + formatDisplayDate(data.updatedAt)) : 'Waiting for dayboard data...';
 
-            const employees = Array.isArray(data.employees) ? data.employees : [];
-            const lanesHtml = employees.length > 0
-              ? employees.map((employee) => {
-                  const schedule = employee.schedule || { hasSchedule: false, summaryText: 'Not scheduled today', segments: [] };
-                  const sessionsToday = Array.isArray(employee.sessionsToday) ? employee.sessionsToday.slice() : [];
-                  const sessionById = {};
-                  sessionsToday.forEach((session) => {
-                    const key = String(session && session.entryId || '').trim();
-                    if (key) sessionById[key] = true;
-                  });
-                  const extraCurrentPunch = employee.currentPunch && !sessionById[String(employee.currentPunch.entryId || '').trim()] ? [employee.currentPunch] : [];
-                  const actualSessions = sessionsToday.concat(extraCurrentPunch);
-                  const expectedHtml = schedule.hasSchedule
-                    ? buildScheduleSegmentsHtml(schedule.segments)
-                    : '<span class="admin-dayboard-empty">Not scheduled today</span>';
-                  const actualHtml = actualSessions.length > 0
-                    ? actualSessions.map((session) => buildAdminDayboardSessionChipHtml(session)).join('')
-                    : '<span class="admin-dayboard-empty">No punches today</span>';
-                  const statusBadges = [];
-                  if (employee.isInNow) {
-                    const inNowSince = employee.currentPunch && employee.currentPunch.clockIn ? formatDisplayTime(employee.currentPunch.clockIn) : '';
-                    statusBadges.push('<span class="admin-dayboard-badge in-now">In now' + (inNowSince ? ' · ' + escapeHtml(inNowSince) : '') + '</span>');
-                  }
-                  if (employee.clockedInToday) {
-                    statusBadges.push('<span class="admin-dayboard-badge today">Clocked in today</span>');
-                  }
-                  if (!employee.isInNow && !employee.clockedInToday && !schedule.hasSchedule) {
-                    statusBadges.push('<span class="admin-dayboard-badge unscheduled">No schedule today</span>');
-                  }
-                  return '<article class="admin-dayboard-lane">' +
-                    '<div class="admin-dayboard-lane-meta">' +
-                      '<div class="admin-dayboard-name"><span class="admin-dayboard-dot' + (employee.isInNow ? ' is-in' : (employee.clockedInToday ? ' is-today' : '')) + '"></span><span>' + escapeHtml(employee.displayLabel || employee.email || 'Unknown') + '</span></div>' +
-                      '<div class="admin-dayboard-status-line">' + statusBadges.join('') + '</div>' +
-                    '</div>' +
-                    '<div class="admin-dayboard-lane-body">' +
-                      '<div class="admin-dayboard-track">' +
-                        '<div class="admin-dayboard-track-label">Expected schedule</div>' +
-                        '<div class="admin-dayboard-chip-row">' + expectedHtml + '</div>' +
-                      '</div>' +
-                      '<div class="admin-dayboard-track">' +
-                        '<div class="admin-dayboard-track-label">Actual punches</div>' +
-                        '<div class="admin-dayboard-chip-row">' + actualHtml + '</div>' +
-                      '</div>' +
-                    '</div>' +
-                  '</article>';
-                }).join('')
-              : '<div style="padding:0.75rem; color:var(--tc-text-muted); font-style:italic;">No employee rows available for today.</div>';
+            const axisTicks = [0, 3, 6, 9, 12, 15, 18, 21, 24].map((hour) => {
+              const labelHour = hour === 24 ? 0 : hour;
+              const suffix = labelHour >= 12 ? 'PM' : 'AM';
+              const displayHour = (labelHour % 12) || 12;
+              const label = displayHour + suffix;
+              const position = toTimelinePercent(hour * 60);
+              return '<span class="admin-dayboard-axis-tick" style="left:' + position.toFixed(3) + '%;"></span>' +
+                '<span class="admin-dayboard-axis-label" style="left:' + position.toFixed(3) + '%;">' + label + '</span>';
+            }).join('');
 
-            board.innerHTML = '<div class="admin-dayboard-lanes">' + lanesHtml + '</div>';
+            function buildRowHtml(row) {
+              const stateClass = row.rowStateClass ? (' ' + row.rowStateClass) : '';
+              const expectedHtml = buildTimelineBlocksHtml(row.expectedRanges, 'expected');
+              const backupHtml = buildTimelineBlocksHtml(row.backupRanges, 'expected-backup');
+              const lunchHtml = buildTimelineBlocksHtml(row.lunchRanges, 'expected-lunch');
+              const completedHtml = buildTimelineBlocksHtml(row.completedRanges, 'completed');
+              const openHtml = buildTimelineBlocksHtml(row.openRanges, 'open');
+              const missingDotHtml = row.showMissingDot
+                ? ('<span class="admin-dayboard-missing-dot" style="left:' + nowPercent.toFixed(3) + '%;"></span>')
+                : '';
+              return '<article class="admin-dayboard-row">' +
+                '<div class="admin-dayboard-namecell' + stateClass + '">' +
+                  '<span class="admin-dayboard-avatar">' + escapeHtml(row.avatarText) + '</span>' +
+                  '<span class="admin-dayboard-name-text">' + escapeHtml(row.displayLabel) + '</span>' +
+                '</div>' +
+                '<div class="admin-dayboard-track-cell">' +
+                  '<div class="admin-dayboard-track-stack">' +
+                    '<div class="admin-dayboard-track-rail expected">' +
+                      expectedHtml + backupHtml + lunchHtml +
+                      missingDotHtml +
+                    '</div>' +
+                    '<div class="admin-dayboard-track-rail actual">' +
+                      completedHtml + openHtml +
+                    '</div>' +
+                    '<span class="admin-dayboard-now-line" style="left:' + nowPercent.toFixed(3) + '%;"></span>' +
+                  '</div>' +
+                '</div>' +
+              '</article>';
+            }
+
+            const mainRowsHtml = preparedRows.length > 0
+              ? preparedRows.map((row) => buildRowHtml(row)).join('')
+              : '<div class="admin-dayboard-empty">No scheduled rows available for today.</div>';
+            const anomalyRowsHtml = anomalyRows.length > 0
+              ? anomalyRows.map((row) => buildRowHtml(row)).join('')
+              : '<div class="admin-dayboard-empty">No unscheduled in-now anomalies.</div>';
+
+            board.innerHTML =
+              '<div class="admin-dayboard-timeline">' +
+                '<div class="admin-dayboard-axis">' +
+                  '<div class="admin-dayboard-axis-name">Employee</div>' +
+                  '<div class="admin-dayboard-axis-track">' + axisTicks + '</div>' +
+                '</div>' +
+                mainRowsHtml +
+                '<div class="admin-dayboard-section-header">Unscheduled but In Now <span class="admin-dayboard-section-count">' + anomalyRows.length + '</span></div>' +
+                anomalyRowsHtml +
+                '<div class="admin-dayboard-legend">' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch in"></span>Name highlight: In now</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch expected"></span>Name highlight: Expected</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch missing"></span>Name highlight: Missing</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-expected"></span>Expected rail: On-duty</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-backup"></span>Expected rail: Backup</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-lunch"></span>Expected rail: Lunch</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-open"></span>Actual rail: Open punch</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-completed"></span>Actual rail: Completed punch</span>' +
+                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-now"></span>Now</span>' +
+                '</div>' +
+              '</div>';
           }
 
           function loadAdminDayboard(onComplete) {
