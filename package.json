@@ -1,6 +1,6 @@
 {
   "name": "timecard-gas-project",
-  "version": "2.4.4-push.4",
+  "version": "2.5.0",
   "description": "A Google Apps Script TimeCard project",
   "main": "src/Code.js",
   "scripts": {

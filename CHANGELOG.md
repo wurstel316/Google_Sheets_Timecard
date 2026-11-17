@@ -10,6 +10,20 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - _None yet._
 
 ### Changed
+- _None yet._
+
+### Fixed
+- _None yet._
+
+### Removed
+- _None yet._
+
+## [2.5.0] - 2026-11-17
+
+### Added
+- _None yet._
+
+### Changed
 - Summary: Replaced the admin "Today at a glance" lane chips with a compact timeline overlay that highlights name backgrounds for in/expected/missing states and removes per-row status pills.
 - Why: Admins needed a fast at-a-glance view under the clock area showing who is expected now, who is currently in, and who is missing without opening detailed admin workflows.
 - Files: src/UserInterface.js
