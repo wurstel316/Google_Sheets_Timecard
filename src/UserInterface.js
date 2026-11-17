@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.4.4-push.4 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.5.0 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
