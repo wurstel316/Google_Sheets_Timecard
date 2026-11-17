@@ -1,4 +1,4 @@
-// Compiled using timecard-gas-project 2.4.4-push.2 (TypeScript 4.9.5)
+// Compiled using timecard-gas-project 2.4.4-push.4 (TypeScript 4.9.5)
 function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPeriodStartDateStr, activePayPeriodEndDateStr, manualAllowedRange, scriptVersion, permissionFlags, preloadedSchedulePreviewFromServer, storedThemeModeFromServer) {
     const startMs = Date.now();
   const normalizedPermissionFlags = (permissionFlags && typeof permissionFlags === 'object')
@@ -1336,14 +1336,15 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             color: var(--tc-dayboard-title);
           }
           .admin-dayboard-board-wrap {
-            overflow: auto;
-            max-height: min(52vh, 36rem);
+            overflow: visible;
+            max-height: none;
             border: 1px solid var(--tc-dayboard-border);
             border-radius: 0.55rem;
             background: var(--tc-dayboard-chip-bg);
           }
           .admin-dayboard-board {
-            min-width: var(--tc-dayboard-board-min-width);
+            min-width: 0;
+            width: 100%;
             display: block;
           }
           .admin-dayboard-empty {
@@ -1600,7 +1601,7 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
             --tc-dayboard-name-col-width: var(--tc-dayboard-name-col-width-mobile);
           }
           body.mobile-layout .admin-dayboard-board-wrap {
-            max-height: min(48vh, 31rem);
+            max-height: none;
           }
           .admin-preview-grid {
             width: 100%;
@@ -4388,12 +4389,6 @@ function createMobileHtml(email, statusObj, entries, spreadsheetId, activePayPer
                 '<div class="admin-dayboard-section-header">Unscheduled but In Now <span class="admin-dayboard-section-count">' + anomalyRows.length + '</span></div>' +
                 anomalyRowsHtml +
                 '<div class="admin-dayboard-legend">' +
-                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch in"></span>Name highlight: In now</span>' +
-                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch expected"></span>Name highlight: Expected</span>' +
-                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch missing"></span>Name highlight: Missing</span>' +
-                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-expected"></span>Expected rail: On-duty</span>' +
-                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-backup"></span>Expected rail: Backup</span>' +
-                  '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-lunch"></span>Expected rail: Lunch</span>' +
                   '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-open"></span>Actual rail: Open punch</span>' +
                   '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-swatch timeline-completed"></span>Actual rail: Completed punch</span>' +
                   '<span class="admin-dayboard-legend-item"><span class="admin-dayboard-legend-now"></span>Now</span>' +

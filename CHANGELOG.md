@@ -22,6 +22,10 @@ This format follows Keep a Changelog and Semantic Versioning principles.
 - Why: A single overlaid rail reduced readability because completed/open punch bars could hide expected windows, making fast visual comparisons harder.
 - Files: src/UserInterface.js
 - Validation: Refactored row markup/CSS into separate expected and actual rails with a shared now-line and missing marker, then verified script syntax with `node --check src/UserInterface.js`.
+- Summary: Updated the dayboard timeline container to auto-size to its content so the panel itself no longer requires internal horizontal or vertical scrolling.
+- Why: Admins requested a resize-to-fit dayboard presentation instead of nested scroll regions inside the "Today at a glance" card.
+- Files: src/UserInterface.js
+- Validation: Removed dayboard wrap max-height clipping and internal overflow scrolling, set timeline board width to fit container without a forced minimum, and verified script syntax with `node --check src/UserInterface.js`.
 
 ### Fixed
 - _None yet._
